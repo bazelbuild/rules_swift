@@ -1667,7 +1667,9 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         The declared `File`.
     """
     objs_dir = "{}_objs".format(target_name)
-    owner_rel_path = owner_relative_path(src)
+
+    # Spaces in object file paths break response-file parsing on Windows
+    owner_rel_path = owner_relative_path(src).replace(" ", "_")
     basename = paths.basename(owner_rel_path)
     dirname = paths.join(objs_dir, paths.dirname(owner_rel_path))
 

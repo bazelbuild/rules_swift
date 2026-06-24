@@ -39,12 +39,16 @@ x_defaults:
       - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
-    build_flags:
-      # Override 'sandboxed' strategy set in .bazelrc because it's not
-      # available on Windows
-      - "--strategy=SwiftCompile="
     build_targets:
       - "//tools/..."
+      # Cross-platform Swift examples that exercise the Windows host toolchain:
+      # a `swift_binary` executable and a `linkshared` Windows DLL.
+      - "//examples/xplatform/hello_world"
+      - "//examples/xplatform/shared_library"
+    test_targets:
+      # Exercises XCTest discovery, the test runner, and `swift_test` execution
+      # on Windows.
+      - "//examples/xplatform/xctest"
 
 tasks:
   macos_latest:
@@ -97,11 +101,31 @@ tasks:
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
-  # TODO: re-enable when Windows in Bazel CI is properly configured for Swift.
-  # windows_last_green:
-  #   name: "Last Green Bazel"
-  #   bazel: last_green
-  #   <<: *windows_common
+  windows:
+    name: "Current LTS"
+    bazel: latest
+    # Expose the installed Swift toolchain and the MSVC/Windows SDK environment to
+    # the build. The swift.org installer (`batch_commands` below) records its
+    # Toolchains/Runtimes bin on the user's Path and sets SDKROOT, and a Visual
+    # Studio "developer prompt" (vcvars) would set INCLUDE/LIB for swiftc's clang
+    # to find the C headers (errno.h, ...) and for the linker — but none of that
+    # reaches the already-running CI process. Set it all here. BazelCI expands
+    # these with os.path.expandvars, so %VAR% resolves and earlier keys (listed
+    # first) are available to later ones. The VS/SDK versions are pinned to the
+    # Bazel CI Windows image; update them if `vcvars64.bat`'s output changes.
+    environment:
+      SWIFT_VERSION: "6.3.2"
+      VCToolsInstallDir: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.39.33519"
+      WindowsSdkDir: "C:\\Program Files (x86)\\Windows Kits\\10"
+      WindowsSDKVersion: "10.0.26100.0"
+      Path: "%LOCALAPPDATA%\\Programs\\Swift\\Toolchains\\%SWIFT_VERSION%+Asserts\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Runtimes\\%SWIFT_VERSION%\\usr\\bin;%LOCALAPPDATA%\\Programs\\Swift\\Tools\\%SWIFT_VERSION%;%VCToolsInstallDir%\\bin\\Hostx64\\x64;%WindowsSdkDir%\\bin\\%WindowsSDKVersion%\\x64;%PATH%"
+      SDKROOT: "%LOCALAPPDATA%\\Programs\\Swift\\Platforms\\%SWIFT_VERSION%\\Windows.platform\\Developer\\SDKs\\Windows.sdk"
+      INCLUDE: "%VCToolsInstallDir%\\include;%WindowsSdkDir%\\include\\%WindowsSDKVersion%\\ucrt;%WindowsSdkDir%\\include\\%WindowsSDKVersion%\\shared;%WindowsSdkDir%\\include\\%WindowsSDKVersion%\\um;%WindowsSdkDir%\\include\\%WindowsSDKVersion%\\winrt;%WindowsSdkDir%\\include\\%WindowsSDKVersion%\\cppwinrt"
+      LIB: "%VCToolsInstallDir%\\lib\\x64;%WindowsSdkDir%\\lib\\%WindowsSDKVersion%\\ucrt\\x64;%WindowsSdkDir%\\lib\\%WindowsSDKVersion%\\um\\x64"
+    batch_commands:
+      - "curl -sSL -o %TEMP%\\swift-installer.exe https://download.swift.org/swift-%SWIFT_VERSION%-release/windows10/swift-%SWIFT_VERSION%-RELEASE/swift-%SWIFT_VERSION%-RELEASE-windows10.exe"
+      - "%TEMP%\\swift-installer.exe -q"
+    <<: *windows_common
 
   doc_tests:
     name: "Doc tests"
