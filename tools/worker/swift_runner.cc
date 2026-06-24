@@ -53,10 +53,6 @@ namespace bazel_rules_swift {
 
 namespace {
 
-
-
-
-
 // Creates a temporary file and writes the given arguments to it, one per line.
 static std::unique_ptr<TempFile> WriteResponseFile(
     const std::vector<std::string>& args) {
@@ -506,7 +502,16 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
   // Looks for the `-o` flags in the command line and captures the path to that
   // file. This captures both regular paths (group 2) and single-quoted paths
   // (group 1).
-  RE2 output_pattern("\\s-o\\s+(?:'((?:\\'|[^'])*)'|(\\S+))");
+  RE2 output_pattern(
+      "\\s(?:-o|-sil-output-path|-ir-output-path)\\s+(?:'((?:\\'|[^'])*)'|("
+      "\\S+))");
+
+  // Looks for output-producing compiler modes in the command line. This is a
+  // subset of the `ModeOpt` flags from Swift's Options.td.
+  RE2 codegen_pattern(
+      "\\s(?:-S|-c|-dump-ast|-emit-assembly|-emit-bc|-emit-ir|-emit-irgen|"
+      "-emit-lowered-sil|-emit-object|-emit-sil|-emit-silgen)\\b");
+
   for (absl::string_view command_line :
        absl::StrSplit(print_jobs_output, '\n')) {
     if (command_line.empty()) {
@@ -526,8 +531,7 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
     absl::string_view command_line_without_expansions =
         possible_response_file.first;
 
-    if (absl::StrContains(command_line, " -c ") ||
-        absl::StrContains(command_line, " -dump-ast ")) {
+    if (RE2::PartialMatch(command_line, codegen_pattern)) {
       int index = codegen_jobs_.size();
       codegen_jobs_.push_back(std::string(command_line_without_expansions));
 
