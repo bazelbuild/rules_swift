@@ -11,6 +11,9 @@ load("//swift/internal:utils.bzl", "include_developer_search_paths")
 # buildifier: disable=bzl-visibility
 load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 
+# buildifier: disable=bzl-visibility
+load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
+
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
 
@@ -168,10 +171,33 @@ def _standalone_toolchain_download_url_test(ctx):
 
 standalone_toolchain_download_url_test = unittest.make(_standalone_toolchain_download_url_test)
 
+def _swift_sdk_download_url_test(ctx):
+    env = unittest.begin(ctx)
+
+    tests = [
+        struct(
+            version = "6.3.2",
+            sdk = "wasm",
+            expected = "https://download.swift.org/swift-6.3.2-release/wasm-sdk/swift-6.3.2-RELEASE/swift-6.3.2-RELEASE_wasm.artifactbundle.tar.gz",
+        ),
+        struct(
+            version = "6.3.2",
+            sdk = "android",
+            expected = "https://download.swift.org/swift-6.3.2-release/android-sdk/swift-6.3.2-RELEASE/swift-6.3.2-RELEASE_android.artifactbundle.tar.gz",
+        ),
+    ]
+    for t in tests:
+        asserts.equals(env, t.expected, swift_sdk_download_url(t.version, t.sdk))
+
+    return unittest.end(env)
+
+swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
         developer_dirs_linkopts_test,
         include_developer_search_paths_test,
         standalone_toolchain_download_url_test,
+        swift_sdk_download_url_test,
     )

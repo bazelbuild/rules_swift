@@ -43,20 +43,42 @@ toolchain(
 
 """
 
-def toolchains_for_platform(platform, toolchain_repository):
+# buildifier: disable=unused-variable
+_SDK_TOOLCHAIN_PLATFORM = """
+# Swift SDK toolchains from repository: `{sdk_repository}`
+toolchain(
+    name = "swift_toolchain_{target}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:swift_toolchain_{target_suffix}",
+    toolchain_type = "@rules_swift//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "cc_toolchain_{target}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:cc_toolchain_{target_suffix}",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+"""
+
+def _exec_compatible_with_for_platform(platform):
     # This assumption is baked into the API so we have to go along with it
     if platform == "xcode":
-        exec_compatible_with = [
+        return [
             "@platforms//os:macos",
         ]
-    else:
-        exec_compatible_with = [
-            "@platforms//os:linux",
-            "@platforms//cpu:{}".format("aarch64" if "aarch64" in platform else "x86_64"),
-        ]
+    return [
+        "@platforms//os:linux",
+        "@platforms//cpu:{}".format("aarch64" if "aarch64" in platform else "x86_64"),
+    ]
 
+def toolchains_for_platform(platform, toolchain_repository):
     return _TOOLCHAIN_PLATFORM.format(
-        exec_compatible_with = exec_compatible_with,
+        exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
