@@ -510,10 +510,8 @@ def _parse_target_system_name(*, arch, os, target_system_name):
         return "%s-unknown-linux-gnu" % arch
     elif os == "windows":
         # The MSVC cc toolchain reports a `target_gnu_system_name` of "local",
-        # so synthesize the triple. The `-msvc` environment is required: while
-        # `swiftc` defaults to it, `swift-symbolgraph-extract` (used for XCTest
-        # test discovery) matches the module layout's triple exactly and fails
-        # to load modules built for `*-windows-msvc` if it is omitted.
+        # so synthesize the triple. The `-msvc` suffix is required for
+        # `swift-symbolgraph-extract` (XCTest discovery) to load the modules.
         return "%s-unknown-windows-msvc" % arch
     else:
         return "%s-unknown-%s" % (arch, os)
@@ -547,11 +545,8 @@ def _swift_toolchain_impl(ctx):
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
-    # On Windows the Swift toolchain composes with Bazel's MSVC C++ toolchain
-    # (`msvc-cl`): `swiftc` uses its bundled clang for the clang importer and
-    # links via MSVC `link.exe`, so a clang CC toolchain is neither present nor
-    # required. Elsewhere (Linux), Swift drives the configured cc toolchain for
-    # C/C++ interop and linking, which must be clang.
+    # On Windows, Swift links via MSVC (`link.exe`) and uses its own bundled
+    # clang for the importer, so the configured cc toolchain need not be clang.
     if ctx.attr.os != "windows" and "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +

@@ -286,25 +286,26 @@ xcode_swift_toolchain(
     )
 
 def _python_executable_works(repository_ctx, python_bin):
-    """Returns True if `python_bin` is a real, runnable Python interpreter.
+    """Returns True if `python_bin` is a real, runnable Python 3 interpreter.
 
     On Windows, `python3.exe`/`python.exe` found on `PATH` are frequently the
     Microsoft Store "App execution alias" stubs rather than real interpreters:
     when run non-interactively they print a message pointing at the Store and
     exit nonzero. Probe the candidate so those stubs are skipped in favor of a
-    working interpreter later on `PATH`.
+    working interpreter later on `PATH`. We also confirm it is Python 3, since
+    the caller needs the Python 3 `plistlib` API.
     """
-    if not python_bin:
-        return False
-    result = repository_ctx.execute([python_bin, "-c", "print('ok')"])
+    result = repository_ctx.execute(
+        [python_bin, "-c", "import sys; print('ok' if sys.version_info[0] == 3 else 'no')"],
+    )
     return result.return_code == 0 and result.stdout.strip() == "ok"
 
 def _get_python_bin(repository_ctx):
     if "PYTHON_BIN_PATH" in repository_ctx.os.environ:
         return repository_ctx.os.environ.get("PYTHON_BIN_PATH").strip()
-    for name in ("python3.exe", "python.exe", "python3", "python"):
+    for name in ("python3.exe", "python3", "python.exe", "python"):
         candidate = repository_ctx.which(name)
-        if _python_executable_works(repository_ctx, candidate):
+        if candidate and _python_executable_works(repository_ctx, candidate):
             return candidate
     return None
 
@@ -341,8 +342,6 @@ Swift toolchain.
     # separators when joined.
     sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/").rstrip("/")
 
-    # The platform `Info.plist` (which records the bundled XCTest version) sits
-    # three levels above the SDK root, i.e. `<platform>/Info.plist`.
     info_plist = sdkroot + "/../../../Info.plist"
     python_bin = _get_python_bin(repository_ctx)
     if not python_bin:
@@ -357,9 +356,6 @@ Swift toolchain.
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
-        # `ProgramData` is normally present in a Windows process environment, but
-        # is not guaranteed to be (e.g. a service-account CI agent), so fall back
-        # to its conventional value rather than failing toolchain configuration.
         "ProgramData": repository_ctx.os.environ.get("ProgramData", "C:\\ProgramData"),
     }
 
