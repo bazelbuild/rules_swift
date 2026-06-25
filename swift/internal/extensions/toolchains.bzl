@@ -43,24 +43,16 @@ toolchain(
 
 """
 
-# buildifier: disable=unused-variable
+# Just the Swift toolchain: Android's C/C++ toolchain is registered separately
+# (e.g. `@androidndk//:all`).
 _SDK_TOOLCHAIN_PLATFORM = """
-# Swift SDK toolchains from repository: `{sdk_repository}`
+# Swift SDK toolchain from repository: `{sdk_repository}`
 toolchain(
     name = "swift_toolchain_{target}_{platform}",
     exec_compatible_with = {exec_compatible_with},
     target_compatible_with = {target_compatible_with},
     toolchain = "@{sdk_repository}//:swift_toolchain_{target_suffix}",
     toolchain_type = "@rules_swift//toolchains:toolchain_type",
-    visibility = ["//visibility:public"],
-)
-
-toolchain(
-    name = "cc_toolchain_{target}_{platform}",
-    exec_compatible_with = {exec_compatible_with},
-    target_compatible_with = {target_compatible_with},
-    toolchain = "@{sdk_repository}//:cc_toolchain_{target_suffix}",
-    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
     visibility = ["//visibility:public"],
 )
 """
@@ -82,6 +74,39 @@ def toolchains_for_platform(platform, toolchain_repository):
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
+
+def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
+    """Returns Swift `toolchain` declarations for an Android Swift SDK.
+
+    Only the Swift toolchain is declared; C/C++ compilation and linking for
+    Android targets use a separately registered cc toolchain (e.g.
+    `@androidndk//:all`).
+
+    Args:
+        platform: The host platform name (e.g. "xcode" or "ubuntu22.04") whose
+            standalone toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_android_sdk_repository`.
+        archs: The Android architectures ("aarch64", "x86_64") to declare
+            toolchains for.
+
+    Returns:
+        BUILD file content declaring the Swift toolchains.
+    """
+    content = ""
+    for arch in archs:
+        content += _SDK_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            sdk_repository = sdk_repository,
+            target = "android_" + arch,
+            target_compatible_with = [
+                "@platforms//os:android",
+                "@platforms//cpu:" + arch,
+            ],
+            target_suffix = arch,
+        )
+    return content
 
 def _toolchains_impl(repository_ctx):
     repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)

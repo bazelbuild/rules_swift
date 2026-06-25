@@ -22,6 +22,12 @@ build --worker_sandboxing
 
 build --enable_platform_specific_config
 
+# Accept the Android NDK/SDK licenses for hermetic_android_toolchains' @androidndk
+# (the Android cc toolchain used by //examples/cross_compilation). Only consulted
+# when those repositories are fetched.
+common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r27c
+common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=35
+
 common:linux --repo_env=CC=clang
 build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
 common:linux --//test:apple_build_tests=False

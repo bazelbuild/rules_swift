@@ -146,6 +146,109 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
+## Cross-compiling to Android with a Swift SDK
+
+swift.org publishes "Swift SDK" artifact bundles (the bundles consumed by
+`swift sdk install`) that let the host compiler cross-compile for platforms it
+cannot target by itself. The `swift` extension can download the Android SDK and
+define matching Swift and C/C++ toolchains, so plain `swift_library` and
+`swift_binary` targets build for `{aarch64,x86_64}-unknown-linux-android` under
+`--platforms`.
+
+Add the `android_sdk` tag, referencing the `toolchain` tag by name (the Swift
+module format is not stable across compiler versions, so the SDK is always
+downloaded for exactly the toolchain's version):
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.android_sdk(toolchain_name = "swift_toolchain")
+
+# rules_swift provides only the Swift toolchain; register an Android C/C++ cc
+# toolchain too (it also provides the sysroot the Swift compiler reads). For
+# example, @androidndk//:all from hermetic_android_toolchains:
+android = use_extension("@hermetic_android_toolchains//:extensions.bzl", "android")
+android.sdk(version = "35", build_tools_version = "35.0.0")
+android.ndk(version = "r27c", api_level = 28)
+use_repo(android, "androidndk")
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    "@androidndk//:all",
+)
+```
+
+If you build on a single host platform you can register everything the
+extension generates in one line instead of listing the matrix:
+
+```bzl
+register_toolchains("@swift_toolchain//:all")
+```
+
+Avoid `:all` when you configure multiple Linux distributions, for the same
+reason the standalone host toolchains are registered explicitly: rules_swift
+cannot yet auto-select a distribution, so `:all` would make the host/exec
+toolchain ambiguous across them.
+
+Then build with a platform carrying the matching constraints:
+
+```bzl
+platform(
+    name = "android-aarch64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:android",
+    ],
+)
+```
+
+```sh
+bazel build //my:binary --platforms=//:android-aarch64
+```
+
+See `examples/cross_compilation` for a complete example, including building
+through a platform transition.
+
+### JNI shared libraries
+
+A plain `swift_binary` links an ordinary executable. To produce a JNI library
+loadable with `System.loadLibrary`, set `linkshared = True`: it produces
+`lib<name>.so`. Export functions with `@_cdecl`; the Android Swift SDK's
+`Android` module provides the JNI types, so the entry points can be written
+entirely in Swift. A `swift_binary(linkshared = True)` may depend on ordinary
+`swift_library` targets (linked statically), so the JNI entry point and the
+shared business logic stay in separate libraries.
+`examples/cross_compilation/android_app` shows the Kotlin app that loads the JNI
+library.
+
+Details worth knowing:
+
+* The Swift standard library is linked statically from the SDK.
+* Android binaries link against the NDK's `libc++_shared.so`, which must be
+  packaged with the application. Select it from the registered Android cc
+  toolchain with `select_android_runtime_lib` from
+  `@rules_swift//swift/toolchains:android_runtime_lib.bzl` (build it under the
+  Android platform so the cc toolchain resolves).
+* rules_swift does not fetch the Android NDK; the registered Android cc toolchain
+  (e.g. `@androidndk//:all`) provides clang, the linker, and the sysroot, and the
+  Swift toolchain reads that toolchain's sysroot at analysis time.
+* Checksums for the SDK bundles are bundled for a curated list of releases (see
+  `swift/internal/extensions/swift_sdk_releases.bzl`); for other releases, pass
+  `sha256` explicitly.
+
+### Coexistence with `rules_apple`
+
+A common setup cross-compiles to Android *and* builds the same app's Apple
+targets with `rules_apple`. The two resolve together cleanly: this line of
+`rules_swift` is `compatibility_level = 3` (the same as released `rules_swift`
+3.x), so a current `rules_apple` release works alongside it. Bazel keeps the
+higher of each shared transitive dependency (`apple_support`, `rules_cc`), which
+are backward compatible, so no extra pinning is required.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root
