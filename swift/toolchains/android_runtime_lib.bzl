@@ -1,11 +1,11 @@
 """A rule that selects a single Android NDK runtime library from the toolchain.
 
-The Android NDK's shared C++ runtime (`libc++_shared.so`) must be packaged into
-any APK that contains Swift (or other NDK C++) code. This rule selects it out of
-the resolved C++ (cc) toolchain's files, so a consumer can reference it for APK
-packaging without naming the NDK repository or build host. Build it for an
-Android platform so the Android cc toolchain (e.g. `@androidndk//:all`) is
-resolved.
+The Swift Android SDK links the NDK's C++ runtime dynamically, so any APK with a
+Swift JNI library must also package `libc++_shared.so` (unlike normal NDK C++,
+which can statically link libc++). This rule selects it out of the resolved C++
+(cc) toolchain's files, so a consumer can reference it for APK packaging without
+naming the NDK repository or build host. Build it for an Android platform so the
+Android cc toolchain (e.g. `@androidndk//:all`) is resolved.
 """
 
 load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain", "use_cc_toolchain")

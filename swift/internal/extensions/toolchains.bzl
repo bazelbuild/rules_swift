@@ -43,8 +43,6 @@ toolchain(
 
 """
 
-# Just the Swift toolchain: Android's C/C++ toolchain is registered separately
-# (e.g. `@androidndk//:all`).
 _SDK_TOOLCHAIN_PLATFORM = """
 # Swift SDK toolchain from repository: `{sdk_repository}`
 toolchain(
@@ -78,16 +76,12 @@ def toolchains_for_platform(platform, toolchain_repository):
 def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
     """Returns Swift `toolchain` declarations for an Android Swift SDK.
 
-    Only the Swift toolchain is declared; C/C++ compilation and linking for
-    Android targets use a separately registered cc toolchain (e.g.
-    `@androidndk//:all`).
-
     Args:
-        platform: The host platform name (e.g. "xcode" or "ubuntu22.04") whose
+        platform: The platform name (e.g. "xcode" or "ubuntu22.04") whose
             standalone toolchain the SDK is paired with.
         sdk_repository: The name of the repository created by
             `swift_android_sdk_repository`.
-        archs: The Android architectures ("aarch64", "x86_64") to declare
+        archs: The Android architectures (e.g. aarch64) to declare
             toolchains for.
 
     Returns:

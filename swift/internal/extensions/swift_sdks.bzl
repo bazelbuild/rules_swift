@@ -154,8 +154,8 @@ def _swift_android_sdk_impl(repository_ctx):
     # The Android Swift SDK's resource directories do not bundle clang's
     # builtin headers, so the clang importer must be pointed at the host
     # toolchain's copy (which matches the clang embedded in swiftc).
-    host_usr = repository_ctx.path(repository_ctx.attr.host_swiftc).dirname.dirname
-    clang_versions = host_usr.get_child("lib", "clang").readdir()
+    paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
+    clang_versions = paired_usr.get_child("lib", "clang").readdir()
     if len(clang_versions) != 1:
         fail("Expected exactly one clang version directory in the host " +
              "toolchain, found: " + str(clang_versions))
@@ -188,27 +188,22 @@ def _swift_android_sdk_impl(repository_ctx):
                 "swift.module_map_no_private_headers",
                 "swift.use_autolink_extract",
                 "swift.use_module_wrap",
-                # The file prefix map would make the worker resolve the Xcode
-                # developer directory on macOS hosts, which this toolchain
-                # does not depend on.
-                "-swift.file_prefix_map",
             ]),
             linker_inputs = _build_list([":sdk_files"]),
-            # The runtime objects and libraries that `swiftc` adds when
-            # statically linking the stdlib for Android; see
-            # `swift_static-{arch}/android/static-stdlib-args.lnk` in the SDK.
-            # The 16 KiB max page size is required by Android 15+. We omit that
-            # file's `-Wl,--exclude-libs,ALL`: under Bazel a `swift_binary`'s
-            # `swift_library` deps are static archives, so it would demote their
-            # exported symbols (e.g. `@_cdecl("Java_…")` JNI entry points) to
-            # local and `System.loadLibrary` could not bind them. Pass a linker
-            # version script to hide the runtime symbols if desired.
+            # The Swift runtime objects/libraries from the SDK's
+            # `swift_static-{arch}/android/static-stdlib-args.lnk`. We drop that
+            # file's `-Wl,--exclude-libs,ALL` (it would demote a depended-on
+            # `swift_library`'s `@_cdecl` JNI exports to local) and add the 16 KiB
+            # max page size required by Android 15+.
             linkopts = _build_list([
                 "{}/android/{}/swiftrt.o".format(resource_dir, arch),
                 "-L{}/android".format(resource_dir),
                 "-ldl",
                 "-llog",
-                "-lm",
+                # libc++ as the shared `libc++_shared.so` (the SDK's intended
+                # linkage; dropping this statically links libc++ instead, which
+                # the NDK discourages for a JNI library). It must be packaged
+                # into the APK; see `select_android_runtime_lib`.
                 "-lstdc++",
                 "-Wl,-z,max-page-size=16384",
             ]),
@@ -224,20 +219,17 @@ def _swift_android_sdk_impl(repository_ctx):
 
 swift_android_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
-        "host_swiftc": attr.label(
+        "paired_swiftc": attr.label(
             doc = """\
-The host toolchain's `swiftc`, used to locate the clang builtin headers that
-match the clang embedded in the Swift compiler.
+The `swiftc` of the standalone toolchain this SDK is paired with, used to locate
+the clang builtin headers that match the clang embedded in the Swift compiler.
 """,
             mandatory = True,
         ),
     },
     doc = """\
 Downloads the Android Swift SDK artifact bundle and defines Swift toolchains that
-target `{aarch64,x86_64}-unknown-linux-android`. C/C++ compilation and linking go
-through a separately-registered Android C++ cc toolchain (e.g. `@androidndk//:all`
-from `hermetic_android_toolchains`); the Swift toolchain reads that toolchain's
-sysroot at analysis time.
+target Android.
 """,
     implementation = _swift_android_sdk_impl,
 )

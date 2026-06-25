@@ -1,64 +1,31 @@
-# A runnable Android APK that loads the Swift JNI .so and shows the Swift
-# greeting on screen, completing the Kotlin -> Swift -> Swift call chain end to
-# end. It is built with rules_android + rules_kotlin (the real-world way Android
-# apps are packaged); those are dev-only dependencies of rules_swift (see the
-# root MODULE.bazel), so consumers of rules_swift are unaffected.
+# A runnable Android app that runs Swift code through the JNI.
 #
-# Build/run (the flags come from `--config=android_example` in //.bazelrc):
+#   bazel build //examples/cross_compilation/android_app:app
+#   adb install -r bazel-bin/examples/cross_compilation/android_app/app.apk
+#   adb shell am start -n com.example.swiftjni/.MainActivity
 #
-#   bazel build --config=android_example \
-#     //examples/cross_compilation/android_app:app
-#
-# Everything here is tagged `manual` (like the rest of //examples/cross_compilation,
-# which fetches the Swift SDK bundle + the NDK) so it stays out of the
-# `//examples/...` wildcard the other CI tasks build.
+# The call chain: MainActivity.kt -> NativeBridge.greetingFromSwift() (Kotlin,
+# JNI) -> libSwiftJNI.so (swift_binary, @_cdecl) -> Greeter (swift_library).
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_android//rules:rules.bzl", "android_binary")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
-load("//examples/embedded:transition.bzl", "transition_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
 load("//swift/toolchains:android_runtime_lib.bzl", "select_android_runtime_lib")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//visibility:public"])
 
-# The NDK's shared C++ runtime, selected from the resolved Android cc toolchain
-# (`@androidndk//:all`) and built for arm64 so it bundles into the APK alongside
-# the Swift .so. (The NDK clang links libc++ dynamically, so the app must ship
-# it; rules_swift's `select_android_runtime_lib` locates it in the cc toolchain.)
-select_android_runtime_lib(
-    name = "libcxx_shared_lib",
-    tags = ["manual"],
-    triple = "aarch64-linux-android",
+android_binary(
+    name = "app",
+    manifest = "AndroidManifest.xml",
+    deps = [
+        ":app_lib",
+        ":libcxx",
+        ":swift_jni",
+    ],
 )
 
-transition_binary(
-    name = "libcxx_shared",
-    binary = ":libcxx_shared_lib",
-    platform = "//examples/cross_compilation:android-aarch64",
-    tags = ["manual"],
-)
-
-# Wrap the prebuilt Swift JNI .so and libc++_shared.so as cc_libraries. A
-# prebuilt .so in a cc_library's srcs becomes a CcInfo dynamic library, which
-# `android_binary`'s per-ABI native split collects and packages under
-# lib/arm64-v8a/. (`swift_binary(linkshared)` exposes its .so via DefaultInfo,
-# not CcInfo, and `cc_import` isn't an allowed `android_binary.deps` rule, so the
-# cc_library wrapper is the way in. The transitions keep the .so arm64 regardless
-# of the split's configuration.)
-cc_library(
-    name = "swift_jni_so",
-    srcs = ["//examples/cross_compilation:libSwiftJNI.so"],
-    tags = ["manual"],
-)
-
-cc_library(
-    name = "libcxx_so",
-    srcs = [":libcxx_shared"],
-    tags = ["manual"],
-)
-
-# The Kotlin host: MainActivity displays NativeBridge.greetingFromSwift().
 kt_android_library(
     name = "app_lib",
     srcs = [
@@ -67,25 +34,50 @@ kt_android_library(
     ],
     custom_package = "com.example.swiftjni",
     manifest = "AndroidManifest.xml",
-    tags = ["manual"],
 )
 
-# The assembled + signed APK. The two cc_library deps carry the native .so files.
-android_binary(
-    name = "app",
-    manifest = "AndroidManifest.xml",
-    tags = ["manual"],
-    deps = [
-        ":app_lib",
-        ":libcxx_so",
-        ":swift_jni_so",
-    ],
-)
-
-# CI build coverage: asserts the APK assembles (exercises the full
-# Swift .so -> rules_android packaging path).
 build_test(
     name = "app_build_test",
-    tags = ["manual"],
     targets = [":app"],
+)
+
+# The Swift JNI library and the NDK C++ runtime it loads, packaged into the APK
+# by android_binary's per-ABI native split. A prebuilt .so in a cc_library's
+# srcs becomes the CcInfo dynamic library the split collects. These only build
+# for Android (the split configures them from --android_platforms), so the
+# //examples/... wildcard skips them on a non-Android host.
+cc_library(
+    name = "swift_jni",
+    srcs = [":SwiftJNI"],
+    target_compatible_with = ["@platforms//os:android"],
+)
+
+cc_library(
+    name = "libcxx",
+    srcs = [":libcxx_shared"],
+    target_compatible_with = ["@platforms//os:android"],
+)
+
+select_android_runtime_lib(
+    name = "libcxx_shared",
+    target_compatible_with = ["@platforms//os:android"],
+    triple = "aarch64-linux-android",
+)
+
+# `linkshared` produces `libSwiftJNI.so`. The JNI entry point is written in
+# Swift (it `import`s the SDK's `Android` module for the JNI types) and calls
+# into the `Greeter` library.
+swift_binary(
+    name = "SwiftJNI",
+    srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [":Greeter"],
+)
+
+# A plain library dependency, compiled for whichever platform depends on it.
+swift_library(
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
 )

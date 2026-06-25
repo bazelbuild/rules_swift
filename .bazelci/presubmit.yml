@@ -26,11 +26,15 @@ x_defaults:
     build_targets:
       - "//examples/..."
       - "-//examples/apple/..."
+      # The Android APK example is exercised on macOS (see //examples/...
+      # below); it needs the hermetic Android SDK/NDK and is skipped here.
+      - "-//examples/cross_compilation/..."
     test_flags: *linux_flags
     test_targets:
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
+      - "-//examples/cross_compilation/..."
       # The following tests require Swift >5.8.
       - "-//test:const_values_empty_const_values_multiple_files"
       - "-//test:const_values_empty_const_values_single_file"
@@ -61,25 +65,6 @@ tasks:
     name: "Last Green Bazel"
     bazel: last_green
     <<: *mac_common
-
-  macos_cross_compilation:
-    name: "Cross-compilation (Android)"
-    platform: macos_arm64
-    xcode_version: "26.2"
-    bazel: latest
-    # The //examples/cross_compilation targets are tagged `manual` (they fetch
-    # the Swift SDK bundle and the NDK), so they are excluded from the
-    # `//examples/...` wildcard the other tasks build. List them explicitly here
-    # so the Swift-SDK cross-compilation toolchains are exercised in CI.
-    # `--config=android_example` supplies the rules_android flags (arm64
-    # --android_platforms + a hermetic JDK) the APK needs; it's harmless for the
-    # bare .so. The build_test asserts the runnable APK (Kotlin -> Swift JNI ->
-    # Swift library) assembles; runtime behavior is shown by `android_app/`.
-    build_flags:
-      - "--config=android_example"
-    build_targets:
-      - "//examples/cross_compilation:libSwiftJNI.so"
-      - "//examples/cross_compilation/android_app:app_build_test"
 
   macos_latest_shell_scripts:
     name: "macOS shell tests"
