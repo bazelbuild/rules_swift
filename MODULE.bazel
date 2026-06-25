@@ -114,6 +114,8 @@ register_toolchains(
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
 bazel_dep(name = "gazelle", version = "0.46.0", dev_dependency = True)
 bazel_dep(name = "rules_go", version = "0.59.0", dev_dependency = True)  # TODO: Remove when transitives update past this version
+bazel_dep(name = "rules_java", version = "9.3.0", dev_dependency = True)
+bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
 bazel_dep(name = "stardoc", version = "0.8.0", dev_dependency = True)
 bazel_dep(name = "swift-syntax", version = "602.0.0.bcr.2", dev_dependency = True)
 bazel_dep(name = "rules_swift_layering_check_external_test", version = "0.0.0", dev_dependency = True)
