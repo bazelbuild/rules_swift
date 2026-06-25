@@ -491,6 +491,23 @@ def _parse_target_system_name(*, arch, os, target_system_name):
     else:
         return "%s-unknown-%s" % (arch, os)
 
+def _resolve_sdkroot(ctx, cc_toolchain):
+    """Returns the SDK root (sysroot) for `-sdk`.
+
+    Prefers the explicit `sdkroot` attribute. Otherwise falls back to the
+    resolved cc toolchain's sysroot -- but rules_android_ndk's `@androidndk`
+    toolchain reports `sysroot` as the clang directory, not the NDK sysroot
+    swiftc needs, so for Android we derive the sysroot from the toolchain files.
+    """
+    if ctx.attr.sdkroot:
+        return ctx.attr.sdkroot
+    if ctx.attr.os == "android":
+        for f in cc_toolchain.all_files.to_list():
+            idx = f.path.find("/sysroot/")
+            if idx != -1:
+                return f.path[:idx] + "/sysroot"
+    return cc_toolchain.sysroot
+
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cc_toolchain(ctx)
@@ -503,11 +520,16 @@ def _swift_toolchain_impl(ctx):
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
-    if "clang" not in cc_toolchain.compiler:
-        fail("Swift requires the configured CC toolchain use clang. " +
+    # Swift can only link through an LLVM/clang cc toolchain, not gcc. Accept any
+    # toolchain whose compiler identifies as clang or LLVM (e.g. the Android NDK's
+    # `@androidndk//:all` reports `llvm-c++`).
+    if "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
+        fail("Swift requires the configured CC toolchain use clang/LLVM. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
              "The current CC toolchain is configured to use '{}'.".format(cc_toolchain.compiler))
+
+    sdkroot = _resolve_sdkroot(ctx, cc_toolchain)
 
     additional_rpaths = []
     if ctx.attr.swift_tools:
@@ -549,10 +571,24 @@ def _swift_toolchain_impl(ctx):
         # own `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they
         # are at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
         # second `swiftrt.o` would conflict with the SDK's own).
+        linkopts = list(ctx.attr.linkopts)
+        linker_inputs = list(ctx.files.linker_inputs)
+        if ctx.attr.os == "android" and sdkroot:
+            # The Swift link action drives the NDK clang directly and does not go
+            # through the cc toolchain's sysroot/runtime-lib link features, so
+            # point clang at the sysroot and stage `libc++_shared.so` (which the
+            # NDK clang links by default) into the link ourselves.
+            linkopts.append("--sysroot=" + sdkroot)
+            libcxx_suffix = "/usr/lib/{}-linux-android/libc++_shared.so".format(ctx.attr.arch)
+            linker_inputs = linker_inputs + [
+                f
+                for f in cc_toolchain.all_files.to_list()
+                if f.path.endswith(libcxx_suffix)
+            ]
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
-            ctx.attr.linkopts,
-            ctx.files.linker_inputs,
+            linkopts,
+            linker_inputs,
         )
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
@@ -609,7 +645,7 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         arch = ctx.attr.arch,
         target_triple = target_triple,
-        sdkroot = ctx.attr.sdkroot or cc_toolchain.sysroot,
+        sdkroot = sdkroot,
         xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )

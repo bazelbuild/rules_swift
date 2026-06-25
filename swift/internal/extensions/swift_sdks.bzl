@@ -1,11 +1,14 @@
-"""Shared building blocks for Swift SDK repository rules.
+"""Shared building blocks for Swift SDK repository rules, plus the Android SDK
+repository rule.
 
 A "Swift SDK" is an artifact bundle published by swift.org for cross-compiling
 Swift to a platform the host toolchain cannot target by itself (the bundles that
-`swift sdk install` consumes). The per-platform extensions (e.g. `wasm_sdk`,
-`android_sdk`) define repository rules that download such a bundle and generate
-a `swift_toolchain` + rules_cc `cc_toolchain` for the target; this module holds
-the helpers and BUILD-file templates they share.
+`swift sdk install` consumes). The `android_sdk` extension defines a repository
+rule that downloads such a bundle and generates a `swift_toolchain` targeting
+`{aarch64,x86_64}-unknown-linux-android`; this module holds the helpers and
+BUILD-file template it uses. C/C++ compilation and linking go through a
+separately registered Android cc toolchain (e.g. `@androidndk//:all`), which also
+provides the sysroot the Swift toolchain reads.
 
 Because the Swift module format is not stable across compiler versions, a Swift
 SDK must come from exactly the same release as the host toolchain it is paired
@@ -16,89 +19,8 @@ with; the `swift` module extension enforces this by deriving both from the same
 # Files in the host toolchain that compile actions need: the driver/frontend
 # binaries, their libraries, and clang's builtin headers (used by the clang
 # importer when the Swift SDK's resource directory does not bundle them).
-# buildifier: disable=unused-variable
 _HOST_COMPILER_INPUTS = "swift_sdk_compiler_inputs"
 
-# Files in the host toolchain that link actions driven by its clang need.
-# buildifier: disable=unused-variable
-_HOST_LINKER_INPUTS = "swift_sdk_linker_inputs"
-
-# buildifier: disable=unused-variable
-_CC_TOOLCHAIN_TEMPLATE = """
-cc_tool(
-    name = "clang",
-    src = "{clang}",
-    data = {clang_data},
-    tags = ["manual"],
-)
-
-cc_tool(
-    name = "ar",
-    src = "{ar}",
-    tags = ["manual"],
-)
-
-cc_tool_map(
-    name = "cc_tools",
-    tags = ["manual"],
-    tools = {{
-        "@rules_cc//cc/toolchains/actions:ar_actions": ":ar",
-        "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:c_compile": ":clang",
-        "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:link_actions": ":clang",
-    }},
-)
-"""
-
-# buildifier: disable=unused-variable
-_CC_TOOLCHAIN_FOR_TARGET_TEMPLATE = """
-cc_args(
-    name = "cc_args_{suffix}",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:compile_actions",
-        "@rules_cc//cc/toolchains/actions:link_actions",
-    ],
-    args = {args},
-)
-
-cc_args(
-    name = "cc_link_args_{suffix}",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:link_actions",
-    ],
-    args = {link_args},
-)
-
-cc_make_variable(
-    name = "cc_target_triple_{suffix}",
-    value = "{triple}",
-    variable_name = "CC_TARGET_TRIPLE",
-)
-
-cc_toolchain(
-    name = "cc_toolchain_{suffix}",
-    args = [
-        ":cc_args_{suffix}",
-        ":cc_link_args_{suffix}",
-    ],
-    compiler = "clang",
-    enabled_features = [
-        "@rules_cc//cc/toolchains/args/archiver_flags:feature",
-        "@rules_cc//cc/toolchains/args/libraries_to_link:feature",
-        "@rules_cc//cc/toolchains/args/link_flags:feature",
-        # Needed so `swift_binary(linkshared = True)` links a shared library
-        # (passes `-shared` for the dynamic_library link action).
-        "@rules_cc//cc/toolchains/args/shared_flag:feature",
-    ],
-    make_variables = [
-        ":cc_target_triple_{suffix}",
-    ],
-    tool_map = ":cc_tools",
-)
-"""
-
-# buildifier: disable=unused-variable
 _SWIFT_TOOLCHAIN_TEMPLATE = """
 swift_toolchain(
     name = "swift_toolchain_{suffix}",
@@ -115,13 +37,7 @@ swift_toolchain(
 )
 """
 
-# buildifier: disable=unused-variable
 _BUILD_HEADER_TEMPLATE = """\
-load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
-load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
-load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
-load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
-load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
@@ -141,7 +57,26 @@ swift_tools(
 )
 """
 
-# buildifier: disable=unused-variable
+def _execroot_relative_path(path):
+    """Returns the execution-root-relative path for an external repository path.
+
+    Args:
+        path: An absolute `path` (or string) below the output base's
+            `external` directory.
+
+    Returns:
+        The same path expressed relative to the execution root, suitable for
+        baking into command line flags.
+    """
+    path_str = str(path)
+
+    # buildifier: disable=external-path
+    if "/external/" not in path_str:
+        fail("Expected a path inside an external repository, got: " + path_str)
+
+    # buildifier: disable=external-path
+    return "external/" + path_str.rsplit("/external/", 1)[1]
+
 def _build_list(items, indent = "    "):
     """Formats a list of strings as a multi-line BUILD file list literal."""
     if not items:
@@ -152,7 +87,6 @@ def _build_list(items, indent = "    "):
     lines.append(indent + "]")
     return "\n".join(lines)
 
-# buildifier: disable=unused-variable
 def _download_sdk_bundle(repository_ctx):
     """Downloads and extracts the Swift SDK artifact bundle for a repository.
 
@@ -178,7 +112,6 @@ def _download_sdk_bundle(repository_ctx):
         ))
     return bundles[0]
 
-# buildifier: disable=unused-variable
 def _common_attrs():
     return {
         "sha256": attr.string(
@@ -201,3 +134,110 @@ this SDK is paired with.
             mandatory = True,
         ),
     }
+
+# The architectures the Android Swift SDK provides resources for and that
+# `@platforms//cpu` can express. (The SDK also supports armv7, which can be
+# added on demand.)
+ANDROID_ARCHS = ["aarch64", "x86_64"]
+
+def _swift_android_sdk_impl(repository_ctx):
+    bundle_dir = _download_sdk_bundle(repository_ctx)
+    toolchain_repo = repository_ctx.attr.toolchain_repo
+
+    repo_root = "external/" + repository_ctx.name
+    sdk_dir_relative = bundle_dir + "/swift-android"
+    if not repository_ctx.path(sdk_dir_relative + "/swift-sdk.json").exists:
+        fail("The Android Swift SDK bundle has an unexpected layout; " +
+             "missing {}/{}/swift-sdk.json".format(repo_root, sdk_dir_relative))
+    lib_dir = "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative)
+
+    # The Android Swift SDK's resource directories do not bundle clang's
+    # builtin headers, so the clang importer must be pointed at the host
+    # toolchain's copy (which matches the clang embedded in swiftc).
+    host_usr = repository_ctx.path(repository_ctx.attr.host_swiftc).dirname.dirname
+    clang_versions = host_usr.get_child("lib", "clang").readdir()
+    if len(clang_versions) != 1:
+        fail("Expected exactly one clang version directory in the host " +
+             "toolchain, found: " + str(clang_versions))
+    clang_builtin_headers = _execroot_relative_path(
+        clang_versions[0].get_child("include"),
+    )
+
+    build_content = _BUILD_HEADER_TEMPLATE.format(
+        bundle_dir = bundle_dir,
+        compiler_inputs = _build_list([
+            ":sdk_files",
+            "@{}//:{}".format(toolchain_repo, _HOST_COMPILER_INPUTS),
+        ]),
+        toolchain_repo = toolchain_repo,
+    )
+
+    for arch in ANDROID_ARCHS:
+        resource_dir = "{}/swift_static-{}".format(lib_dir, arch)
+
+        build_content += _SWIFT_TOOLCHAIN_TEMPLATE.format(
+            arch = arch,
+            copts = _build_list([
+                "-resource-dir",
+                resource_dir,
+                "-Xcc",
+                "-I" + clang_builtin_headers,
+            ]),
+            features = _build_list([
+                "swift.lld_gc_workaround",
+                "swift.module_map_no_private_headers",
+                "swift.use_autolink_extract",
+                "swift.use_module_wrap",
+                # The file prefix map would make the worker resolve the Xcode
+                # developer directory on macOS hosts, which this toolchain
+                # does not depend on.
+                "-swift.file_prefix_map",
+            ]),
+            linker_inputs = _build_list([":sdk_files"]),
+            # The runtime objects and libraries that `swiftc` adds when
+            # statically linking the stdlib for Android; see
+            # `swift_static-{arch}/android/static-stdlib-args.lnk` in the SDK.
+            # The 16 KiB max page size is required by Android 15+. We omit that
+            # file's `-Wl,--exclude-libs,ALL`: under Bazel a `swift_binary`'s
+            # `swift_library` deps are static archives, so it would demote their
+            # exported symbols (e.g. `@_cdecl("Java_…")` JNI entry points) to
+            # local and `System.loadLibrary` could not bind them. Pass a linker
+            # version script to hide the runtime symbols if desired.
+            linkopts = _build_list([
+                "{}/android/{}/swiftrt.o".format(resource_dir, arch),
+                "-L{}/android".format(resource_dir),
+                "-ldl",
+                "-llog",
+                "-lm",
+                "-lstdc++",
+                "-Wl,-z,max-page-size=16384",
+            ]),
+            os = "android",
+            # Empty: the toolchain reads the sysroot from the resolved Android
+            # C++ cc toolchain (e.g. `@androidndk//:all`) at analysis time.
+            sdkroot = "",
+            suffix = arch,
+            swift_version = repository_ctx.attr.swift_version,
+        )
+
+    repository_ctx.file("BUILD.bazel", build_content)
+
+swift_android_sdk_repository = repository_rule(
+    attrs = _common_attrs() | {
+        "host_swiftc": attr.label(
+            doc = """\
+The host toolchain's `swiftc`, used to locate the clang builtin headers that
+match the clang embedded in the Swift compiler.
+""",
+            mandatory = True,
+        ),
+    },
+    doc = """\
+Downloads the Android Swift SDK artifact bundle and defines Swift toolchains that
+target `{aarch64,x86_64}-unknown-linux-android`. C/C++ compilation and linking go
+through a separately-registered Android C++ cc toolchain (e.g. `@androidndk//:all`
+from `hermetic_android_toolchains`); the Swift toolchain reads that toolchain's
+sysroot at analysis time.
+""",
+    implementation = _swift_android_sdk_impl,
+)
