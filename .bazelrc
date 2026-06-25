@@ -22,22 +22,14 @@ build --worker_sandboxing
 
 build --enable_platform_specific_config
 
-# Accept the Android NDK/SDK licenses for hermetic_android_toolchains' @androidndk
-# (the Android cc toolchain used by //examples/cross_compilation). Only consulted
-# when those repositories are fetched.
 common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r27c
 common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=35
 
-# Build the runnable APK example (//examples/cross_compilation/android_app) with
-# `--config=android_example`. Scoped to a config (not applied globally) so the
-# rest of the build is untouched: --android_platforms drives rules_android's
-# per-ABI native split (the emulator is arm64), and the hermetic remote JDK runs
-# rules_android's Java actions instead of requiring a host JDK.
-common:android_example --android_platforms=@rules_android//:arm64-v8a
-common:android_example --java_language_version=17
-common:android_example --java_runtime_version=remotejdk_17
-common:android_example --tool_java_language_version=17
-common:android_example --tool_java_runtime_version=remotejdk_17
+common --android_platforms=@rules_android//:arm64-v8a
+common --java_language_version=17
+common --java_runtime_version=remotejdk_17
+common --tool_java_language_version=17
+common --tool_java_runtime_version=remotejdk_17
 
 common:linux --repo_env=CC=clang
 build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'

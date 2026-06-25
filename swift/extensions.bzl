@@ -73,16 +73,12 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
             ))
         sha256 = SWIFT_SDK_RELEASES[swift_version]["android"]
 
-    # The Swift Android toolchain compiles and links C/C++ through a separately
-    # registered Android C++ cc toolchain (e.g. `@androidndk//:all` from
-    # `hermetic_android_toolchains`) and reads that toolchain's sysroot at
-    # analysis time, so rules_swift does not fetch or manage the NDK itself.
     build_file_content = ""
     for platform in platforms:
         repository_name = "{}_android_sdk_{}".format(toolchain_name, platform)
         swift_android_sdk_repository(
             name = repository_name,
-            host_swiftc = "@{}_{}//:usr/bin/swiftc".format(toolchain_name, platform),
+            paired_swiftc = "@{}_{}//:usr/bin/swiftc".format(toolchain_name, platform),
             sha256 = sha256,
             swift_version = swift_version,
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
@@ -202,24 +198,7 @@ versions known to this version of rules_swift.
     },
     doc = """\
 Downloads the Android Swift SDK matching a `toolchain` tag's Swift version and
-defines Swift toolchains targeting `aarch64-unknown-linux-android` and
-`x86_64-unknown-linux-android`.
-
-C/C++ compilation and linking for those targets go through a separately
-registered Android C++ cc toolchain, which also provides the sysroot the Swift
-compiler reads. Register one alongside the Swift toolchains -- for example
-`@androidndk//:all` from
-[hermetic_android_toolchains](https://github.com/keith/hermetic_android_toolchains):
-
-```starlark
-register_toolchains(
-    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
-    "@androidndk//:all",
-)
-```
-
-and build with a platform that has the `@platforms//os:android` and
-`@platforms//cpu:aarch64` (or `x86_64`) constraints.
+defines Swift toolchains targeting Android.
 """,
 )
 

@@ -194,24 +194,14 @@ reason the standalone host toolchains are registered explicitly: rules_swift
 cannot yet auto-select a distribution, so `:all` would make the host/exec
 toolchain ambiguous across them.
 
-Then build with a platform carrying the matching constraints:
-
-```bzl
-platform(
-    name = "android-aarch64",
-    constraint_values = [
-        "@platforms//cpu:aarch64",
-        "@platforms//os:android",
-    ],
-)
-```
+Then build with a platform carrying the matching constraints — for Android, use
+the ones `rules_android` already exposes:
 
 ```sh
-bazel build //my:binary --platforms=//:android-aarch64
+bazel build //my:binary --platforms=@rules_android//:arm64-v8a
 ```
 
-See `examples/cross_compilation` for a complete example, including building
-through a platform transition.
+See `examples/cross_compilation/android_app` for a complete, runnable example.
 
 ### JNI shared libraries
 
@@ -245,9 +235,7 @@ Details worth knowing:
 A common setup cross-compiles to Android *and* builds the same app's Apple
 targets with `rules_apple`. The two resolve together cleanly: this line of
 `rules_swift` is `compatibility_level = 3` (the same as released `rules_swift`
-3.x), so a current `rules_apple` release works alongside it. Bazel keeps the
-higher of each shared transitive dependency (`apple_support`, `rules_cc`), which
-are backward compatible, so no extra pinning is required.
+3.x), so a current `rules_apple` release works alongside it.
 
 ## Using the extension from a non-root module
 

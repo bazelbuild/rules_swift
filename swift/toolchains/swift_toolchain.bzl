@@ -474,6 +474,35 @@ def _swift_sdk_linkopts_cc_info(
         ),
     )
 
+def _swift_android_linkopts_cc_info(ctx, cc_toolchain, sdkroot):
+    """Returns a `CcInfo` with the Android Swift runtime link flags.
+
+    The binary link runs through `cc_common.link` with the resolved Android cc
+    toolchain, but rules_android_ndk's toolchain reports its sysroot as the clang
+    directory and exposes an empty `dynamic_runtime_lib`, so the real sysroot is
+    never passed and `libc++_shared.so` (which the NDK clang links by default) is
+    never staged. Add both ourselves, on top of the SDK's `linkopts`/`linker_inputs`.
+
+    Args:
+        ctx: The toolchain rule context.
+        cc_toolchain: The resolved Android C++ `CcToolchainInfo`.
+        sdkroot: The Android sysroot derived from the cc toolchain.
+
+    Returns:
+        A `CcInfo` propagating the Android runtime link flags and inputs.
+    """
+    linkopts = list(ctx.attr.linkopts)
+    linker_inputs = list(ctx.files.linker_inputs)
+    if sdkroot:
+        linkopts.append("--sysroot=" + sdkroot)
+        libcxx_suffix = "/usr/lib/{}-linux-android/libc++_shared.so".format(ctx.attr.arch)
+        linker_inputs = linker_inputs + [
+            f
+            for f in cc_toolchain.all_files.to_list()
+            if f.path.endswith(libcxx_suffix)
+        ]
+    return _swift_sdk_linkopts_cc_info(ctx.label, linkopts, linker_inputs)
+
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
@@ -520,11 +549,8 @@ def _swift_toolchain_impl(ctx):
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
-    # Swift can only link through an LLVM/clang cc toolchain, not gcc. Accept any
-    # toolchain whose compiler identifies as clang or LLVM (e.g. the Android NDK's
-    # `@androidndk//:all` reports `llvm-c++`).
     if "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
-        fail("Swift requires the configured CC toolchain use clang/LLVM. " +
+        fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
              "The current CC toolchain is configured to use '{}'.".format(cc_toolchain.compiler))
@@ -562,33 +588,21 @@ def _swift_toolchain_impl(ctx):
         )
     elif ctx.attr.os == "none":
         swift_linkopts_cc_info = CcInfo()
+    elif ctx.attr.os == "android":
+        swift_linkopts_cc_info = _swift_android_linkopts_cc_info(ctx, cc_toolchain, sdkroot)
     elif ctx.attr.linkopts or ctx.attr.linker_inputs:
         # A toolchain whose Swift runtime comes from a Swift SDK (e.g.
-        # WebAssembly or Android) provides the *complete* set of runtime link
-        # flags via `linkopts`/`linker_inputs`, replacing — not adding to — the
-        # defaults computed below. Those defaults are specific to a Linux *host*
-        # toolchain (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's
-        # own `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they
-        # are at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
+        # WebAssembly) provides the *complete* set of runtime link flags via
+        # `linkopts`/`linker_inputs`, replacing — not adding to — the defaults
+        # computed below. Those defaults are specific to a Linux *host* toolchain
+        # (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's own
+        # `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they are
+        # at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
         # second `swiftrt.o` would conflict with the SDK's own).
-        linkopts = list(ctx.attr.linkopts)
-        linker_inputs = list(ctx.files.linker_inputs)
-        if ctx.attr.os == "android" and sdkroot:
-            # The Swift link action drives the NDK clang directly and does not go
-            # through the cc toolchain's sysroot/runtime-lib link features, so
-            # point clang at the sysroot and stage `libc++_shared.so` (which the
-            # NDK clang links by default) into the link ourselves.
-            linkopts.append("--sysroot=" + sdkroot)
-            libcxx_suffix = "/usr/lib/{}-linux-android/libc++_shared.so".format(ctx.attr.arch)
-            linker_inputs = linker_inputs + [
-                f
-                for f in cc_toolchain.all_files.to_list()
-                if f.path.endswith(libcxx_suffix)
-            ]
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
-            linkopts,
-            linker_inputs,
+            list(ctx.attr.linkopts),
+            list(ctx.files.linker_inputs),
         )
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(

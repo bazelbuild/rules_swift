@@ -147,65 +147,17 @@ android_ndk.ndk(
     api_level = 28,
     version = "r27c",
 )
-use_repo(android_ndk, "androidndk", "androidsdk")
+use_repo(android_ndk, "androidndk")
 
 register_toolchains(
     "@androidndk//:all",
     dev_dependency = True,
 )
 
-# A runnable APK example (//examples/cross_compilation/android_app) that loads
-# the Swift JNI .so and shows the Swift greeting on screen. It uses rules_android
-# + rules_kotlin — the real-world way Android apps are built. These are all
-# dev-only (rules_android pulls in a Maven graph and is heavy), so they never
-# affect rules_swift consumers; a consumer brings their own Android rules.
-bazel_dep(name = "rules_android", version = "0.7.3", dev_dependency = True)
-bazel_dep(name = "rules_java", version = "9.3.0", dev_dependency = True)
-bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
-bazel_dep(name = "rules_jvm_external", version = "7.0", dev_dependency = True)
-
-# rules_java's hermetic JDK + java tools for rules_android's Java actions.
-rules_java_toolchains = use_extension(
-    "@rules_java//java:extensions.bzl",
-    "toolchains",
-    dev_dependency = True,
-)
-use_repo(rules_java_toolchains, "remote_java_tools")
-
-# rules_android's own Maven dependencies, pinned to a checked-in lock file:
-#   REPIN=1 bazel run @rules_android_maven//:pin
-maven = use_extension(
-    "@rules_jvm_external//:extensions.bzl",
-    "maven",
-    dev_dependency = True,
-)
-maven.install(
-    name = "rules_android_maven",
-    aar_import_bzl_label = "@rules_android//rules:rules.bzl",
-    artifacts = [],
-    known_contributing_modules = ["rules_android"],
-    lock_file = "//:rules_android_maven_install.json",
-    repositories = [
-        "https://maven.google.com",
-        "https://repo1.maven.org/maven2",
-    ],
-    use_starlark_android_rules = True,
-)
-use_repo(maven, "rules_android_maven")
-
-# Point rules_android at the hermetic @androidsdk created by the android_ndk.sdk
-# tag above (instead of requiring a local $ANDROID_HOME).
-rules_android_sdk = use_extension(
-    "@rules_android//rules/android_sdk_repository:rule.bzl",
-    "android_sdk_repository_extension",
-    dev_dependency = True,
-)
-override_repo(rules_android_sdk, "androidsdk")
-
-register_toolchains(
-    "@androidsdk//:all",
-    dev_dependency = True,
-)
+# Dev dependencies for the runnable APK example (rules_android + rules_kotlin and
+# their Maven graph). Split into its own segment to keep the heavy, example-only
+# dependencies out of the root module; it references `android_ndk` defined above.
+include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
