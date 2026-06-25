@@ -71,10 +71,15 @@ tasks:
     # the Swift SDK bundle and the NDK), so they are excluded from the
     # `//examples/...` wildcard the other tasks build. List them explicitly here
     # so the Swift-SDK cross-compilation toolchains are exercised in CI.
-    # Build-only: the trivial JNI library exercises the link path, while runtime
-    # behavior is covered downstream by real consumers.
+    # `--config=android_example` supplies the rules_android flags (arm64
+    # --android_platforms + a hermetic JDK) the APK needs; it's harmless for the
+    # bare .so. The build_test asserts the runnable APK (Kotlin -> Swift JNI ->
+    # Swift library) assembles; runtime behavior is shown by `android_app/`.
+    build_flags:
+      - "--config=android_example"
     build_targets:
       - "//examples/cross_compilation:libSwiftJNI.so"
+      - "//examples/cross_compilation/android_app:app_build_test"
 
   macos_latest_shell_scripts:
     name: "macOS shell tests"

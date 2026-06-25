@@ -48,8 +48,15 @@ on the command line.
 
 ## Android app
 
-`android_app/` contains the Kotlin app (and a documented packaging recipe) that
-loads `libSwiftJNI.so` and calls into it, completing the
-Kotlin → Swift (JNI `.so`) → Swift library chain. Packaging an APK uses
-`rules_android` + an Android SDK in the consuming module; see
+`android_app/` is a complete, runnable APK that loads `libSwiftJNI.so`, calls
+into it, and shows the Swift greeting on screen — completing the
+Kotlin → Swift (JNI `.so`) → Swift library chain:
+
+```sh
+bazel build --config=android_example \
+  //examples/cross_compilation/android_app:app
+```
+
+It's packaged with `rules_android` + `rules_kotlin` (dev-only dependencies of
+`rules_swift`) and the hermetic `@androidsdk` (no local SDK needed). See
 `android_app/README.md`.
