@@ -66,3 +66,12 @@ register_toolchains(
     "@androidsdk//:all",
     dev_dependency = True,
 )
+
+# A hermetic emulator + system image so `bazel run …:run` can launch the example
+# with nothing preinstalled (adb comes from @androidsdk).
+emulator = use_extension(
+    "//examples/cross_compilation/android_app:emulator.bzl",
+    "emulator",
+    dev_dependency = True,
+)
+use_repo(emulator, "android_emulator", "android_system_image")

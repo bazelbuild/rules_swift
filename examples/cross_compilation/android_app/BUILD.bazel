@@ -11,11 +11,35 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_android//rules:rules.bzl", "android_binary")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("//swift:swift.bzl", "swift_binary", "swift_library")
 load("//swift/toolchains:android_runtime_lib.bzl", "select_android_runtime_lib")
 load(":validation.bzl", "android_apk_contents_check", "android_so_abi_check")
 
 package(default_visibility = ["//visibility:public"])
+
+# `bazel run //examples/cross_compilation/android_app:run` installs the APK on a
+# connected device/emulator and launches it, booting a hermetic emulator first
+# if nothing is connected (downloaded emulator + system image; adb from
+# @androidsdk). macOS/arm64 only — see emulator.bzl.
+sh_binary(
+    name = "run",
+    srcs = ["run.sh"],
+    args = [
+        "$(rlocationpath :app.apk)",
+        "$(rlocationpath @androidsdk//:adb)",
+        "$(rlocationpath @android_emulator//:emulator/emulator)",
+        "$(rlocationpath @android_system_image//:system.img)",
+    ],
+    data = [
+        ":app.apk",
+        "@android_emulator//:all",
+        "@android_emulator//:emulator/emulator",
+        "@android_system_image//:all",
+        "@android_system_image//:system.img",
+        "@androidsdk//:adb",
+    ],
+)
 
 android_binary(
     name = "app",

@@ -22,6 +22,17 @@ adb install -r bazel-bin/examples/cross_compilation/android_app/app.apk
 adb shell am start -n com.example.swiftjni/.MainActivity
 ```
 
+Or, with nothing preinstalled (no Android Studio, no device), let Bazel boot a
+hermetic emulator, install, and launch — macOS/arm64:
+
+```sh
+bazel run //examples/cross_compilation/android_app:run
+```
+
+This downloads the emulator + an AOSP system image (see `emulator.bzl`) and uses
+adb from `@androidsdk`; if a device/emulator is already connected it just installs
+and launches on that.
+
 The screen shows **“Hello from Swift, Android!”** — computed by the `Greeter`
 `swift_library`, returned through the `@_cdecl` JNI entry point in
 `libSwiftJNI.so`, and displayed by Kotlin. (`//.bazelrc` sets
