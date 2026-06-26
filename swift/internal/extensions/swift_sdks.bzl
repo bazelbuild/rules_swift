@@ -201,9 +201,12 @@ def _swift_android_sdk_impl(repository_ctx):
                 "-ldl",
                 "-llog",
                 # libc++ as the shared `libc++_shared.so` (the SDK's intended
-                # linkage; dropping this statically links libc++ instead, which
-                # the NDK discourages for a JNI library). It must be packaged
-                # into the APK; see `select_android_runtime_lib`.
+                # linkage). The Android cc toolchain links libc++ statically by
+                # default (https://github.com/bazelbuild/rules_android_ndk/issues/93),
+                # which the NDK discourages for a library that may share a process
+                # with other `.so`s; `-lstdc++` overrides that to the shared
+                # runtime, which must then be packaged into the APK (see
+                # `select_android_runtime_lib`).
                 "-lstdc++",
                 "-Wl,-z,max-page-size=16384",
             ]),
