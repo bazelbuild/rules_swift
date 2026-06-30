@@ -1,3 +1,5 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
 # A runnable Android app that runs Swift code through the JNI.
 #
 #   bazel build //examples/cross_compilation/android_app:app
@@ -137,4 +139,16 @@ swift_library(
     name = "Greeter",
     srcs = ["Sources/Greeter/Greeter.swift"],
     module_name = "Greeter",
+)
+
+bzl_library(
+    name = "emulator",
+    srcs = ["emulator.bzl"],
+    deps = ["@bazel_tools//tools/build_defs/repo:http.bzl"],
+)
+
+bzl_library(
+    name = "validation",
+    srcs = ["validation.bzl"],
+    deps = ["@rules_cc//cc:find_cc_toolchain_bzl"],
 )
