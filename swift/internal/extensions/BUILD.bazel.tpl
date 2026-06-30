@@ -15,6 +15,12 @@ exports_files([
 
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
 
+exports_files([
+    "usr/bin/swiftc",
+    "usr/bin/swift-autolink-extract",
+    "usr/bin/swift-symbolgraph-extract",
+])
+
 filegroup(
     name = "swift_sdk_compiler_inputs",
     srcs = glob(
