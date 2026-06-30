@@ -22,6 +22,15 @@ build --worker_sandboxing
 
 build --enable_platform_specific_config
 
+common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r27c
+common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=35
+
+common --android_platforms=@rules_android//:arm64-v8a
+common --java_language_version=17
+common --java_runtime_version=remotejdk_17
+common --tool_java_language_version=17
+common --tool_java_runtime_version=remotejdk_17
+
 common:linux --repo_env=CC=clang
 build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
 common:linux --//test:apple_build_tests=False
