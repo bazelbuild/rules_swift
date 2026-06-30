@@ -1,9 +1,8 @@
-"""Swift SDK and Android NDK release version mappings.
+"""Swift SDK release version mappings.
 
-This module defines checksums for the artifacts needed to cross-compile Swift
-for platforms that are not covered by a host toolchain, using the official
-"Swift SDK" artifact bundles published by swift.org (the bundles installed by
-`swift sdk install`).
+Checksums for the official "Swift SDK" artifact bundles published by swift.org
+(the bundles installed by `swift sdk install`), used to cross-compile Swift to
+platforms not covered by a host toolchain.
 
 The Swift module format is not stable across compiler versions, so a Swift SDK
 can only be used with the host toolchain from exactly the same release; the

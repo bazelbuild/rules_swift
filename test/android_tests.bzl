@@ -1,22 +1,18 @@
-"""Tests that the Android Swift SDK toolchain links through the NDK cc toolchain
-with the right target triple."""
+"""Test building for android."""
 
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
 load(
-    "//test/rules:action_inputs_test.bzl",
-    "make_action_inputs_test_rule",
+    "//test/rules:android_validation_test.bzl",
+    "android_apk_contents_test",
+    "android_so_abi_test",
 )
 
-# Build the target under test for Android (the SDK toolchain + the NDK cc
-# toolchain resolve from these constraints). The platform label is resolved to
-# its canonical form here so the transition (applied in the analysistest rule's
-# own repository) still points at this repository's fixture.
 _ANDROID_CONFIG = {
     "//command_line_option:platforms": [
-        str(Label("//test/fixtures/android:android_arm64")),
+        str(Label("@rules_android//:arm64-v8a")),
     ],
 }
 
@@ -24,54 +20,59 @@ android_command_line_test = make_action_command_line_test_rule(
     config_settings = _ANDROID_CONFIG,
 )
 
-android_inputs_test = make_action_inputs_test_rule(
-    config_settings = _ANDROID_CONFIG,
-)
-
-def android_test_suite(name, tags = []):
+def android_test_suite(name):
     """Test suite for the Android Swift SDK toolchain's compile/link actions.
 
     Args:
         name: The base name to be used in targets created by this macro.
-        tags: Additional tags to apply to each test.
     """
-    all_tags = [name] + tags
+    all_tags = [name]
 
-    # The Swift compile targets the Android triple.
+    # The Swift compile targets Android
     android_command_line_test(
         name = "{}_swiftcompile_targets_android".format(name),
         expected_argv = ["-target aarch64-linux-android"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "//test/fixtures/android:jni_lib",
     )
 
-    # The link runs the NDK clang for the Android target (the `28` is the
-    # `android.ndk(api_level = ...)` from MODULE.bazel), against the NDK sysroot,
-    # and links libc++ as the shared `libc++_shared.so`.
     android_command_line_test(
         name = "{}_link_uses_ndk".format(name),
         expected_argv = [
             "--target=aarch64-linux-android28",
             "--sysroot",
-            "-lstdc++",
+            "-ldl",  # Comes from rules_android_ndk
+            "-lm",  # Comes from rules_android_ndk
+            "-lc",  # Comes from rules_android_ndk
+            "-llog",  # This is a dependency of the Swift SDK
+            "-Wl,-z,max-page-size=16384",  # Comes from rules_android_ndk
+            "-Wl,--gc-sections",  # Comes from rules_android_ndk
         ],
         mnemonic = "CppLink",
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "//test/fixtures/android:jni_lib",
     )
 
-    # The NDK's libc++_shared.so is staged into the link so a downstream APK can
-    # package it next to the Swift `.so`.
-    android_inputs_test(
-        name = "{}_link_stages_libcxx_shared".format(name),
-        expected_inputs = ["libc++_shared.so"],
-        mnemonic = "CppLink",
+    android_so_abi_test(
+        name = "{}_jni_lib_abi".format(name),
+        apk = "//test/fixtures/android:app.apk",
+        jni_symbol = "Java_com_example_Fixture_value",
+        needed_libraries = ["liblog.so"],
+        not_needed_libraries = ["libc++_shared.so"],
+        shared_library = "lib/arm64-v8a/libjni_lib.so",
         tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/android:jni_lib",
+    )
+
+    android_apk_contents_test(
+        name = "{}_apk_contents".format(name),
+        apk = "//test/fixtures/android:app.apk",
+        expected_entries = [
+            "AndroidManifest.xml",
+            "classes.dex",
+            "lib/arm64-v8a/libjni_lib.so",
+        ],
+        tags = all_tags,
     )
 
     native.test_suite(

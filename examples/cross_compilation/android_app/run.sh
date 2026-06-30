@@ -1,7 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # `bazel run //examples/cross_compilation/android_app:run`: installs the example
 # APK on a connected device/emulator and launches it. If nothing is connected,
 # boots the hermetic emulator (downloaded emulator + AOSP system image) first.
+
 set -euo pipefail
 
 RUNFILES_ROOT="$PWD/.."
@@ -12,6 +14,16 @@ SYSIMG_MARKER="$RUNFILES_ROOT/$4"
 
 has_device() {
   "$ADB" devices | awk 'NR>1 && $2 == "device"' | grep -q .
+}
+
+is_boot_completed() {
+  [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]
+}
+
+is_package_manager_ready() {
+  "$ADB" shell service check package 2>/dev/null | grep -q ": found" &&
+    "$ADB" shell service check settings 2>/dev/null | grep -q ": found" &&
+    "$ADB" shell cmd package path android >/dev/null 2>&1
 }
 
 "$ADB" start-server >/dev/null 2>&1 || true
@@ -63,10 +75,12 @@ EOF
 
   "$ADB" wait-for-device
   for _ in $(seq 1 120); do
-    [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]] && break
+    is_boot_completed && is_package_manager_ready && break
     sleep 2
   done
   has_device || { echo "error: emulator failed to boot; see $EMULATOR_LOG" >&2; exit 1; }
+  is_boot_completed || { echo "error: emulator did not complete boot; see $EMULATOR_LOG" >&2; exit 1; }
+  is_package_manager_ready || { echo "error: emulator booted, but package manager is not ready; see $EMULATOR_LOG" >&2; exit 1; }
   echo "Emulator booted."
 fi
 

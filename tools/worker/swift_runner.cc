@@ -585,22 +585,6 @@ bool SwiftRunner::ProcessArgument(
     // we didn't know at analysis time.
     consumer(flag);
     consumer(std::filesystem::current_path().string() + "=" + new_path);
-
-#if __APPLE__
-    // The developer-directory remap only applies to toolchains that use the
-    // Apple developer directory. A cross-compile (e.g. to Android) running on a
-    // macOS host has no DEVELOPER_DIR; skip the remap rather than hard-failing,
-    // keeping the working-directory remap above so file_prefix_map stays
-    // hermetic for those targets.
-    const char* developer_dir_env = std::getenv("DEVELOPER_DIR");
-    if (developer_dir_env != nullptr && developer_dir_env[0] != '\0') {
-      std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
-      if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
-        consumer(flag);
-        consumer(developer_dir + "=/PLACEHOLDER_DEVELOPER_DIR");
-      }
-    }
-#endif
   };
 
   // `-Xwrapped-swift=` arguments are consumed entirely by the worker and are

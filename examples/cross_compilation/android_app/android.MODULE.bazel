@@ -1,18 +1,13 @@
-# Dev dependencies for the runnable APK example (//examples/cross_compilation/
-# android_app), included from the root MODULE.bazel. rules_android + rules_kotlin
-# package the APK the real-world way; they pull in a Maven graph and are heavy,
-# so they're kept out of the root module and are all dev_dependency. Consumers of
-# rules_swift never see them; a consumer brings their own Android rules.
-#
-# `android_ndk` (the hermetic_android_toolchains extension) and `@androidndk` are
-# defined in the root module above this include().
-
+bazel_dep(name = "hermetic_android_toolchains", version = "0.1.1", dev_dependency = True)
 bazel_dep(name = "rules_android", version = "0.7.3", dev_dependency = True)
+bazel_dep(name = "rules_android_ndk", version = "0.1.5", dev_dependency = True)
 bazel_dep(name = "rules_java", version = "9.3.0", dev_dependency = True)
-bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
 bazel_dep(name = "rules_jvm_external", version = "7.0", dev_dependency = True)
+bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
 
-# rules_java's hermetic JDK + java tools for rules_android's Java actions.
+swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
+swift.android_sdk(toolchain_name = "swift_toolchain")
+
 rules_java_toolchains = use_extension(
     "@rules_java//java:extensions.bzl",
     "toolchains",
@@ -22,8 +17,7 @@ use_repo(rules_java_toolchains, "remote_java_tools")
 
 # rules_android's own Maven dependencies, pinned to a checked-in lock file:
 #   REPIN=1 bazel run @rules_android_maven//:pin
-# rules_android requiring a consumer-side maven.install is a known wart; see
-# https://github.com/bazelbuild/rules_android/issues/485.
+# https://github.com/bazelbuild/rules_android/issues/485
 maven = use_extension(
     "@rules_jvm_external//:extensions.bzl",
     "maven",
@@ -43,35 +37,79 @@ maven.install(
 )
 use_repo(maven, "rules_android_maven")
 
-# Point rules_android at the hermetic @androidsdk created by the android_ndk.sdk
-# tag in the root module (instead of requiring a local $ANDROID_HOME). The
-# extension proxy is re-declared here because include() segments don't share
-# names with the root module; this resolves to the same extension usage.
-android_ndk = use_extension(
+android = use_extension(
     "@hermetic_android_toolchains//:extensions.bzl",
     "android",
     dev_dependency = True,
 )
-use_repo(android_ndk, "androidsdk")
-
-rules_android_sdk = use_extension(
-    "@rules_android//rules/android_sdk_repository:rule.bzl",
-    "android_sdk_repository_extension",
-    dev_dependency = True,
+android.sdk(
+    build_tools_version = "35.0.0",
+    version = "35",
 )
+android.ndk(
+    api_level = 28,
+    version = "r27c",
+)
+use_repo(android, "androidndk", "androidsdk")
+
+# Make @rules_android's @androidsdk labels resolve to the hermetic SDK.
+rules_android_sdk = use_extension("@rules_android//rules/android_sdk_repository:rule.bzl", "android_sdk_repository_extension", dev_dependency = True)
 
 override_repo(rules_android_sdk, "androidsdk")
 
+# Make @rules_android_ndk's @androidndk labels resolve to the hermetic SDK.
+rules_android_ndk = use_extension("@rules_android_ndk//:extension.bzl", "android_ndk_repository_extension", dev_dependency = True)
+
+override_repo(rules_android_ndk, "androidndk")
+
 register_toolchains(
+    "@androidndk//:all",
     "@androidsdk//:all",
     dev_dependency = True,
 )
 
-# A hermetic emulator + system image so `bazel run …:run` can launch the example
-# with nothing preinstalled (adb comes from @androidsdk).
-emulator = use_extension(
-    "//examples/cross_compilation/android_app:emulator.bzl",
-    "emulator",
+register_toolchains(
+    "@androidndk//:all",
     dev_dependency = True,
 )
-use_repo(emulator, "android_emulator", "android_system_image")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "android_emulator",
+    build_file_content = """\
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["emulator/emulator"])
+
+filegroup(name = "all", srcs = glob(["emulator/**"]))
+""",
+    dev_dependency = True,
+    sha256 = "25378c67fd5bd03178e3a478b866496da8545e969df3a7a26ce9167772ffc026",
+    url = "https://dl.google.com/android/repository/emulator-darwin_aarch64-15565763.zip",
+)
+
+http_archive(
+    name = "android_system_image",
+    build_file_content = """\
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["system.img"])
+
+filegroup(name = "all", srcs = glob(["**"]))
+""",
+    dev_dependency = True,
+    sha256 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+    strip_prefix = "arm64-v8a",
+    url = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-34_r04.zip",
+)
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    dev_dependency = True,
+)

@@ -146,18 +146,14 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
-## Cross-compiling to Android with a Swift SDK
+## Building for Android
 
-swift.org publishes "Swift SDK" artifact bundles (the bundles consumed by
-`swift sdk install`) that let the host compiler cross-compile for platforms it
-cannot target by itself. The `swift` extension can download the Android SDK and
-define matching Swift and C/C++ toolchains, so plain `swift_library` and
-`swift_binary` targets build for `{aarch64,x86_64}-unknown-linux-android` under
-`--platforms`.
+The `swift` module extension can be used to download the Swift Android
+SDK for writing NDK code in Swift.
 
-Add the `android_sdk` tag, referencing the `toolchain` tag by name (the Swift
-module format is not stable across compiler versions, so the SDK is always
-downloaded for exactly the toolchain's version):
+Add the `android_sdk` tag, referencing the `toolchain` tag by name (the
+Swift module format is not stable across compiler versions, so the SDK
+is always downloaded for exactly the toolchain's version):
 
 ```bzl
 swift.toolchain(
@@ -168,8 +164,7 @@ swift.toolchain(
 swift.android_sdk(toolchain_name = "swift_toolchain")
 
 # rules_swift provides only the Swift toolchain; register an Android C/C++ cc
-# toolchain too (it also provides the sysroot the Swift compiler reads). For
-# example, @androidndk//:all from hermetic_android_toolchains:
+# toolchain too. For example, @androidndk//:all from hermetic_android_toolchains:
 android = use_extension("@hermetic_android_toolchains//:extensions.bzl", "android")
 android.sdk(version = "35", build_tools_version = "35.0.0")
 android.ndk(version = "r27c", api_level = 28)
@@ -182,60 +177,31 @@ register_toolchains(
 )
 ```
 
-If you build on a single host platform you can register everything the
-extension generates in one line instead of listing the matrix:
-
-```bzl
-register_toolchains("@swift_toolchain//:all")
-```
-
-Avoid `:all` when you configure multiple Linux distributions, for the same
-reason the standalone host toolchains are registered explicitly: rules_swift
-cannot yet auto-select a distribution, so `:all` would make the host/exec
-toolchain ambiguous across them.
-
-Then build with a platform carrying the matching constraints — for Android, use
-the ones `rules_android` already exposes:
-
-```sh
-bazel build //my:binary --platforms=@rules_android//:arm64-v8a
-```
-
-See `examples/cross_compilation/android_app` for a complete, runnable example.
+See `examples/cross_compilation/android_app` for an end to end example.
 
 ### JNI shared libraries
 
-A plain `swift_binary` links an ordinary executable. To produce a JNI library
-loadable with `System.loadLibrary`, set `linkshared = True`: it produces
-`lib<name>.so`. Export functions with `@_cdecl`; the Android Swift SDK's
-`Android` module provides the JNI types, so the entry points can be written
-entirely in Swift. A `swift_binary(linkshared = True)` may depend on ordinary
-`swift_library` targets (linked statically), so the JNI entry point and the
-shared business logic stay in separate libraries.
-`examples/cross_compilation/android_app` shows the Kotlin app that loads the JNI
-library.
+To produce a JNI library (`lib<name>.so`) loadable with
+`System.loadLibrary`, Use something like:
 
-Details worth knowing:
+```bzl
+swift_binary(
+    name = "<name>",
+    linkshared = True,
+    ...
+)
+```
 
-* The Swift standard library is linked statically from the SDK.
-* Android binaries link against the NDK's `libc++_shared.so`, which must be
-  packaged with the application. Select it from the registered Android cc
-  toolchain with `select_android_runtime_lib` from
-  `@rules_swift//swift/toolchains:android_runtime_lib.bzl` (build it under the
-  Android platform so the cc toolchain resolves).
-* rules_swift does not fetch the Android NDK; the registered Android cc toolchain
-  (e.g. `@androidndk//:all`) provides clang, the linker, and the sysroot, and the
-  Swift toolchain reads that toolchain's sysroot at analysis time.
-* Checksums for the SDK bundles are bundled for a curated list of releases (see
-  `swift/internal/extensions/swift_sdk_releases.bzl`); for other releases, pass
-  `sha256` explicitly.
+Export JNI functions with `@_cdecl`:
 
-### Coexistence with `rules_apple`
+```swift
+import Android
 
-A common setup cross-compiles to Android *and* builds the same app's Apple
-targets with `rules_apple`. The two resolve together cleanly: this line of
-`rules_swift` is `compatibility_level = 3` (the same as released `rules_swift`
-3.x), so a current `rules_apple` release works alongside it.
+@_cdecl("Java_com_example_swiftjni_NativeBridge_greetingFromSwift")
+public func greetingFromSwift(_ env: UnsafeMutablePointer<JNIEnv?>, _ clazz: jclass) -> jstring? {
+```
+
+See `examples/cross_compilation/android_app` for an end to end example.
 
 ## Using the extension from a non-root module
 
