@@ -82,7 +82,7 @@ use_repo(system_sdk, "system_sdk")
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3",
+    swift_version = "6.3.2",
 )
 use_repo(
     swift,
@@ -109,6 +109,8 @@ register_toolchains(
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
     dev_dependency = True,
 )
+
+include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
