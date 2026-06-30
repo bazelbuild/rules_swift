@@ -4,6 +4,7 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
+# gazelle:exclude examples
 # gazelle:exclude test
 
 # Consumed by Bazel integration tests (such as those defined in rules_apple).
