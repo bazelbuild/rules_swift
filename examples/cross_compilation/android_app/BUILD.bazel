@@ -1,29 +1,11 @@
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
-# A runnable Android app that runs Swift code through the JNI.
-#
-#   bazel build //examples/cross_compilation/android_app:app
-#   adb install -r bazel-bin/examples/cross_compilation/android_app/app.apk
-#   adb shell am start -n com.example.swiftjni/.MainActivity
-#
-# The call chain: MainActivity.kt -> NativeBridge.greetingFromSwift() (Kotlin,
-# JNI) -> libSwiftJNI.so (swift_binary, @_cdecl) -> Greeter (swift_library).
-
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_android//rules:rules.bzl", "android_binary")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("//swift:swift.bzl", "swift_binary", "swift_library")
-load("//swift/toolchains:android_runtime_lib.bzl", "select_android_runtime_lib")
-load(":validation.bzl", "android_apk_contents_check", "android_so_abi_check")
 
-package(default_visibility = ["//visibility:public"])
-
-# `bazel run //examples/cross_compilation/android_app:run` installs the APK on a
-# connected device/emulator and launches it, booting a hermetic emulator first
-# if nothing is connected (downloaded emulator + system image; adb from
-# @androidsdk). macOS/arm64 only — see emulator.bzl.
+# bazel run //examples/cross_compilation/android_app:run
 sh_binary(
     name = "run",
     srcs = ["run.sh"],
@@ -48,7 +30,6 @@ android_binary(
     manifest = "AndroidManifest.xml",
     deps = [
         ":app_lib",
-        ":libcxx",
         ":swift_jni",
     ],
 )
@@ -68,64 +49,13 @@ build_test(
     targets = [":app"],
 )
 
-# Assert the built JNI .so is a correct AArch64 ELF that exports the @_cdecl
-# entry point and links libc++_shared.so (run via build_test below).
-android_so_abi_check(
-    name = "swift_jni_abi",
-    jni_symbol = "Java_com_example_swiftjni_NativeBridge_greetingFromSwift",
-    shared_library = ":SwiftJNI",
-    tags = ["manual"],
-)
-
-build_test(
-    name = "swift_jni_abi_test",
-    targets = [":swift_jni_abi"],
-)
-
-# Assert the APK actually packages the Swift .so, the NDK C++ runtime, and the
-# dexed Kotlin (run via build_test below).
-android_apk_contents_check(
-    name = "apk_contents",
-    apk = ":app.apk",
-    expected_entries = [
-        "lib/arm64-v8a/libSwiftJNI.so",
-        "lib/arm64-v8a/libc++_shared.so",
-        "classes.dex",
-    ],
-    tags = ["manual"],
-)
-
-build_test(
-    name = "apk_contents_test",
-    targets = [":apk_contents"],
-)
-
-# The Swift JNI library and the NDK C++ runtime it loads, packaged into the APK
-# by android_binary's per-ABI native split. A prebuilt .so in a cc_library's
-# srcs becomes the CcInfo dynamic library the split collects. These only build
-# for Android (the split configures them from --android_platforms), so the
-# //examples/... wildcard skips them on a non-Android host.
+# https://github.com/bazelbuild/rules_android/pull/531
 cc_library(
     name = "swift_jni",
     srcs = [":SwiftJNI"],
     target_compatible_with = ["@platforms//os:android"],
 )
 
-cc_library(
-    name = "libcxx",
-    srcs = [":libcxx_shared"],
-    target_compatible_with = ["@platforms//os:android"],
-)
-
-select_android_runtime_lib(
-    name = "libcxx_shared",
-    target_compatible_with = ["@platforms//os:android"],
-    triple = "aarch64-linux-android",
-)
-
-# `linkshared` produces `libSwiftJNI.so`. The JNI entry point is written in
-# Swift (it `import`s the SDK's `Android` module for the JNI types) and calls
-# into the `Greeter` library.
 swift_binary(
     name = "SwiftJNI",
     srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
@@ -134,21 +64,8 @@ swift_binary(
     deps = [":Greeter"],
 )
 
-# A plain library dependency, compiled for whichever platform depends on it.
 swift_library(
     name = "Greeter",
     srcs = ["Sources/Greeter/Greeter.swift"],
     module_name = "Greeter",
-)
-
-bzl_library(
-    name = "emulator",
-    srcs = ["emulator.bzl"],
-    deps = ["@bazel_tools//tools/build_defs/repo:http.bzl"],
-)
-
-bzl_library(
-    name = "validation",
-    srcs = ["validation.bzl"],
-    deps = ["@rules_cc//cc:find_cc_toolchain_bzl"],
 )

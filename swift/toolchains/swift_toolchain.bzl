@@ -474,35 +474,6 @@ def _swift_sdk_linkopts_cc_info(
         ),
     )
 
-def _swift_android_linkopts_cc_info(ctx, cc_toolchain, sdkroot):
-    """Returns a `CcInfo` with the Android Swift runtime link flags.
-
-    The binary link runs through `cc_common.link` with the resolved Android cc
-    toolchain, but rules_android_ndk's toolchain reports its sysroot as the clang
-    directory and exposes an empty `dynamic_runtime_lib`, so the real sysroot is
-    never passed and `libc++_shared.so` (which the NDK clang links by default) is
-    never staged. Add both ourselves, on top of the SDK's `linkopts`/`linker_inputs`.
-
-    Args:
-        ctx: The toolchain rule context.
-        cc_toolchain: The resolved Android C++ `CcToolchainInfo`.
-        sdkroot: The Android sysroot derived from the cc toolchain.
-
-    Returns:
-        A `CcInfo` propagating the Android runtime link flags and inputs.
-    """
-    linkopts = list(ctx.attr.linkopts)
-    linker_inputs = list(ctx.files.linker_inputs)
-    if sdkroot:
-        linkopts.append("--sysroot=" + sdkroot)
-        libcxx_suffix = "/usr/lib/{}-linux-android/libc++_shared.so".format(ctx.attr.arch)
-        linker_inputs = linker_inputs + [
-            f
-            for f in cc_toolchain.all_files.to_list()
-            if f.path.endswith(libcxx_suffix)
-        ]
-    return _swift_sdk_linkopts_cc_info(ctx.label, linkopts, linker_inputs)
-
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
@@ -589,7 +560,13 @@ def _swift_toolchain_impl(ctx):
     elif ctx.attr.os == "none":
         swift_linkopts_cc_info = CcInfo()
     elif ctx.attr.os == "android":
-        swift_linkopts_cc_info = _swift_android_linkopts_cc_info(ctx, cc_toolchain, sdkroot)
+        if not sdkroot:
+            fail("Android toolchain requires a sysroot to be set, either via the `sdkroot` attribute or by using a CC toolchain that provides one.")
+        swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
+            ctx.label,
+            ["--sysroot={}".format(sdkroot)] + ctx.attr.linkopts,
+            ctx.files.linker_inputs,
+        )
     elif ctx.attr.linkopts or ctx.attr.linker_inputs:
         # A toolchain whose Swift runtime comes from a Swift SDK (e.g.
         # WebAssembly) provides the *complete* set of runtime link flags via
@@ -601,8 +578,8 @@ def _swift_toolchain_impl(ctx):
         # second `swiftrt.o` would conflict with the SDK's own).
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
-            list(ctx.attr.linkopts),
-            list(ctx.files.linker_inputs),
+            ctx.attr.linkopts,
+            ctx.files.linker_inputs,
         )
     else:
         swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(

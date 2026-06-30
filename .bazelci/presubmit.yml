@@ -26,15 +26,11 @@ x_defaults:
     build_targets:
       - "//examples/..."
       - "-//examples/apple/..."
-      # The Android APK example is exercised on macOS (see //examples/...
-      # below); it needs the hermetic Android SDK/NDK and is skipped here.
-      - "-//examples/cross_compilation/..."
     test_flags: *linux_flags
     test_targets:
       - "//examples/..."
       - "//test/..."
       - "-//examples/apple/..."
-      - "-//examples/cross_compilation/..."
       # The following tests require Swift >5.8.
       - "-//test:const_values_empty_const_values_multiple_files"
       - "-//test:const_values_empty_const_values_single_file"

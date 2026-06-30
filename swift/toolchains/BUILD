@@ -156,10 +156,3 @@ bzl_library(
     visibility = ["//visibility:public"],
     deps = ["//swift:providers"],
 )
-
-bzl_library(
-    name = "android_runtime_lib",
-    srcs = ["android_runtime_lib.bzl"],
-    visibility = ["//visibility:public"],
-    deps = ["@rules_cc//cc:find_cc_toolchain_bzl"],
-)

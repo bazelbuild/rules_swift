@@ -84,9 +84,6 @@ swift.toolchain(
     name = "swift_toolchain",
     swift_version = "6.3.2",
 )
-swift.android_sdk(
-    toolchain_name = "swift_toolchain",
-)
 use_repo(
     swift,
     "swift_toolchain",
@@ -113,50 +110,6 @@ register_toolchains(
     dev_dependency = True,
 )
 
-register_toolchains(
-    # Android Swift SDK toolchains used by //examples/cross_compilation. As with
-    # the embedded toolchains above, we register only the host platforms used by
-    # CI rather than `@swift_toolchain//:all`, because rules_swift cannot yet
-    # auto-select a Linux distribution and `:all` would make the host/exec
-    # toolchain ambiguous across distros. A consumer that builds on a single host
-    # platform can simply register `@swift_toolchain//:all`. The Android C/C++
-    # toolchain comes from `@androidndk//:all` (registered below), not here.
-    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04",
-    "@swift_toolchain//:swift_toolchain_android_aarch64_ubuntu22.04-aarch64",
-    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
-    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04",
-    "@swift_toolchain//:swift_toolchain_android_x86_64_ubuntu22.04-aarch64",
-    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
-    dev_dependency = True,
-)
-
-# The Android C/C++ cc toolchains for the cross-compile. rules_swift's Swift
-# Android toolchain links through these and reads the sysroot from them.
-bazel_dep(name = "hermetic_android_toolchains", version = "0.1.1", dev_dependency = True)
-
-android_ndk = use_extension(
-    "@hermetic_android_toolchains//:extensions.bzl",
-    "android",
-    dev_dependency = True,
-)
-android_ndk.sdk(
-    build_tools_version = "35.0.0",
-    version = "35",
-)
-android_ndk.ndk(
-    api_level = 28,
-    version = "r27c",
-)
-use_repo(android_ndk, "androidndk")
-
-register_toolchains(
-    "@androidndk//:all",
-    dev_dependency = True,
-)
-
-# Dev dependencies for the runnable APK example (rules_android + rules_kotlin and
-# their Maven graph). Split into its own segment to keep the heavy, example-only
-# dependencies out of the root module; it references `android_ndk` defined above.
 include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 
 # Dev dependencies

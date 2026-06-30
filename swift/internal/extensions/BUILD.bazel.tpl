@@ -14,19 +14,13 @@ exports_files([
 ])
 
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
-# See swift/internal/extensions/swift_sdks.bzl.
+
 exports_files([
-    "usr/bin/clang",
-    "usr/bin/llvm-ar",
+    "usr/bin/swiftc",
     "usr/bin/swift-autolink-extract",
     "usr/bin/swift-symbolgraph-extract",
-    "usr/bin/swiftc",
 ])
 
-# The subset of the toolchain that Swift compile actions for a Swift SDK
-# target need: the driver/frontend and their libraries, plus clang's builtin
-# headers for the clang importer. The Swift standard library for the target
-# comes from the SDK, not from here.
 filegroup(
     name = "swift_sdk_compiler_inputs",
     srcs = glob(
@@ -38,24 +32,6 @@ filegroup(
             "usr/lib/swift/host/**",
             "usr/lib/swift/linux/**",
             "usr/lib/swift/macosx/**",
-        ],
-        allow_empty = True,
-    ),
-)
-
-# The subset of the toolchain that link actions driven by this toolchain's
-# clang need.
-filegroup(
-    name = "swift_sdk_linker_inputs",
-    srcs = glob(
-        [
-            "usr/bin/clang*",
-            "usr/bin/ld.lld",
-            "usr/bin/ld64.lld",
-            "usr/bin/lld",
-            "usr/bin/llvm-ar",
-            "usr/bin/wasm-ld",
-            "usr/lib/clang/**",
         ],
         allow_empty = True,
     ),

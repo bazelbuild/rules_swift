@@ -1,5 +1,4 @@
-"""Shared building blocks for Swift SDK repository rules, plus the Android SDK
-repository rule.
+"""Shared building blocks for Swift SDK repository rules.
 
 A "Swift SDK" is an artifact bundle published by swift.org for cross-compiling
 Swift to a platform the host toolchain cannot target by itself (the bundles that
@@ -15,11 +14,6 @@ SDK must come from exactly the same release as the host toolchain it is paired
 with; the `swift` module extension enforces this by deriving both from the same
 `swift.toolchain` tag.
 """
-
-# Files in the host toolchain that compile actions need: the driver/frontend
-# binaries, their libraries, and clang's builtin headers (used by the clang
-# importer when the Swift SDK's resource directory does not bundle them).
-_HOST_COMPILER_INPUTS = "swift_sdk_compiler_inputs"
 
 _SWIFT_TOOLCHAIN_TEMPLATE = """
 swift_toolchain(
@@ -135,10 +129,13 @@ this SDK is paired with.
         ),
     }
 
-# The architectures the Android Swift SDK provides resources for and that
-# `@platforms//cpu` can express. (The SDK also supports armv7, which can be
-# added on demand.)
-ANDROID_ARCHS = ["aarch64", "x86_64"]
+# Mirrored from https://github.com/bazelbuild/rules_android_ndk/blob/27b38742eade7e8000b9ed0f320c9f277a0e89d1/target_systems.bzl.tpl
+# Swift doesn't support any other ones
+ANDROID_ARCHS = [
+    "aarch64",
+    "armv7",
+    "x86_64",
+]
 
 def _swift_android_sdk_impl(repository_ctx):
     bundle_dir = _download_sdk_bundle(repository_ctx)
@@ -151,23 +148,19 @@ def _swift_android_sdk_impl(repository_ctx):
              "missing {}/{}/swift-sdk.json".format(repo_root, sdk_dir_relative))
     lib_dir = "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative)
 
-    # The Android Swift SDK's resource directories do not bundle clang's
-    # builtin headers, so the clang importer must be pointed at the host
-    # toolchain's copy (which matches the clang embedded in swiftc).
+    # The clang headers are provided by the Swift toolchain, not the Android SDK bundle
     paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
     clang_versions = paired_usr.get_child("lib", "clang").readdir()
     if len(clang_versions) != 1:
         fail("Expected exactly one clang version directory in the host " +
              "toolchain, found: " + str(clang_versions))
-    clang_builtin_headers = _execroot_relative_path(
-        clang_versions[0].get_child("include"),
-    )
+    clang_builtin_headers = _execroot_relative_path(clang_versions[0].get_child("include"))
 
     build_content = _BUILD_HEADER_TEMPLATE.format(
         bundle_dir = bundle_dir,
         compiler_inputs = _build_list([
             ":sdk_files",
-            "@{}//:{}".format(toolchain_repo, _HOST_COMPILER_INPUTS),
+            "@{}//:swift_sdk_compiler_inputs".format(toolchain_repo),
         ]),
         toolchain_repo = toolchain_repo,
     )
@@ -190,30 +183,22 @@ def _swift_android_sdk_impl(repository_ctx):
                 "swift.use_module_wrap",
             ]),
             linker_inputs = _build_list([":sdk_files"]),
-            # The Swift runtime objects/libraries from the SDK's
-            # `swift_static-{arch}/android/static-stdlib-args.lnk`. We drop that
-            # file's `-Wl,--exclude-libs,ALL` (it would demote a depended-on
-            # `swift_library`'s `@_cdecl` JNI exports to local) and add the 16 KiB
-            # max page size required by Android 15+.
+            # Swift defines linkopts for android in
+            # `swift_static-{arch}/android/static-stdlib-args.lnk`, we add the
+            # ones that matter here removing the ones that rules_android_ndk
+            # already passes.
             linkopts = _build_list([
                 "{}/android/{}/swiftrt.o".format(resource_dir, arch),
                 "-L{}/android".format(resource_dir),
-                "-ldl",
                 "-llog",
-                # libc++ as the shared `libc++_shared.so` (the SDK's intended
-                # linkage). The Android cc toolchain links libc++ statically by
-                # default (https://github.com/bazelbuild/rules_android_ndk/issues/93),
-                # which the NDK discourages for a library that may share a process
-                # with other `.so`s; `-lstdc++` overrides that to the shared
-                # runtime, which must then be packaged into the APK (see
-                # `select_android_runtime_lib`).
-                "-lstdc++",
+                "-lswiftCore",
+                "-Wl,-export-dynamic",
+                "-Wl,--exclude-libs,ALL",
+                # TODO: Remove once https://github.com/bazelbuild/rules_android_ndk/commit/efc0c191796477c540e87e0f6bb5d88d6a58cc1f is in a release
                 "-Wl,-z,max-page-size=16384",
             ]),
             os = "android",
-            # Empty: the toolchain reads the sysroot from the resolved Android
-            # C++ cc toolchain (e.g. `@androidndk//:all`) at analysis time.
-            sdkroot = "",
+            sdkroot = "",  # Resolved in swift_toolchain.bzl
             suffix = arch,
             swift_version = repository_ctx.attr.swift_version,
         )
