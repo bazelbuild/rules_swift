@@ -44,6 +44,14 @@ disabled_file_prefix_map_test = make_action_command_line_test_rule(
     },
 )
 
+unsupported_developer_dir_file_prefix_map_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "-swift._supports_developer_dir",
+        ],
+    },
+)
+
 use_global_index_store_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -161,6 +169,17 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
             "-file-prefix-map",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
+        ],
+        target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    unsupported_developer_dir_file_prefix_map_test(
+        name = "{}_file_prefix_xcode_remap_unsupported_developer_dir_test".format(name),
+        tags = all_tags,
+        not_expected_argv = [
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],

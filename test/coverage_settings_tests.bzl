@@ -29,6 +29,16 @@ coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
     },
 )
 
+unsupported_developer_dir_coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:collect_code_coverage": "true",
+        "//command_line_option:features": [
+            "-swift._supports_developer_dir",
+            "swift.remap_xcode_path",
+        ],
+    },
+)
+
 def coverage_settings_test_suite(name, tags = []):
     """Test suite for coverage options.
 
@@ -59,6 +69,7 @@ def coverage_settings_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+            "-coverage-prefix-map",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
@@ -69,6 +80,17 @@ def coverage_settings_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-coverage-prefix-map",
+            "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
+        ],
+        target_compatible_with = ["@platforms//os:macos"],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    unsupported_developer_dir_coverage_xcode_prefix_map_test(
+        name = "{}_xcode_prefix_map_unsupported_developer_dir".format(name),
+        tags = all_tags,
+        not_expected_argv = [
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
         ],
         target_compatible_with = ["@platforms//os:macos"],

@@ -488,7 +488,7 @@ def _all_action_configs(
                 ),
             ],
             features = [
-                [SWIFT_FEATURE_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP],
+                [SWIFT_FEATURE_REMAP_XCODE_PATH, SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR],
             ],
         ),
         ActionConfigInfo(
@@ -507,6 +507,7 @@ def _all_action_configs(
                     SWIFT_FEATURE_REMAP_XCODE_PATH,
                     SWIFT_FEATURE_COVERAGE_PREFIX_MAP,
                     SWIFT_FEATURE_COVERAGE,
+                    SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR,
                 ],
             ],
         ),
@@ -524,6 +525,7 @@ def _all_action_configs(
             features = [
                 SWIFT_FEATURE_FILE_PREFIX_MAP,
                 SWIFT_FEATURE_REMAP_XCODE_PATH,
+                SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR,
             ],
         ),
     ])
