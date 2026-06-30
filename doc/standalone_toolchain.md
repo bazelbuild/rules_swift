@@ -146,6 +146,63 @@ bazel run @rules_swift//tools/swift-releases -- list \
     main-snapshot-2024-08-01 --platform xcode --platform ubuntu22.04
 ```
 
+## Building for Android
+
+The `swift` module extension can be used to download the Swift Android
+SDK for writing NDK code in Swift.
+
+Add the `android_sdk` tag, referencing the `toolchain` tag by name (the
+Swift module format is not stable across compiler versions, so the SDK
+is always downloaded for exactly the toolchain's version):
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.android_sdk(toolchain_name = "swift_toolchain")
+
+# rules_swift provides only the Swift toolchain; register an Android C/C++ cc
+# toolchain too. For example, @androidndk//:all from hermetic_android_toolchains:
+android = use_extension("@hermetic_android_toolchains//:extensions.bzl", "android")
+android.sdk(version = "35", build_tools_version = "35.0.0")
+android.ndk(version = "r27c", api_level = 28)
+use_repo(android, "androidndk")
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_android_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_android_x86_64_xcode",
+    "@androidndk//:all",
+)
+```
+
+See `examples/cross_compilation/android_app` for an end to end example.
+
+### JNI shared libraries
+
+To produce a JNI library (`lib<name>.so`) loadable with
+`System.loadLibrary`, Use something like:
+
+```bzl
+swift_binary(
+    name = "<name>",
+    linkshared = True,
+    ...
+)
+```
+
+Export JNI functions with `@_cdecl`:
+
+```swift
+import Android
+
+@_cdecl("Java_com_example_swiftjni_NativeBridge_greetingFromSwift")
+public func greetingFromSwift(_ env: UnsafeMutablePointer<JNIEnv?>, _ clazz: jclass) -> jstring? {
+```
+
+See `examples/cross_compilation/android_app` for an end to end example.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root

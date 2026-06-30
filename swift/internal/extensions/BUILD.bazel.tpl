@@ -13,6 +13,24 @@ exports_files([
     "usr/bin/llvm-objcopy",
 ])
 
+### Tools referenced by Swift SDK cross-compilation repositories. ###
+
+filegroup(
+    name = "swift_sdk_compiler_inputs",
+    srcs = glob(
+        [
+            "usr/bin/swift*",
+            "usr/lib/clang/**",
+            "usr/lib/lib*.dylib",
+            "usr/lib/lib*.so*",
+            "usr/lib/swift/host/**",
+            "usr/lib/swift/linux/**",
+            "usr/lib/swift/macosx/**",
+        ],
+        allow_empty = True,
+    ),
+)
+
 filegroup(
     name = "files",
     srcs = glob(

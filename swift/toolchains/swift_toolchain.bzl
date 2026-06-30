@@ -491,6 +491,23 @@ def _parse_target_system_name(*, arch, os, target_system_name):
     else:
         return "%s-unknown-%s" % (arch, os)
 
+def _resolve_sdkroot(ctx, cc_toolchain):
+    """Returns the SDK root (sysroot) for `-sdk`.
+
+    Prefers the explicit `sdkroot` attribute. Otherwise falls back to the
+    resolved cc toolchain's sysroot -- but rules_android_ndk's `@androidndk`
+    toolchain reports `sysroot` as the clang directory, not the NDK sysroot
+    swiftc needs, so for Android we derive the sysroot from the toolchain files.
+    """
+    if ctx.attr.sdkroot:
+        return ctx.attr.sdkroot
+    if ctx.attr.os == "android":
+        for f in cc_toolchain.all_files.to_list():
+            idx = f.path.find("/sysroot/")
+            if idx != -1:
+                return f.path[:idx] + "/sysroot"
+    return cc_toolchain.sysroot
+
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cc_toolchain(ctx)
@@ -503,11 +520,13 @@ def _swift_toolchain_impl(ctx):
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
 
-    if "clang" not in cc_toolchain.compiler:
+    if "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
         fail("Swift requires the configured CC toolchain use clang. " +
              "Either use the locally installed LLVM by setting `CC=clang` in your environment " +
              "before invoking Bazel, or configure a Bazel LLVM CC toolchain. " +
              "The current CC toolchain is configured to use '{}'.".format(cc_toolchain.compiler))
+
+    sdkroot = _resolve_sdkroot(ctx, cc_toolchain)
 
     additional_rpaths = []
     if ctx.attr.swift_tools:
@@ -540,14 +559,22 @@ def _swift_toolchain_impl(ctx):
         )
     elif ctx.attr.os == "none":
         swift_linkopts_cc_info = CcInfo()
+    elif ctx.attr.os == "android":
+        if not sdkroot:
+            fail("Android toolchain requires a sysroot to be set, either via the `sdkroot` attribute or by using a CC toolchain that provides one.")
+        swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
+            ctx.label,
+            ["--sysroot={}".format(sdkroot)] + ctx.attr.linkopts,
+            ctx.files.linker_inputs,
+        )
     elif ctx.attr.linkopts or ctx.attr.linker_inputs:
         # A toolchain whose Swift runtime comes from a Swift SDK (e.g.
-        # WebAssembly or Android) provides the *complete* set of runtime link
-        # flags via `linkopts`/`linker_inputs`, replacing — not adding to — the
-        # defaults computed below. Those defaults are specific to a Linux *host*
-        # toolchain (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's
-        # own `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they
-        # are at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
+        # WebAssembly) provides the *complete* set of runtime link flags via
+        # `linkopts`/`linker_inputs`, replacing — not adding to — the defaults
+        # computed below. Those defaults are specific to a Linux *host* toolchain
+        # (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's own
+        # `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they are
+        # at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
         # second `swiftrt.o` would conflict with the SDK's own).
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
@@ -609,7 +636,7 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         arch = ctx.attr.arch,
         target_triple = target_triple,
-        sdkroot = ctx.attr.sdkroot or cc_toolchain.sysroot,
+        sdkroot = sdkroot,
         xctest_version = ctx.attr.xctest_version,
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )

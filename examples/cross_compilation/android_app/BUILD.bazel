@@ -1,0 +1,71 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_android//rules:rules.bzl", "android_binary")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
+
+# bazel run //examples/cross_compilation/android_app:run
+sh_binary(
+    name = "run",
+    srcs = ["run.sh"],
+    args = [
+        "$(rlocationpath :app.apk)",
+        "$(rlocationpath @androidsdk//:adb)",
+        "$(rlocationpath @android_emulator//:emulator/emulator)",
+        "$(rlocationpath @android_system_image//:system.img)",
+    ],
+    data = [
+        ":app.apk",
+        "@android_emulator//:all",
+        "@android_emulator//:emulator/emulator",
+        "@android_system_image//:all",
+        "@android_system_image//:system.img",
+        "@androidsdk//:adb",
+    ],
+)
+
+android_binary(
+    name = "app",
+    manifest = "AndroidManifest.xml",
+    deps = [
+        ":app_lib",
+        ":swift_jni",
+    ],
+)
+
+kt_android_library(
+    name = "app_lib",
+    srcs = [
+        "java/com/example/swiftjni/MainActivity.kt",
+        "java/com/example/swiftjni/NativeBridge.kt",
+    ],
+    custom_package = "com.example.swiftjni",
+    manifest = "AndroidManifest.xml",
+)
+
+build_test(
+    name = "app_build_test",
+    targets = [":app"],
+)
+
+# https://github.com/bazelbuild/rules_android/pull/531
+cc_library(
+    name = "swift_jni",
+    srcs = [":SwiftJNI"],
+    target_compatible_with = ["@platforms//os:android"],
+)
+
+swift_binary(
+    name = "SwiftJNI",
+    srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [":Greeter"],
+)
+
+swift_library(
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
+)
