@@ -165,7 +165,6 @@ swift_toolchain(
         "swift.enable_embedded",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
-        "-swift.file_prefix_map",
     ],
     os = "none",
     parsed_version = "{swift_version}",
@@ -183,7 +182,6 @@ swift_toolchain(
         "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
-        "-swift.file_prefix_map",
     ],
     os = select({
         "@platforms//os:linux": "linux",
