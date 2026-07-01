@@ -585,14 +585,6 @@ bool SwiftRunner::ProcessArgument(
     // we didn't know at analysis time.
     consumer(flag);
     consumer(std::filesystem::current_path().string() + "=" + new_path);
-
-#if __APPLE__
-    std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
-    if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
-      consumer(flag);
-      consumer(developer_dir + "=/PLACEHOLDER_DEVELOPER_DIR");
-    }
-#endif
   };
 
   // `-Xwrapped-swift=` arguments are consumed entirely by the worker and are
