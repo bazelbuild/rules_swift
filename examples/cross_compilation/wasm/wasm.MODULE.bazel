@@ -12,3 +12,49 @@ register_toolchains(
     "@swift_toolchain//:swift_toolchain_wasm32_xcode",
     dev_dependency = True,
 )
+
+# A hermetic wasmtime so `:reactor_test` can execute the reactor. Only the
+# repository selected for the host is ever downloaded.
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+_WASMTIME_BUILD = """\
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["wasmtime"])
+"""
+
+http_archive(
+    name = "wasmtime_darwin_aarch64",
+    build_file_content = _WASMTIME_BUILD,
+    dev_dependency = True,
+    sha256 = "acee50be70dbe90b0ab2ac7db1321fc44715153a1b1cc58291c97b6d7cffc558",
+    strip_prefix = "wasmtime-v46.0.1-aarch64-macos",
+    url = "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-aarch64-macos.tar.xz",
+)
+
+http_archive(
+    name = "wasmtime_darwin_x86_64",
+    build_file_content = _WASMTIME_BUILD,
+    dev_dependency = True,
+    sha256 = "0513db67e7089c7e5f743a01427782bc4def83854222f4bc9b1d75f0b925240b",
+    strip_prefix = "wasmtime-v46.0.1-x86_64-macos",
+    url = "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-macos.tar.xz",
+)
+
+http_archive(
+    name = "wasmtime_linux_aarch64",
+    build_file_content = _WASMTIME_BUILD,
+    dev_dependency = True,
+    sha256 = "071c4def2a08f0ebc95c52dfd4f2886eb697ba495804217cf76e13b09d70a1be",
+    strip_prefix = "wasmtime-v46.0.1-aarch64-linux",
+    url = "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-aarch64-linux.tar.xz",
+)
+
+http_archive(
+    name = "wasmtime_linux_x86_64",
+    build_file_content = _WASMTIME_BUILD,
+    dev_dependency = True,
+    sha256 = "9ae0b17ea298bcc52277a8208d6ab7fae8e1a89579672f9d82f9d86c116edb62",
+    strip_prefix = "wasmtime-v46.0.1-x86_64-linux",
+    url = "https://github.com/bytecodealliance/wasmtime/releases/download/v46.0.1/wasmtime-v46.0.1-x86_64-linux.tar.xz",
+)

@@ -1,11 +1,12 @@
+# A WebAssembly reactor written in Swift, executed under a hermetic wasmtime
+# and embedded in a static web app.
+
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//examples/embedded:transition.bzl", "transition_binary")
 load("//swift:swift.bzl", "swift_binary", "swift_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# The platform covered by the WebAssembly Swift SDK toolchain registered by this
-# repository's dev `MODULE.bazel` (via the `swift` extension's `wasm_sdk` tag).
-# Build the targets below with `--platforms` set to this.
 platform(
     name = "wasm32-wasip1",
     constraint_values = [
@@ -14,24 +15,19 @@ platform(
     ],
 )
 
-# A plain library dependency, compiled for whichever platform depends on it,
-# demonstrating that a normal `swift_library` is reused unchanged across targets.
 swift_library(
     name = "Greeter",
     srcs = ["Sources/Greeter/Greeter.swift"],
     module_name = "Greeter",
-    tags = ["manual"],
 )
 
-# ---------------------------------------------------------------------------
-# WebAssembly: a reactor module (no `main`; exports functions for a JS host).
-# ---------------------------------------------------------------------------
-
+# A reactor module (no `main`; exports functions for a host). `@_cdecl` names
+# the exports; wasm-ld still needs an explicit `--export=` to retain each one.
+# This only builds for wasm (the transition below configures it), so the
+# `//examples/...` wildcard skips it on a host platform.
 swift_binary(
     name = "Reactor",
     srcs = ["Sources/Reactor/Reactor.swift"],
-    # Keep the exported functions in the linked module. `@_cdecl` names them;
-    # wasm-ld still needs an explicit `--export=` to retain each one.
     linkopts = [
         "-Xlinker",
         "--export=greeting_into",
@@ -39,23 +35,81 @@ swift_binary(
         "--export=greeting_length",
     ],
     linkshared = True,
-    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:wasi"],
     deps = [":Greeter"],
 )
 
 # Build `:Reactor` for the wasm platform. Consumers can instead set
-# `--platforms=//examples/cross_compilation/wasm:wasm32-wasip1` on the command line.
+# `--platforms=//examples/cross_compilation/wasm:wasm32-wasip1` on the command
+# line.
 transition_binary(
     name = "Reactor.wasm",
     binary = ":Reactor",
     platform = ":wasm32-wasip1",
 )
 
+# Executes the reactor under a hermetic wasmtime (downloaded in
+# wasm.MODULE.bazel) and asserts on the value Swift computes.
+sh_test(
+    name = "reactor_test",
+    srcs = ["reactor_test.sh"],
+    args = [
+        "$(rlocationpath :wasmtime)",
+        "$(rlocationpath :Reactor.wasm)",
+    ],
+    data = [
+        ":Reactor.wasm",
+        ":wasmtime",
+    ],
+)
+
+alias(
+    name = "wasmtime",
+    actual = select({
+        ":darwin_arm64": "@wasmtime_darwin_aarch64//:wasmtime",
+        ":darwin_x86_64": "@wasmtime_darwin_x86_64//:wasmtime",
+        ":linux_arm64": "@wasmtime_linux_aarch64//:wasmtime",
+        ":linux_x86_64": "@wasmtime_linux_x86_64//:wasmtime",
+    }),
+)
+
+config_setting(
+    name = "darwin_arm64",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "darwin_x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "linux_arm64",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+)
+
 # A static web app embedding the reactor: `index.html` + `Reactor.wasm` in one
 # directory. Serve it (e.g. `python3 -m http.server -d
-# bazel-bin/examples/cross_compilation/wasm/web_app`) and open it — the page calls
-# the reactor's exports from JavaScript and shows the greeting Swift produced.
-# `web/verify.mjs` does the same headlessly under Node. See `web/README.md`.
+# bazel-bin/examples/cross_compilation/wasm/web_app`) and open it — the page
+# calls the reactor's exports from JavaScript and shows the greeting Swift
+# produced. `web/verify.mjs` does the same headlessly under Node.
 genrule(
     name = "web_app",
     srcs = [
@@ -68,5 +122,4 @@ genrule(
     ],
     cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
           "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
-    tags = ["manual"],
 )

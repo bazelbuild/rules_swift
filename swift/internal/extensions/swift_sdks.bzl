@@ -361,10 +361,6 @@ def _swift_wasm_sdk_impl(repository_ctx):
             # that wasi-libc's startup code expects.
             "swift.no_entry_point_rename",
             "swift.use_autolink_extract",
-            # The file prefix map would make the worker resolve the Xcode
-            # developer directory on macOS hosts, which this toolchain does
-            # not depend on.
-            "-swift.file_prefix_map",
         ]),
         linker_inputs = _build_list([":sdk_files"]),
         # The runtime objects and libraries that `swiftc` would add when
