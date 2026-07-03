@@ -1773,6 +1773,12 @@ def _clang_search_paths_configurator(prerequisites, args):
         format_each = "-isystem%s",
     )
 
+    args.add_all(
+        prerequisites.cc_compilation_context.external_includes,
+        before_each = "-Xcc",
+        format_each = "-isystem%s",
+    )
+
 def _dependencies_clang_defines_configurator(prerequisites, args):
     """Adds C/C++ dependencies' preprocessor defines to the command line."""
     all_clang_defines = depset(transitive = [
