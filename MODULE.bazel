@@ -111,7 +111,6 @@ register_toolchains(
 )
 
 include("//examples/cross_compilation/android_app:android.MODULE.bazel")
-
 include("//examples/cross_compilation/wasm:wasm.MODULE.bazel")
 
 # Dev dependencies
