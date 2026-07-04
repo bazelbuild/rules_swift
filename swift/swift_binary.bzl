@@ -203,12 +203,10 @@ def _swift_binary_impl(ctx):
     else:
         name = ctx.label.name
 
-    # When targeting WebAssembly a `linkshared` binary is a "reactor" module: it
-    # is still produced as an `executable`-shaped wasm file (not a `-shared`
-    # dynamic library), but linked with the reactor execution model so it has no
-    # `_start`/`main` and instead exports functions for a host to call.
-    # Everywhere else, `linkshared` produces a real dynamic library
-    # (`lib<name>.so` / `.dylib`), matching `cc_binary`'s `linkshared`.
+    # On WebAssembly a `linkshared` binary is a "reactor": an executable-shaped
+    # wasm module linked with `-mexec-model=reactor` (no `main`; it exports
+    # functions for a host to call). Everywhere else `linkshared` produces a
+    # real dynamic library, matching `cc_binary`.
     shared_link_flags = []
     if ctx.attr.linkshared and not is_wasm:
         output_type = "dynamic_library"

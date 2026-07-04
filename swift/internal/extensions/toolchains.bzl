@@ -55,9 +55,6 @@ toolchain(
 )
 """
 
-# Unlike Android (whose C/C++ toolchain comes from a separately registered
-# Android cc toolchain), the WebAssembly SDK repository also generates a
-# rules_cc cc_toolchain that drives the paired toolchain's clang.
 _WASM_SDK_TOOLCHAIN_PLATFORM = """
 # Swift SDK toolchains from repository: `{sdk_repository}`
 toolchain(
