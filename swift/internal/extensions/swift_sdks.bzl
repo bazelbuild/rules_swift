@@ -293,6 +293,14 @@ def _swift_android_sdk_impl(repository_ctx):
                 "-L{}/android".format(resource_dir),
                 "-llog",
                 "-lswiftCore",
+                # Swift Concurrency's global executor lives on libdispatch,
+                # but the dependency comes from C++ objects inside
+                # libswift_Concurrency.a, so it is never autolinked. Link it
+                # (and its BlocksRuntime) explicitly from the same SDK
+                # directory; lld only extracts referenced members, so this is
+                # free for binaries that don't use concurrency.
+                "-ldispatch",
+                "-lBlocksRuntime",
                 "-Wl,-export-dynamic",
                 "-Wl,--exclude-libs,ALL",
                 # TODO: Remove once https://github.com/bazelbuild/rules_android_ndk/commit/efc0c191796477c540e87e0f6bb5d88d6a58cc1f is in a release
