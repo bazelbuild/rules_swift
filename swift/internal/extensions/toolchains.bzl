@@ -55,6 +55,33 @@ toolchain(
 )
 """
 
+_WASM_SDK_TOOLCHAIN_PLATFORM = """
+# Swift SDK toolchains from repository: `{sdk_repository}`
+toolchain(
+    name = "swift_toolchain_{target}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:swift_toolchain_{target_suffix}",
+    toolchain_type = "@rules_swift//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+# The paired rules_cc toolchain drives the SDK bundle's own clang for the C
+# side of the build (unlike Android, where the cc toolchain comes from the
+# separately registered NDK). It only resolves for this wasm target platform,
+# and because root-module registrations take precedence in toolchain
+# resolution, a consumer who registers their own wasm cc toolchain wins over
+# this one automatically.
+toolchain(
+    name = "cc_toolchain_{target}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:cc_toolchain_{target_suffix}",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+"""
+
 def _exec_compatible_with_for_platform(platform):
     # This assumption is baked into the API so we have to go along with it
     if platform == "xcode":
@@ -101,6 +128,30 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
             target_suffix = arch,
         )
     return content
+
+def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
+    """Returns `toolchain` declarations for a WebAssembly Swift SDK.
+
+    Args:
+        platform: The platform name (e.g. "xcode" or "ubuntu22.04") whose
+            standalone toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_wasm_sdk_repository`.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    return _WASM_SDK_TOOLCHAIN_PLATFORM.format(
+        exec_compatible_with = _exec_compatible_with_for_platform(platform),
+        platform = platform,
+        sdk_repository = sdk_repository,
+        target = "wasm32",
+        target_compatible_with = [
+            "@platforms//os:wasi",
+            "@platforms//cpu:wasm32",
+        ],
+        target_suffix = "wasm32",
+    )
 
 def _toolchains_impl(repository_ctx):
     repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)

@@ -16,6 +16,8 @@ exports_files([
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
 
 exports_files([
+    "usr/bin/clang",
+    "usr/bin/llvm-ar",
     "usr/bin/swiftc",
     "usr/bin/swift-autolink-extract",
     "usr/bin/swift-symbolgraph-extract",
@@ -32,6 +34,24 @@ filegroup(
             "usr/lib/swift/host/**",
             "usr/lib/swift/linux/**",
             "usr/lib/swift/macosx/**",
+        ],
+        allow_empty = True,
+    ),
+)
+
+# The subset of the toolchain that link actions driven by this toolchain's
+# clang need (used by the WebAssembly SDK's cc toolchain).
+filegroup(
+    name = "swift_sdk_linker_inputs",
+    srcs = glob(
+        [
+            "usr/bin/clang*",
+            "usr/bin/ld.lld",
+            "usr/bin/ld64.lld",
+            "usr/bin/lld",
+            "usr/bin/llvm-ar",
+            "usr/bin/wasm-ld",
+            "usr/lib/clang/**",
         ],
         allow_empty = True,
     ),

@@ -1,0 +1,88 @@
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//examples/embedded:transition.bzl", "transition_binary")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
+
+platform(
+    name = "wasm32-wasip1",
+    constraint_values = [
+        "@platforms//cpu:wasm32",
+        "@platforms//os:wasi",
+    ],
+)
+
+swift_library(
+    name = "Greeter",
+    srcs = ["Sources/Greeter/Greeter.swift"],
+    module_name = "Greeter",
+)
+
+# A reactor module (no `main`; exports functions for a host). `@_cdecl` names
+# the exports; wasm-ld still needs an explicit `--export=` to retain each one.
+# This only builds for wasm (the transition below configures it), so the
+# `//examples/...` wildcard skips it on a host platform.
+swift_binary(
+    name = "Reactor",
+    srcs = ["Sources/Reactor/Reactor.swift"],
+    linkopts = [
+        "-Xlinker",
+        "--export=greeting_into",
+        "-Xlinker",
+        "--export=greeting_length",
+    ],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:wasi"],
+    deps = [":Greeter"],
+)
+
+# Build `:Reactor` for the wasm platform. Consumers can instead set
+# `--platforms=//examples/cross_compilation/wasm:wasm32-wasip1` on the command
+# line.
+transition_binary(
+    name = "Reactor.wasm",
+    binary = ":Reactor",
+    platform = ":wasm32-wasip1",
+)
+
+# Executes the reactor under a hermetic wasmtime (downloaded in
+# wasm.MODULE.bazel) and asserts on the value Swift computes.
+sh_test(
+    name = "reactor_test",
+    srcs = ["reactor_test.sh"],
+    args = [
+        "$(rlocationpath :wasmtime)",
+        "$(rlocationpath :Reactor.wasm)",
+    ],
+    data = [
+        ":Reactor.wasm",
+        ":wasmtime",
+    ],
+)
+
+alias(
+    name = "wasmtime",
+    actual = select({
+        "@bazel_tools//src/conditions:darwin_arm64": "@wasmtime_darwin_aarch64//:wasmtime",
+        "@bazel_tools//src/conditions:darwin_x86_64": "@wasmtime_darwin_x86_64//:wasmtime",
+        "@bazel_tools//src/conditions:linux_aarch64": "@wasmtime_linux_aarch64//:wasmtime",
+        "@bazel_tools//src/conditions:linux_x86_64": "@wasmtime_linux_x86_64//:wasmtime",
+    }),
+)
+
+# A static web app embedding the reactor: `index.html` + `Reactor.wasm` in one
+# directory. Serve it (e.g. `python3 -m http.server -d
+# bazel-bin/examples/cross_compilation/wasm/web_app`) and open it — the page
+# calls the reactor's exports from JavaScript and shows the greeting Swift
+# produced. `web/verify.mjs` does the same headlessly under Node.
+genrule(
+    name = "web_app",
+    srcs = [
+        "web/index.html",
+        ":Reactor.wasm",
+    ],
+    outs = [
+        "web_app/index.html",
+        "web_app/Reactor.wasm",
+    ],
+    cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
+          "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
+)

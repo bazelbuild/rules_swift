@@ -14,6 +14,7 @@ https://www.swift.org/api/v1/install/releases.json.
 SWIFT_SDK_RELEASES = {
     "6.3.2": {
         "android": "939e933549d12d28f2e0bf71019d734d309859e9773c572657ce565a81f85d68",
+        "wasm": "a61f0584c93283589f8b2f42db05c1f9a182b506c2957271402992655591dd7c",
     },
 }
 
