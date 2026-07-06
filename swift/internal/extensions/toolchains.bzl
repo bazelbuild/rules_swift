@@ -66,6 +66,12 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+# The paired rules_cc toolchain drives the SDK bundle's own clang for the C
+# side of the build (unlike Android, where the cc toolchain comes from the
+# separately registered NDK). It only resolves for this wasm target platform,
+# and because root-module registrations take precedence in toolchain
+# resolution, a consumer who registers their own wasm cc toolchain wins over
+# this one automatically.
 toolchain(
     name = "cc_toolchain_{target}_{platform}",
     exec_compatible_with = {exec_compatible_with},

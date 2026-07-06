@@ -1,11 +1,6 @@
-# A WebAssembly reactor written in Swift, executed under a hermetic wasmtime
-# and embedded in a static web app.
-
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//examples/embedded:transition.bzl", "transition_binary")
 load("//swift:swift.bzl", "swift_binary", "swift_library")
-
-package(default_visibility = ["//visibility:public"])
 
 platform(
     name = "wasm32-wasip1",
