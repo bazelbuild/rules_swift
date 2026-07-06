@@ -63,6 +63,16 @@ def cc_library_test_suite(name, tags = []):
         tags = all_tags,
     )
 
+    # Verify that Swift can import a `cc_library` that ignores warnings in headers coming
+    # from external dependencies.
+    build_test(
+        name = "{}_swift_imports_cc_library_with_external_dependencies".format(name),
+        targets = [
+            "//test/fixtures/cc_library:import_external_cpp_dependency",
+        ],
+        tags = all_tags,
+    )
+
     explicit_module_map_pcm_test(
         name = "{}_explicit_module_map_omits_cc_library_pcm_argument".format(name),
         expected_argv = [

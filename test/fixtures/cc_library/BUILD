@@ -64,6 +64,19 @@ cc_library(
     tags = FIXTURE_TAGS,
 )
 
+cc_library(
+    name = "external_cpp_dependency",
+    hdrs = [
+        "external_header.hpp",
+    ],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+    deps = [
+        "@nlohmann_json//:singleheader-json",
+    ],
+)
+
+
 swift_interop_hint(
     name = "prefix_and_strip_prefix_with_exclusion_swift_hint",
     exclude_hdrs = ["header_with_error.h"],
@@ -96,4 +109,14 @@ swift_library(
     srcs = ["ImportPrefixAndStripPrefixWithExclusion.swift"],
     tags = FIXTURE_TAGS,
     deps = [":prefix_and_strip_prefix_with_exclusion"],
+)
+
+swift_library(
+    name = "import_external_cpp_dependency",
+    srcs = ["ImportExternalDependency.swift"],
+    tags = FIXTURE_TAGS,
+    deps = [":external_cpp_dependency"],
+    features = [
+        "swift.enable_cpp23_interop",
+    ],
 )
