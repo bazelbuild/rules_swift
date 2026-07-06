@@ -76,7 +76,6 @@ cc_library(
     ],
 )
 
-
 swift_interop_hint(
     name = "prefix_and_strip_prefix_with_exclusion_swift_hint",
     exclude_hdrs = ["header_with_error.h"],
@@ -114,9 +113,9 @@ swift_library(
 swift_library(
     name = "import_external_cpp_dependency",
     srcs = ["ImportExternalDependency.swift"],
-    tags = FIXTURE_TAGS,
-    deps = [":external_cpp_dependency"],
     features = [
         "swift.enable_cpp23_interop",
     ],
+    tags = FIXTURE_TAGS,
+    deps = [":external_cpp_dependency"],
 )
