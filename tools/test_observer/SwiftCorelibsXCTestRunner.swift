@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if os(Linux)
+#if os(Linux) || os(Windows)
   import Foundation
   import XCTest
 
-  public typealias XCTestRunner = LinuxXCTestRunner
+  public typealias XCTestRunner = SwiftCorelibsXCTestRunner
 
-  /// A test runner for tests that use the XCTest framework on Linux.
+  /// A test runner for tests that use the XCTest framework on platforms that use
+  /// swift-corelibs-xctest (Linux and Windows).
   ///
   /// This test runner uses test case entries that were constructed by scanning the symbol graph
-  /// output of the compiler.
+  /// output of the compiler, since those platforms lack the Objective-C runtime used for test
+  /// discovery on Apple platforms.
   @MainActor
-  public enum LinuxXCTestRunner {
+  public enum SwiftCorelibsXCTestRunner {
     /// A wrapper around a single test from an `XCTestCaseEntry` used by the test collector.
     private struct Test: Testable {
       /// The type of the `XCTestCase` that contains the test.

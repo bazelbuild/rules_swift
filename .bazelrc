@@ -35,6 +35,12 @@ common:linux --repo_env=CC=clang
 build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
 common:linux --//test:apple_build_tests=False
 
+# Worker sandboxing copies the worker into a sandbox exec root and cleans it
+# between invocations. On Windows a running/recently-run executable cannot be
+# deleted, so that cleanup fails with "Permission denied". Run Swift workers
+# unsandboxed on Windows.
+build:windows --noworker_sandboxing
+
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
