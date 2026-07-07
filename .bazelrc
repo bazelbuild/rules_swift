@@ -51,6 +51,6 @@ build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
 build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
 
 # ignore warnings in external CC dependencies
-build --features="external_include_paths"
+build --features=external_include_paths --host_features=external_include_paths
 
 try-import %workspace%/user.bazelrc
