@@ -54,7 +54,7 @@ build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
 build --features=external_include_paths --host_features=external_include_paths
 
 # MSVC ignores `/external:I` flag (given by "--features=external_include_paths") if also doesn't get the `/external:W<level>` flag which is
-# unfortunately not added by bazel by default. This is a workaround to add the `/external:W0` flag to all MSVC builds, which will ignore warnings in external dependencies.
-build:windows --copt="/external:W0"
+# unfortunately not added by bazel by default. Adding it with `--copt` doesn't work, so we'll simply disable this feature on windows.
+build:windows --features=-external_include_paths --host_features=-external_include_paths
 
 try-import %workspace%/user.bazelrc
