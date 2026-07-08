@@ -19,17 +19,21 @@ load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
     "//swift/internal/extensions:swift_sdk_releases.bzl",
     "SWIFT_SDK_RELEASES",
+    "static_linux_sdk_download_url",
     "swift_sdk_download_url",
 )
 load(
     "//swift/internal/extensions:swift_sdks.bzl",
     "ANDROID_ARCHS",
+    "STATIC_LINUX_ARCHS",
     "swift_android_sdk_repository",
+    "swift_static_linux_sdk_repository",
     "swift_wasm_sdk_repository",
 )
 load(
     "//swift/internal/extensions:toolchains.bzl",
     "android_sdk_toolchains_for_platform",
+    "static_linux_sdk_toolchains_for_platform",
     "toolchains_for_platform",
     "toolchains_repository",
     "wasm_sdk_toolchains_for_platform",
@@ -116,6 +120,62 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
         )
     return build_file_content
 
+def _setup_static_linux_sdk(*, tag, toolchain_name, swift_version, platforms):
+    """Creates the repositories for a `swift.static_linux_sdk` tag.
+
+    Args:
+        tag: The `static_linux_sdk` tag.
+        toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
+        swift_version: The Swift release version of that toolchain.
+        platforms: The host platforms the toolchain was created for.
+
+    Returns:
+        BUILD file content with the `toolchain` declarations to add to the
+        toolchains hub repository.
+    """
+    release = None
+    if swift_version in SWIFT_SDK_RELEASES:
+        release = SWIFT_SDK_RELEASES[swift_version].get("static_linux")
+
+    sdk_version = tag.sdk_version
+    if not sdk_version:
+        if not release:
+            fail("No known Static Linux Swift SDK version for Swift `{}`. Please provide sdk_version.".format(
+                swift_version,
+            ))
+        sdk_version = release["version"]
+
+    sha256 = tag.sha256
+    if not sha256:
+        if not release:
+            fail("No known Static Linux Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256 and sdk_version.".format(
+                swift_version,
+                SWIFT_SDK_RELEASES.keys(),
+            ))
+        if sdk_version != release["version"]:
+            fail("No known checksum for Static Linux Swift SDK version `{}` for Swift `{}`. Please provide sha256 when overriding sdk_version.".format(
+                sdk_version,
+                swift_version,
+            ))
+        sha256 = release["sha256"]
+
+    build_file_content = ""
+    for platform in platforms:
+        repository_name = "{}_static_linux_sdk_{}".format(toolchain_name, platform)
+        swift_static_linux_sdk_repository(
+            name = repository_name,
+            sha256 = sha256,
+            swift_version = swift_version,
+            toolchain_repo = "{}_{}".format(toolchain_name, platform),
+            url = static_linux_sdk_download_url(swift_version, sdk_version),
+        )
+        build_file_content += static_linux_sdk_toolchains_for_platform(
+            platform = platform,
+            sdk_repository = repository_name,
+            archs = STATIC_LINUX_ARCHS,
+        )
+    return build_file_content
+
 def _sdk_tags_by_toolchain_name(tags, kind):
     """Groups SDK tags by the toolchain they extend, rejecting duplicates."""
     tags_by_name = {}
@@ -146,23 +206,27 @@ def _standalone_toolchain_impl(module_ctx):
         root_module.tags.wasm_sdk,
         "wasm_sdk",
     )
+    static_linux_sdk_tags = _sdk_tags_by_toolchain_name(
+        root_module.tags.static_linux_sdk,
+        "static_linux_sdk",
+    )
 
     toolchain_names = [
         toolchain.name
         for toolchain in root_module.tags.toolchain
     ]
-    for toolchain_name in android_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `android_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
-    for toolchain_name in wasm_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `wasm_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
+    for kind, tags in (
+        ("android_sdk", android_sdk_tags),
+        ("wasm_sdk", wasm_sdk_tags),
+        ("static_linux_sdk", static_linux_sdk_tags),
+    ):
+        for toolchain_name in tags:
+            if toolchain_name not in toolchain_names:
+                fail("The `{}` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
+                    kind,
+                    toolchain_name,
+                    toolchain_names,
+                ))
 
     toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
@@ -207,6 +271,13 @@ def _standalone_toolchain_impl(module_ctx):
         if toolchain.name in wasm_sdk_tags:
             toolchains_build_file_content += _setup_wasm_sdk(
                 tag = wasm_sdk_tags[toolchain.name],
+                toolchain_name = toolchain.name,
+                swift_version = swift_version,
+                platforms = platforms,
+            )
+        if toolchain.name in static_linux_sdk_tags:
+            toolchains_build_file_content += _setup_static_linux_sdk(
+                tag = static_linux_sdk_tags[toolchain.name],
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
@@ -257,6 +328,50 @@ and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
 """,
 )
 
+_static_linux_sdk = tag_class(
+    attrs = {
+        "sdk_version": attr.string(
+            doc = """\
+The Static Linux SDK version in the artifact bundle filename. May be omitted
+for Swift/SDK version pairs known to this version of rules_swift. If this
+overrides the known SDK version, `sha256` must also be provided.
+""",
+        ),
+        "sha256": attr.string(
+            doc = """\
+The expected SHA-256 of the SDK artifact bundle. May be omitted only for
+Swift/SDK version pairs known to this version of rules_swift.
+""",
+        ),
+        "toolchain_name": attr.string(
+            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
+            mandatory = True,
+        ),
+    },
+    doc = """\
+Downloads the Static Linux Swift SDK matching a `toolchain` tag's Swift version
+and defines Swift and C++ toolchains targeting `x86_64-swift-linux-musl` and
+`aarch64-swift-linux-musl`.
+
+Register the generated toolchains for the host platforms you build on, e.g.:
+
+```starlark
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_xcode",
+)
+```
+
+and build with a platform that has `@platforms//os:linux`,
+`@platforms//cpu:x86_64` (or `aarch64`), and
+`@rules_swift//swift/toolchains:static_linux` constraints.
+
+On Linux hosts, register the Static Linux SDK toolchains before generic
+same-architecture Linux Swift toolchains, since both can match a Static Linux
+platform and Bazel chooses by registration order.
+""",
+)
+
 _toolchain = tag_class(attrs = {
     "name": attr.string(
         doc = "Repository name of the generated toolchain",
@@ -278,6 +393,7 @@ swift = module_extension(
     implementation = _standalone_toolchain_impl,
     tag_classes = {
         "android_sdk": _android_sdk,
+        "static_linux_sdk": _static_linux_sdk,
         "toolchain": _toolchain,
         "wasm_sdk": _wasm_sdk,
     },

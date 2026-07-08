@@ -55,7 +55,7 @@ toolchain(
 )
 """
 
-_WASM_SDK_TOOLCHAIN_PLATFORM = """
+_CC_SDK_TOOLCHAIN_PLATFORM = """
 # Swift SDK toolchains from repository: `{sdk_repository}`
 toolchain(
     name = "swift_toolchain_{target}_{platform}",
@@ -66,12 +66,6 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
-# The paired rules_cc toolchain drives the SDK bundle's own clang for the C
-# side of the build (unlike Android, where the cc toolchain comes from the
-# separately registered NDK). It only resolves for this wasm target platform,
-# and because root-module registrations take precedence in toolchain
-# resolution, a consumer who registers their own wasm cc toolchain wins over
-# this one automatically.
 toolchain(
     name = "cc_toolchain_{target}_{platform}",
     exec_compatible_with = {exec_compatible_with},
@@ -141,7 +135,7 @@ def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
     Returns:
         BUILD file content declaring the Swift and C++ toolchains.
     """
-    return _WASM_SDK_TOOLCHAIN_PLATFORM.format(
+    return _CC_SDK_TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         sdk_repository = sdk_repository,
@@ -152,6 +146,36 @@ def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
         ],
         target_suffix = "wasm32",
     )
+
+def static_linux_sdk_toolchains_for_platform(platform, sdk_repository, archs):
+    """Returns `toolchain` declarations for a Static Linux Swift SDK.
+
+    Args:
+        platform: The platform name (e.g. "xcode" or "ubuntu22.04") whose
+            standalone toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_static_linux_sdk_repository`.
+        archs: The Static Linux architectures ("aarch64", "x86_64") to declare
+            toolchains for.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    content = ""
+    for arch in archs:
+        content += _CC_SDK_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            sdk_repository = sdk_repository,
+            target = "static_linux_" + arch,
+            target_compatible_with = [
+                "@platforms//os:linux",
+                "@platforms//cpu:" + arch,
+                "@rules_swift//swift/toolchains:static_linux",
+            ],
+            target_suffix = "static_linux_" + arch,
+        )
+    return content
 
 def _toolchains_impl(repository_ctx):
     repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)

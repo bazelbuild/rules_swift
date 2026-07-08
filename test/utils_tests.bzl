@@ -12,7 +12,12 @@ load("//swift/internal:utils.bzl", "include_developer_search_paths")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
+load(
+    "//swift/internal/extensions:swift_sdk_releases.bzl",
+    "SWIFT_SDK_RELEASES",
+    "static_linux_sdk_download_url",
+    "swift_sdk_download_url",
+)
 
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
@@ -193,11 +198,33 @@ def _swift_sdk_download_url_test(ctx):
 
 swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 
+def _static_linux_sdk_release_metadata_test(ctx):
+    env = unittest.begin(ctx)
+
+    static_linux_release = SWIFT_SDK_RELEASES["6.3.2"]["static_linux"]
+    asserts.equals(
+        env,
+        "3fd798bef6f4408f1ea5a6f94ce4d4052830c4326ab85ebc04f983f01b3da407",
+        static_linux_release["sha256"],
+    )
+    asserts.equals(env, "0.1.0", static_linux_release["version"])
+
+    asserts.equals(
+        env,
+        "https://download.swift.org/swift-6.3.2-release/static-sdk/swift-6.3.2-RELEASE/swift-6.3.2-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz",
+        static_linux_sdk_download_url("6.3.2", "0.1.0"),
+    )
+
+    return unittest.end(env)
+
+static_linux_sdk_release_metadata_test = unittest.make(_static_linux_sdk_release_metadata_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
         developer_dirs_linkopts_test,
         include_developer_search_paths_test,
+        static_linux_sdk_release_metadata_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
     )

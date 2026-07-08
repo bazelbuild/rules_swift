@@ -14,6 +14,10 @@ https://www.swift.org/api/v1/install/releases.json.
 SWIFT_SDK_RELEASES = {
     "6.3.2": {
         "android": "939e933549d12d28f2e0bf71019d734d309859e9773c572657ce565a81f85d68",
+        "static_linux": {
+            "sha256": "3fd798bef6f4408f1ea5a6f94ce4d4052830c4326ab85ebc04f983f01b3da407",
+            "version": "0.1.0",
+        },
         "wasm": "a61f0584c93283589f8b2f42db05c1f9a182b506c2957271402992655591dd7c",
     },
 }
@@ -37,5 +41,27 @@ def swift_sdk_download_url(swift_version, sdk):
         "swift-{version}-RELEASE/swift-{version}-RELEASE_{sdk}.artifactbundle.tar.gz"
     ).format(
         sdk = sdk,
+        version = swift_version,
+    )
+
+def static_linux_sdk_download_url(swift_version, sdk_version):
+    """Returns the download URL for a Static Linux Swift SDK artifact bundle.
+
+    Args:
+        swift_version: The Swift release version (e.g. "6.3.2").
+        sdk_version: The Static Linux SDK version (e.g. "0.1.0").
+
+    Returns:
+        The URL of the `.artifactbundle.tar.gz` for the given release.
+    """
+    if "-snapshot-" in swift_version:
+        fail("Swift SDKs are only supported for release versions, got `{}`".format(
+            swift_version,
+        ))
+    return (
+        "https://download.swift.org/swift-{version}-release/static-sdk/" +
+        "swift-{version}-RELEASE/swift-{version}-RELEASE_static-linux-{sdk_version}.artifactbundle.tar.gz"
+    ).format(
+        sdk_version = sdk_version,
         version = swift_version,
     )

@@ -11,6 +11,17 @@ load(
 
 licenses(["notice"])
 
+constraint_setting(
+    name = "swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
+    name = "static_linux",
+    constraint_setting = ":swift_sdk",
+    visibility = ["//visibility:public"],
+)
+
 toolchain(
     name = "linux-swift-toolchain_x86_64",
     exec_compatible_with = [

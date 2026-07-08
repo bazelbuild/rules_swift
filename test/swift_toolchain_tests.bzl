@@ -11,6 +11,15 @@ toolchain_macos_arm64_with_sdkroot_test = make_action_command_line_test_rule(
     },
 )
 
+toolchain_static_linux_x86_64_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:extra_toolchains": [
+            "//test/fixtures/toolchains:cc_toolchain_static_linux_x86_64",
+            "//test/fixtures/toolchains:toolchain_static_linux_x86_64",
+        ],
+    },
+)
+
 def swift_toolchain_test_suite(name, tags = []):
     """Test suite for swift_toolchain's provider.
 
@@ -27,6 +36,35 @@ def swift_toolchain_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "//test/fixtures/basic:first",
+    )
+
+    toolchain_static_linux_x86_64_test(
+        name = "{}_static_linux_x86_64".format(name),
+        expected_argv = [
+            "-target",
+            "x86_64-swift-linux-musl",
+            "-sdk",
+            "static-sdk-root",
+            "-resource-dir",
+            "static-resource-root",
+            "-Xcc",
+            "--target=x86_64-swift-linux-musl",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    toolchain_static_linux_x86_64_test(
+        name = "{}_static_linux_cc_links_libcxx".format(name),
+        expected_argv = [
+            "--target=x86_64-swift-linux-musl",
+            "--sysroot=static-sdk-root",
+            "-lc++",
+        ],
+        mnemonic = "CppLink",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/toolchains:static_linux_cc_uses_libcxx",
     )
 
     native.test_suite(
