@@ -348,19 +348,6 @@ bzl_library(
     ],
 )
 
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["**"]) + [
-        "//swift/internal:for_bazel_tests",
-        "//swift/toolchains:for_bazel_tests",
-    ],
-    visibility = [
-        "//:__pkg__",
-    ],
-)
-
 # Additional Swift compiler flags that will be applied to all `SwiftCompile`
 # actions in non-execution configurations (but not module interface compile
 # actions or Clang module compile actions).

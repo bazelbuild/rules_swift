@@ -108,13 +108,3 @@ cc_library(
         ],
     }),
 )
-
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["**"]),
-    visibility = [
-        "//tools:__pkg__",
-    ],
-)

@@ -153,18 +153,6 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["**"]) + [
-        "//swift/toolchains/config:for_bazel_tests",
-    ],
-    visibility = [
-        "//swift:__pkg__",
-    ],
-)
-
 bzl_library(
     name = "swift_tools",
     srcs = ["swift_tools.bzl"],

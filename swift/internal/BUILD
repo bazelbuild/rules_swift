@@ -264,15 +264,6 @@ bzl_library(
     ],
 )
 
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["**"]),
-    visibility = [
-        "//swift:__pkg__",
-    ],
-)
-
 bzl_library(
     name = "repositories",
     srcs = ["repositories.bzl"],

@@ -12,16 +12,6 @@ sh_binary(
     data = ["scan.py"],
 )
 
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["*.bzl"]) + [
-        "BUILD.bazel",
-        "scan.py",
-    ],
-    visibility = ["//:__subpackages__"],
-)
-
 bzl_library(
     name = "extensions",
     srcs = ["extensions.bzl"],
