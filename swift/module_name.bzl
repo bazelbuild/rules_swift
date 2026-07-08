@@ -98,6 +98,7 @@ def derive_swift_module_name(
         module_name = package_part + "_" + name_part
     else:
         module_name = name_part
+
     if module_name[0].isdigit():
         module_name = "_" + module_name
     return module_name
