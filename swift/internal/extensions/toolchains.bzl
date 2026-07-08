@@ -100,7 +100,15 @@ def toolchains_for_platform(platform, toolchain_repository):
         toolchain_repository = toolchain_repository,
     )
 
-def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
+# Mirrored from https://github.com/bazelbuild/rules_android_ndk/blob/27b38742eade7e8000b9ed0f320c9f277a0e89d1/target_systems.bzl.tpl
+# Swift doesn't support any other ones
+_ANDROID_ARCHS = [
+    "aarch64",
+    "armv7",
+    "x86_64",
+]
+
+def android_sdk_toolchains_for_platform(platform, sdk_repository):
     """Returns Swift `toolchain` declarations for an Android Swift SDK.
 
     Args:
@@ -108,14 +116,13 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
             standalone toolchain the SDK is paired with.
         sdk_repository: The name of the repository created by
             `swift_android_sdk_repository`.
-        archs: The Android architectures (e.g. aarch64) to declare
             toolchains for.
 
     Returns:
         BUILD file content declaring the Swift toolchains.
     """
     content = ""
-    for arch in archs:
+    for arch in _ANDROID_ARCHS:
         content += _SDK_TOOLCHAIN_PLATFORM.format(
             exec_compatible_with = _exec_compatible_with_for_platform(platform),
             platform = platform,
