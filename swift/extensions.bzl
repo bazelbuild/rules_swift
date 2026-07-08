@@ -16,7 +16,7 @@
 
 load("@bazel_features//:features.bzl", "bazel_features")
 load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
-load("//swift/internal/extensions:standalone_toolchain.bzl", _standalone_toolchain = "standalone_toolchain")
+load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
     "//swift/internal/extensions:swift_sdk_releases.bzl",
@@ -31,10 +31,10 @@ load(
 )
 load(
     "//swift/internal/extensions:toolchains.bzl",
-    _android_sdk_toolchains_for_platform = "android_sdk_toolchains_for_platform",
-    _toolchains_for_platform = "toolchains_for_platform",
-    _toolchains_repository = "toolchains_repository",
-    _wasm_sdk_toolchains_for_platform = "wasm_sdk_toolchains_for_platform",
+    "android_sdk_toolchains_for_platform",
+    "toolchains_for_platform",
+    "toolchains_repository",
+    "wasm_sdk_toolchains_for_platform",
 )
 load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
@@ -86,7 +86,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
             url = swift_sdk_download_url(swift_version, "android"),
         )
-        build_file_content += _android_sdk_toolchains_for_platform(
+        build_file_content += android_sdk_toolchains_for_platform(
             platform = platform,
             sdk_repository = repository_name,
             archs = ANDROID_ARCHS,
@@ -125,7 +125,7 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
             url = swift_sdk_download_url(swift_version, "wasm"),
         )
-        build_file_content += _wasm_sdk_toolchains_for_platform(
+        build_file_content += wasm_sdk_toolchains_for_platform(
             platform = platform,
             sdk_repository = repository_name,
         )
@@ -200,13 +200,13 @@ def _standalone_toolchain_impl(module_ctx):
         swift_releases = toolchain.platform_sha256.items() or SWIFT_RELEASES[swift_version].items()
         for platform, sha256 in swift_releases:
             repository_name = toolchain.name + "_{}".format(platform)
-            _standalone_toolchain(
+            standalone_toolchain(
                 name = repository_name,
                 sha256 = sha256,
                 platform = platform,
                 swift_version = swift_version,
             )
-            toolchains_build_file_content += _toolchains_for_platform(
+            toolchains_build_file_content += toolchains_for_platform(
                 platform = platform,
                 toolchain_repository = repository_name,
             )
@@ -227,7 +227,7 @@ def _standalone_toolchain_impl(module_ctx):
                 platforms = platforms,
             )
 
-        _toolchains_repository(
+        toolchains_repository(
             name = toolchain.name,
             build_file_content = toolchains_build_file_content,
         )
