@@ -49,6 +49,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
+        swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
@@ -89,6 +90,7 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
+        swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
