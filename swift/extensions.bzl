@@ -18,7 +18,6 @@ load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolcha
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 load(
     "//swift/internal/extensions:swift_sdks.bzl",
-    "ANDROID_ARCHS",
     "swift_android_sdk_repository",
     "swift_wasm_sdk_repository",
 )
@@ -77,7 +76,6 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         build_file_content += android_sdk_toolchains_for_platform(
             platform = platform,
             sdk_repository = repository_name,
-            archs = ANDROID_ARCHS,
         )
     return build_file_content
 
