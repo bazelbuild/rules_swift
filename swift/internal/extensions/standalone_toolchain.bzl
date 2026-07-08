@@ -100,8 +100,6 @@ def _standalone_toolchain_impl(repository_ctx):
         "BUILD.bazel",
         repository_ctx.attr._build_template,
         substitutions = {
-            "{exec_os}": repository_ctx.os.name,
-            "{exec_arch}": repository_ctx.os.arch,
             "{swift_version}": repository_ctx.attr.swift_version,
         },
     )
@@ -110,7 +108,7 @@ standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
         "_build_template": attr.label(
-            default = "//swift/internal/extensions:BUILD.bazel.tpl",
+            default = "//swift/internal/extensions:toolchain.BUILD",
         ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",

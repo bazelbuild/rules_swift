@@ -43,18 +43,16 @@ filegroup(
 # clang need (used by the WebAssembly SDK's cc toolchain).
 filegroup(
     name = "swift_sdk_linker_inputs",
-    srcs = glob(
-        [
-            "usr/bin/clang*",
-            "usr/bin/ld.lld",
-            "usr/bin/ld64.lld",
-            "usr/bin/lld",
-            "usr/bin/llvm-ar",
-            "usr/bin/wasm-ld",
-            "usr/lib/clang/**",
-        ],
-        allow_empty = True,
-    ),
+    srcs = glob([
+        "usr/bin/clang*",
+        "usr/lib/clang/**",
+    ]) + [
+        "usr/bin/ld.lld",
+        "usr/bin/ld64.lld",
+        "usr/bin/lld",
+        "usr/bin/llvm-ar",
+        "usr/bin/wasm-ld",
+    ],
 )
 
 filegroup(
