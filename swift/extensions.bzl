@@ -334,7 +334,10 @@ _static_linux_sdk = tag_class(
             doc = """\
 The Static Linux SDK version in the artifact bundle filename. May be omitted
 for Swift/SDK version pairs known to this version of rules_swift. If this
-overrides the known SDK version, `sha256` must also be provided.
+overrides the known SDK version, `sha256` must also be provided. Custom SDK
+versions must preserve the standard Static Linux SDK artifact-bundle layout,
+including the `swift-sdk.json` metadata; linker args are read from the SDK's
+`linux-static/static-executable-args.lnk`.
 """,
         ),
         "sha256": attr.string(

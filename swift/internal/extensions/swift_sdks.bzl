@@ -230,6 +230,74 @@ def _static_linux_resource_path(target_settings, triple):
         field = "swiftResourcesPath"
     return _relative_metadata_path(resource_path, field, triple)
 
+def static_linux_linkopts_from_args(
+        *,
+        arch,
+        linux_static_dir,
+        args,
+        include_swiftrt = True):
+    """Returns linkopts using a Static Linux `static-executable-args.lnk` file.
+
+    Args:
+        arch: The target architecture.
+        linux_static_dir: The execroot-relative `linux-static` resource
+            directory.
+        args: The parsed non-empty lines from `static-executable-args.lnk`.
+        include_swiftrt: If True, add the `swiftrt.o` path used by the current
+            Static Linux SDK layout.
+
+    Returns:
+        Linkopts suitable for a C/C++ linker action.
+    """
+    linkopts = []
+    if include_swiftrt:
+        linkopts.append("{}/{}/swiftrt.o".format(linux_static_dir, arch))
+    linkopts.append("-L{}".format(linux_static_dir))
+
+    linker_arg_expected = False
+    for arg in args:
+        if linker_arg_expected:
+            if arg.startswith("-undefined=") and arg != "-undefined=":
+                linkopts.append("-Wl,-u," + arg.removeprefix("-undefined="))
+            else:
+                linkopts.extend(["-Xlinker", arg])
+            linker_arg_expected = False
+        elif arg == "-Xlinker":
+            linker_arg_expected = True
+        else:
+            linkopts.append(arg)
+
+    if linker_arg_expected:
+        linkopts.append("-Xlinker")
+
+    return linkopts
+
+def _static_linux_linkopts_from_sdk(
+        repository_ctx,
+        *,
+        arch,
+        linux_static_dir,
+        linux_static_dir_relative,
+        repo_root):
+    swiftrt_relative = "{}/{}/swiftrt.o".format(linux_static_dir_relative, arch)
+    args_relative = linux_static_dir_relative + "/static-executable-args.lnk"
+    if not repository_ctx.path(args_relative).exists:
+        fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
+             "missing {}/{}".format(repo_root, args_relative))
+
+    args = []
+    for line in repository_ctx.read(args_relative).split("\n"):
+        arg = line.strip()
+        if arg and not arg.startswith("#"):
+            args.append(arg)
+
+    return static_linux_linkopts_from_args(
+        arch = arch,
+        args = args,
+        include_swiftrt = repository_ctx.path(swiftrt_relative).exists,
+        linux_static_dir = linux_static_dir,
+    )
+
 def _common_attrs():
     return {
         "sha256": attr.string(
@@ -528,6 +596,7 @@ def _swift_static_linux_sdk_impl(repository_ctx):
         if not repository_ctx.path(resource_dir_relative).exists:
             fail("The Static Linux Swift SDK bundle has an unexpected layout; " +
                  "missing " + resource_dir)
+        linux_static_dir_relative = resource_dir_relative + "/linux-static"
         linux_static_dir = resource_dir + "/linux-static"
 
         build_content += _SWIFT_TOOLCHAIN_TEMPLATE.format(
@@ -542,25 +611,13 @@ def _swift_static_linux_sdk_impl(repository_ctx):
                 "swift.use_autolink_extract",
             ]),
             linker_inputs = _build_list([":sdk_files"]),
-            # These are the runtime objects and libraries that `swiftc` adds
-            # for a Static Linux executable; see
-            # `swift_static/linux-static/static-executable-args.lnk` in the SDK.
-            linkopts = _build_list([
-                "{}/{}/swiftrt.o".format(linux_static_dir, arch),
-                "-L{}".format(linux_static_dir),
-                "-static",
-                "-lswiftCore",
-                "-lswift_RegexParser",
-                "-Wl,-u,pthread_self",
-                "-Wl,-u,pthread_once",
-                "-Wl,-u,pthread_key_create",
-                "-ldispatch",
-                "-lBlocksRuntime",
-                "-lpthread",
-                "-ldl",
-                "-lc++",
-                "-lm",
-            ]),
+            linkopts = _build_list(_static_linux_linkopts_from_sdk(
+                repository_ctx,
+                arch = arch,
+                linux_static_dir = linux_static_dir,
+                linux_static_dir_relative = linux_static_dir_relative,
+                repo_root = repo_root,
+            )),
             os = "linux",
             sdkroot = sdkroot,
             suffix = suffix,

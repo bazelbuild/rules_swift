@@ -19,6 +19,12 @@ load(
     "swift_sdk_download_url",
 )
 
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal/extensions:swift_sdks.bzl",
+    "static_linux_linkopts_from_args",
+)
+
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
 
@@ -219,11 +225,82 @@ def _static_linux_sdk_release_metadata_test(ctx):
 
 static_linux_sdk_release_metadata_test = unittest.make(_static_linux_sdk_release_metadata_test)
 
+def _static_linux_linkopts_from_args_test(ctx):
+    env = unittest.begin(ctx)
+
+    args = [
+        "-static",
+        "-lswiftCore",
+        "-lswift_RegexParser",
+        "-Xlinker",
+        "-undefined=pthread_self",
+        "-Xlinker",
+        "-undefined=pthread_once",
+        "-Xlinker",
+        "-undefined=pthread_key_create",
+        "-ldispatch",
+        "-lBlocksRuntime",
+        "-lpthread",
+        "-ldl",
+        "-lc++",
+        "-lm",
+    ]
+
+    asserts.equals(
+        env,
+        [
+            "external/static_linux_sdk/swift_static/linux-static/x86_64/swiftrt.o",
+            "-Lexternal/static_linux_sdk/swift_static/linux-static",
+            "-static",
+            "-lswiftCore",
+            "-lswift_RegexParser",
+            "-Wl,-u,pthread_self",
+            "-Wl,-u,pthread_once",
+            "-Wl,-u,pthread_key_create",
+            "-ldispatch",
+            "-lBlocksRuntime",
+            "-lpthread",
+            "-ldl",
+            "-lc++",
+            "-lm",
+        ],
+        static_linux_linkopts_from_args(
+            arch = "x86_64",
+            args = args,
+            linux_static_dir = "external/static_linux_sdk/swift_static/linux-static",
+        ),
+    )
+
+    asserts.equals(
+        env,
+        [
+            "-Lexternal/static_linux_sdk/swift_static/linux-static",
+            "-Xlinker",
+            "--future-linker-arg",
+            "-Xlinker",
+        ],
+        static_linux_linkopts_from_args(
+            arch = "x86_64",
+            args = [
+                "-Xlinker",
+                "--future-linker-arg",
+                "-Xlinker",
+            ],
+            include_swiftrt = False,
+            linux_static_dir = "external/static_linux_sdk/swift_static/linux-static",
+        ),
+    )
+
+    return unittest.end(env)
+
+static_linux_linkopts_from_args_test = unittest.make(_static_linux_linkopts_from_args_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
         developer_dirs_linkopts_test,
         include_developer_search_paths_test,
+        static_linux_linkopts_from_args_test,
         static_linux_sdk_release_metadata_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
