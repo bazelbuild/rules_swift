@@ -14,6 +14,7 @@
 
 """Definitions for bzlmod module extensions."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
