@@ -14,8 +14,6 @@
 
 """Definitions for bzlmod module extensions."""
 
-load("@bazel_features//:features.bzl", "bazel_features")
-load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
@@ -39,19 +37,6 @@ load(
 load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
 system_sdk = _system_sdk
-
-def _non_module_deps_impl(module_ctx):
-    swift_rules_dependencies()
-
-    metadata_kwargs = {}
-    if bazel_features.external_deps.extension_metadata_has_reproducible:
-        metadata_kwargs["reproducible"] = True
-
-    return module_ctx.extension_metadata(
-        **metadata_kwargs
-    )
-
-non_module_deps = module_extension(implementation = _non_module_deps_impl)
 
 def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
     """Creates the repositories for a `swift.android_sdk` tag.
