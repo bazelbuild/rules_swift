@@ -17,11 +17,6 @@
 At this time, only the Linux toolchain uses this capability. The Xcode toolchain
 determines which
 features are supported using Xcode version checks in xcode_toolchain.bzl.
-
-NOTE: This file is loaded from repositories.bzl, before any workspace
-dependencies have been downloaded. Therefore, only files within this repository
-should be loaded here. Do not load anything else, even common libraries like
-Skylib.
 """
 
 load(

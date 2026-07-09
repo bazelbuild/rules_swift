@@ -264,16 +264,6 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_autoconfiguration",
-        "@bazel_tools//tools/build_defs/repo:http.bzl",
-    ],
-)
-
 # keep
 bzl_library(
     name = "feature_names",
