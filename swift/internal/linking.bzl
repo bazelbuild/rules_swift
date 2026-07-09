@@ -126,9 +126,7 @@ def _create_autolink_linking_context(
         post_compile_linker_inputs = [
             cc_common.create_linker_input(
                 owner = label,
-                user_link_flags = depset(
-                    ["@{}".format(autolink_file.path)],
-                ),
+                user_link_flags = depset(["@{}".format(autolink_file.path)]),
                 additional_inputs = depset([autolink_file]),
             ),
         ]

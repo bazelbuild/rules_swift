@@ -233,9 +233,7 @@ def _swift_binary_impl(ctx):
         output_type = output_type,
         stamp = ctx.attr.stamp,
         toolchains = toolchains,
-        user_link_flags = (
-            binary_link_flags + entry_point_linkopts + shared_link_flags
-        ),
+        user_link_flags = binary_link_flags + entry_point_linkopts + shared_link_flags,
         variables_extension = variables_extension,
     )
 

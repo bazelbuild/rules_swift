@@ -303,7 +303,7 @@ def _swift_linkopts_cc_info(
             linker_inputs = depset([
                 cc_common.create_linker_input(
                     owner = toolchain_label,
-                    user_link_flags = depset(linkopts),
+                    user_link_flags = linkopts,
                 ),
             ]),
         ),
@@ -356,7 +356,7 @@ def _test_linking_context(target_triple, toolchain_label):
         linker_inputs = depset([
             cc_common.create_linker_input(
                 owner = toolchain_label,
-                user_link_flags = depset(linkopts),
+                user_link_flags = linkopts,
             ),
         ]),
     )
