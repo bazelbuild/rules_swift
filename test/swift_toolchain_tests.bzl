@@ -13,9 +13,8 @@ toolchain_macos_arm64_with_sdkroot_test = make_action_command_line_test_rule(
 
 toolchain_static_linux_x86_64_test = make_action_command_line_test_rule(
     config_settings = {
-        "//command_line_option:extra_toolchains": [
-            "//test/fixtures/toolchains:cc_toolchain_static_linux_x86_64",
-            "//test/fixtures/toolchains:toolchain_static_linux_x86_64",
+        "//command_line_option:platforms": [
+            str(Label("//test/fixtures/toolchains:linux_musl_x86_64")),
         ],
     },
 )
@@ -44,9 +43,9 @@ def swift_toolchain_test_suite(name, tags = []):
             "-target",
             "x86_64-swift-linux-musl",
             "-sdk",
-            "static-sdk-root",
+            "swift-linux-musl/musl-1.2.5.sdk/x86_64",
             "-resource-dir",
-            "static-resource-root",
+            "swift-linux-musl/musl-1.2.5.sdk/x86_64/usr/lib/swift_static",
             "-Xcc",
             "--target=x86_64-swift-linux-musl",
         ],
@@ -59,7 +58,8 @@ def swift_toolchain_test_suite(name, tags = []):
         name = "{}_static_linux_cc_links_libcxx".format(name),
         expected_argv = [
             "--target=x86_64-swift-linux-musl",
-            "--sysroot=static-sdk-root",
+            "--sysroot",
+            "swift-linux-musl/musl-1.2.5.sdk/x86_64",
             "-lc++",
         ],
         mnemonic = "CppLink",

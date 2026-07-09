@@ -223,12 +223,11 @@ def _relative_metadata_path(value, field, triple):
     return value
 
 def _static_linux_resource_path(target_settings, triple):
-    resource_path = target_settings.get("swiftStaticResourcesPath")
-    field = "swiftStaticResourcesPath"
-    if not resource_path:
-        resource_path = target_settings.get("swiftResourcesPath")
-        field = "swiftResourcesPath"
-    return _relative_metadata_path(resource_path, field, triple)
+    return _relative_metadata_path(
+        target_settings.get("swiftStaticResourcesPath"),
+        "swiftStaticResourcesPath",
+        triple,
+    )
 
 def static_linux_linkopts_from_args(
         *,
@@ -288,7 +287,7 @@ def _static_linux_linkopts_from_sdk(
     args = []
     for line in repository_ctx.read(args_relative).split("\n"):
         arg = line.strip()
-        if arg and not arg.startswith("#"):
+        if arg:
             args.append(arg)
 
     return static_linux_linkopts_from_args(
