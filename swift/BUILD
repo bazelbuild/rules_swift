@@ -19,7 +19,6 @@ bzl_library(
         "//swift/internal/extensions:standalone_toolchain",
         "//swift/internal/extensions:swift_releases",
         "//swift/internal/extensions:toolchains",
-        "@bazel_features//:features",
     ],
 )
 
