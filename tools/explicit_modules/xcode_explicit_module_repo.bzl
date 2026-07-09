@@ -58,6 +58,9 @@ def _xcode_explicit_module_repo_impl(rctx):
                 result.stderr,
             ),
         )
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = True)
+    return None
 
 xcode_explicit_module_repo = repository_rule(
     implementation = _xcode_explicit_module_repo_impl,

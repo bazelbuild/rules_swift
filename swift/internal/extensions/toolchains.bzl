@@ -155,6 +155,9 @@ def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
 
 def _toolchains_impl(repository_ctx):
     repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = True)
+    return None
 
 toolchains_repository = repository_rule(
     implementation = _toolchains_impl,

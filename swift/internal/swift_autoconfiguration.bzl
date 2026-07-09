@@ -405,6 +405,9 @@ package(default_visibility = ["//visibility:public"])
             _create_linux_toolchain(repository_ctx = repository_ctx),
         ]),
     )
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = False)
+    return None
 
 swift_autoconfiguration = repository_rule(
     environ = ["CC", "PATH", "ProgramData", "Path"],

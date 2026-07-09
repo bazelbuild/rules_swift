@@ -103,6 +103,9 @@ def _standalone_toolchain_impl(repository_ctx):
             "{swift_version}": repository_ctx.attr.swift_version,
         },
     )
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = True)
+    return None
 
 standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
