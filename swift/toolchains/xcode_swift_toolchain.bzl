@@ -22,6 +22,7 @@ toolchain, see `doc/rules.md`.
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
+load("@build_bazel_apple_support//xcode:providers.bzl", "XcodeVersionInfo")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftFeatureAllowlistInfo",
@@ -186,7 +187,7 @@ def _swift_compatibility_lib_paths(*, target_triple, xcode_config):
 
     Args:
         target_triple: The target triple `struct`.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+        xcode_config: The `XcodeVersionInfo` provider.
 
     Returns:
         A list of paths to the Swift compatibility libraries in the toolchain.
@@ -225,7 +226,7 @@ def _swift_linkopts_cc_info(
         target_triple: The target triple `struct`.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+        xcode_config: The `XcodeVersionInfo` provider.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -633,7 +634,7 @@ def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
 
     Args:
-        xcode_config: The `apple_common.XcodeVersionConfig` provider.
+        xcode_config: The `XcodeVersionInfo` provider.
         desired_version: The minimum desired Xcode version, as a dotted version
             string.
 
@@ -704,7 +705,7 @@ def _xcode_swift_toolchain_impl(ctx):
         target_triples.parse(cc_toolchain.target_gnu_system_name),
     )
 
-    xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
+    xcode_config = ctx.attr._xcode_config[XcodeVersionInfo]
 
     swiftcopts = ctx.attr._copts[BuildSettingInfo].value
     swift_linkopts_cc_info = _swift_linkopts_cc_info(

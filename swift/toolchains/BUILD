@@ -56,6 +56,7 @@ bzl_library(
         "//swift/toolchains/config:tool_config",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//rules:common_settings",
+        "@build_bazel_apple_support//xcode:providers",
         "@rules_cc//cc/common",
     ],
 )
