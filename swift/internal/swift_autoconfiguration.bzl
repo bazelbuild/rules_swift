@@ -255,36 +255,6 @@ swift_toolchain(
         version_file = version_file,
     )
 
-def _create_xcode_toolchain():
-    """Creates BUILD targets for the Swift toolchain on macOS using Xcode.
-    """
-    feature_values = [
-        # TODO: This should be removed so that private headers can be used with
-        # explicit modules, but the build targets for CgRPC need to be cleaned
-        # up first because they contain C++ code.
-        SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS,
-    ]
-
-    return """\
-xcode_swift_toolchain(
-    name = "xcode-sdk-toolchain",
-    features = [{feature_list}],
-)
-
-xcode_swift_toolchain(
-    name = "xcode-toolchain",
-    cross_import_overlays = ["@system_sdk//:all_cross_import_overlays"],
-    features = [{feature_list}],
-    implicit_system_modules = "@system_sdk//:implicit_modules",
-    system_modules = "@system_sdk//:all_modules",
-)
-""".format(
-        feature_list = ", ".join([
-            '"{}"'.format(feature)
-            for feature in feature_values
-        ]),
-    )
-
 def _python_executable_works(repository_ctx, python_bin):
     """Returns True if `python_bin` is a real, runnable Python 3 interpreter.
 
@@ -393,14 +363,9 @@ load(
     "@rules_swift//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
 )
-load(
-    "@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl",
-    "xcode_swift_toolchain",
-)
 
 package(default_visibility = ["//visibility:public"])
 """,
-            _create_xcode_toolchain(),
             _create_windows_toolchain(repository_ctx = repository_ctx),
             _create_linux_toolchain(repository_ctx = repository_ctx),
         ]),
