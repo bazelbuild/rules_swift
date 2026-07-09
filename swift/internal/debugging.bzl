@@ -99,9 +99,7 @@ def ensure_swiftmodule_is_embedded(
     # use the `-add_ast_path` linker flag.
     return cc_common.create_linker_input(
         owner = label,
-        user_link_flags = depset([
-            "-Wl,-add_ast_path,{}".format(swiftmodule.path),
-        ]),
+        user_link_flags = depset(["-Wl,-add_ast_path,{}".format(swiftmodule.path)]),
         additional_inputs = depset([swiftmodule]),
     )
 
