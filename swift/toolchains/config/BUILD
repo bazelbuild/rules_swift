@@ -82,13 +82,3 @@ bzl_library(
         "@bazel_skylib//lib:paths",
     ],
 )
-
-# Consumed by Bazel integration tests.
-filegroup(
-    name = "for_bazel_tests",
-    testonly = True,
-    srcs = glob(["**"]),
-    visibility = [
-        "//swift/toolchains:__pkg__",
-    ],
-)
