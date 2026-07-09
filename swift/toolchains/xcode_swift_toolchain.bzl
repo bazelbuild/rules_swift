@@ -19,7 +19,6 @@ toolchain package. If you are looking for rules to build Swift code using this
 toolchain, see `doc/rules.md`.
 """
 
-load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
@@ -1156,6 +1155,6 @@ for incremental compilation using a persistent mode.
     fragments = [
         "cpp",
         "objc",
-    ] + ([] if bazel_features.cc.swift_fragment_removed else ["swift"]),
+    ],
     implementation = _xcode_swift_toolchain_impl,
 )
