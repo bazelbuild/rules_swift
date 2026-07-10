@@ -145,8 +145,6 @@ http_archive(
     urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
 )
 
-register_toolchains("//swift/toolchains:all")
-
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
     # NOTE: This doesn't apply to downstream repos
@@ -219,6 +217,12 @@ register_toolchains(
 
 include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 include("//examples/cross_compilation/wasm:wasm.MODULE.bazel")
+include("//examples/cross_compilation/static_linux:static_linux.MODULE.bazel")
+
+# Keep broad built-in Linux toolchains after Static Linux SDK toolchains:
+# Static Linux platforms are also `@platforms//os:linux`, and Bazel chooses the
+# first compatible toolchain.
+register_toolchains("//swift/toolchains:all")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)

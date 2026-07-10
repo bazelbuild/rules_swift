@@ -1,0 +1,20 @@
+swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
+swift.static_linux_sdk(toolchain_name = "swift_toolchain")
+
+register_toolchains(
+    # Register Static Linux before the broad built-in Linux toolchains in the
+    # root MODULE.bazel; Static Linux platforms are also @platforms//os:linux.
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_static_linux_aarch64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_static_linux_aarch64_xcode",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_ubuntu22.04-aarch64",
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_xcode",
+    dev_dependency = True,
+)

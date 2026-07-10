@@ -238,6 +238,36 @@ linked statically from the SDK, so the reactor is a self-contained
 
 See `examples/cross_compilation/wasm` for an end to end example.
 
+## Building for Static Linux
+
+The `swift` module extension can also download the Static Linux Swift SDK,
+which defines matching Swift and C/C++ toolchains targeting
+`x86_64-swift-linux-musl` and `aarch64-swift-linux-musl`.
+
+Add the `static_linux_sdk` tag, referencing the `toolchain` tag by name (the
+Swift module format is not stable across compiler versions, so the SDK is
+always downloaded for exactly the toolchain's version):
+
+```bzl
+swift.static_linux_sdk(toolchain_name = "swift_toolchain")
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_static_linux_x86_64_xcode",
+    "@swift_toolchain//:cc_toolchain_static_linux_x86_64_xcode",
+)
+```
+
+Then build with a platform that has `@platforms//os:linux`,
+`@platforms//cpu:x86_64` or `@platforms//cpu:aarch64`, and
+`@rules_swift//swift/toolchains:static_linux` constraints.
+
+Register Static Linux SDK toolchains before any generic same-architecture Linux
+Swift toolchains (for example `//swift/toolchains:all`). Static Linux platforms
+still carry `@platforms//os:linux`, so a generic Linux toolchain can also match;
+Bazel uses registration order to choose among compatible toolchains.
+
+See `examples/cross_compilation/static_linux` for an end to end example.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root

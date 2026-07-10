@@ -23,6 +23,8 @@ bzl_library(
     deps = [
         "//swift/internal/extensions:standalone_toolchain",
         "//swift/internal/extensions:swift_releases",
+        "//swift/internal/extensions:swift_sdk_releases",
+        "//swift/internal/extensions:swift_sdks",
         "//swift/internal/extensions:toolchains",
     ],
 )
