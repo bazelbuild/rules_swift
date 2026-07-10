@@ -145,9 +145,6 @@ http_archive(
     urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
 )
 
-apple_cc_configure = use_extension("@apple_support//crosstool:setup.bzl", "apple_cc_configure_extension")
-use_repo(apple_cc_configure, "local_config_apple_cc")
-
 register_toolchains("//swift/toolchains:all")
 
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
