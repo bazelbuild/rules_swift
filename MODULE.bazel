@@ -145,7 +145,6 @@ http_archive(
     urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
 )
 
-register_toolchains("//swift/toolchains:all")
 
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
@@ -212,6 +211,7 @@ register_toolchains(
     "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:cc_toolchain_embedded_xcode",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
     dev_dependency = True,
@@ -219,6 +219,9 @@ register_toolchains(
 
 include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 include("//examples/cross_compilation/wasm:wasm.MODULE.bazel")
+
+# Below dev_dependency toolchains for our own testing, doesn't affect users
+register_toolchains("//swift/toolchains:all")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
