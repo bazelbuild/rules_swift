@@ -256,6 +256,9 @@ def _swift_binary_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
+                transitive_files = depset(
+                    transitive = [toolchains.swift.runtime],
+                ),
             ),
         ),
         coverage_common.instrumented_files_info(
