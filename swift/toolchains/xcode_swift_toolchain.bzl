@@ -956,7 +956,6 @@ def _xcode_swift_toolchain_impl(ctx):
             for target in ctx.attr.package_configurations
         ],
         requested_features = requested_features,
-        runtime = depset(),
         system_modules = collect_implicit_deps_providers(
             [ctx.attr.system_modules] if ctx.attr.system_modules else [],
         ),

@@ -390,8 +390,7 @@ def _swift_unix_linkopts_cc_info(
         os,
         toolchain_label,
         toolchain_root,
-        additional_inputs,
-        additional_rpaths):
+        additional_inputs):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -406,8 +405,6 @@ def _swift_unix_linkopts_cc_info(
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
         additional_inputs: depset of File objects to add to link actions.
-        additional_rpaths: list of additional RPATH to add at link time.
-
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
         depend on Swift targets.
@@ -434,9 +431,6 @@ def _swift_unix_linkopts_cc_info(
         "-ldl",
         runtime_object_path,
         "-static-libgcc",
-    ] + [
-        "-Wl,-rpath,{}".format(rpath)
-        for rpath in additional_rpaths
     ]
 
     return CcInfo(
@@ -477,6 +471,32 @@ def _swift_sdk_linkopts_cc_info(
                     owner = toolchain_label,
                     user_link_flags = linkopts,
                     additional_inputs = depset(linker_inputs),
+                ),
+            ]),
+        ),
+    )
+
+def _runtime_cc_info(ctx, cc_toolchain):
+    """Returns linker metadata for shared libraries required at runtime."""
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+    )
+    libraries = [
+        cc_common.create_library_to_link(
+            actions = ctx.actions,
+            cc_toolchain = cc_toolchain,
+            dynamic_library = runtime,
+            feature_configuration = feature_configuration,
+        )
+        for runtime in ctx.files.runtime
+    ]
+    return CcInfo(
+        linking_context = cc_common.create_linking_context(
+            linker_inputs = depset([
+                cc_common.create_linker_input(
+                    owner = ctx.label,
+                    libraries = depset(libraries),
                 ),
             ]),
         ),
@@ -551,7 +571,6 @@ def _swift_toolchain_impl(ctx):
 
     sdkroot = _resolve_sdkroot(ctx, cc_toolchain)
 
-    additional_rpaths = []
     if ctx.attr.swift_tools:
         if ctx.attr.swift_executable:
             fail("`swift_executable` and `swift_tools` cannot be used concurrently. " +
@@ -563,15 +582,6 @@ def _swift_toolchain_impl(ctx):
                  "The toolchain root will be found relative to these tools automatically.")
 
         toolchain_root = paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.dirname)
-
-        # When swift binaries / tests built with a hermetic toolchain gets executed, they need the
-        # swift standard libs in their runfiles, along with an RPATH to access them.
-        additional_rpaths.append(
-            "{}/lib/swift/{}".format(
-                paths.dirname(paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.short_path)),
-                ctx.attr.os,
-            ),
-        )
 
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
@@ -611,7 +621,6 @@ def _swift_toolchain_impl(ctx):
             ctx.label,
             toolchain_root,
             ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs if ctx.attr.swift_tools else [],
-            additional_rpaths,
         )
 
     swiftcopts = []
@@ -710,7 +719,10 @@ def _swift_toolchain_impl(ctx):
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             [],
-            additional_cc_infos = [swift_linkopts_cc_info],
+            additional_cc_infos = [
+                swift_linkopts_cc_info,
+                _runtime_cc_info(ctx, cc_toolchain),
+            ],
         ),
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
@@ -718,7 +730,6 @@ def _swift_toolchain_impl(ctx):
         ],
         requested_features = requested_features,
         root_dir = toolchain_root,
-        runtime = depset(ctx.files.runtime),
         system_modules = collect_implicit_deps_providers([]),
         implicit_system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
@@ -799,7 +810,7 @@ configuration options that are applied to targets on a per-package basis.
             "root": attr.string(),
             "runtime": attr.label_list(
                 doc = """\
-List of files to carry over as test data to swift executables and tests.
+Shared libraries that should be added to the linking context of Swift targets.
 """,
                 allow_files = True,
             ),
@@ -902,6 +913,7 @@ The version of XCTest that the toolchain packages.
         },
     ),
     doc = "Represents a Swift compiler toolchain.",
+    fragments = ["cpp"],
     toolchains = use_cc_toolchain(),
     implementation = _swift_toolchain_impl,
 )

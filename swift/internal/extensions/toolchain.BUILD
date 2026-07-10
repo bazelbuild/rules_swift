@@ -235,8 +235,8 @@ swift_toolchain(
     parsed_version = "{swift_version}",
     runtime = glob(
         [
-            "usr/lib/swift/**/*.dylib",  # On MacOS
-            "usr/lib/swift/**/*.so",  # On Linux
+            "usr/lib/swift/linux/*.so",
+            "usr/lib/swift/macosx/*.dylib",
         ],
         allow_empty = True,
     ),

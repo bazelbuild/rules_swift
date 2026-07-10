@@ -516,9 +516,6 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
-                transitive_files = depset(
-                    transitive = [toolchains.swift.runtime],
-                ),
             ),
         ),
         OutputGroupInfo(
