@@ -6,14 +6,13 @@ x_defaults:
     platform: macos_arm64
     xcode_version: "26.2"
     build_targets:
-      - "//examples/..."
+      - "//..."
     test_targets:
-      - "//examples/..."
-      - "//test/..."
+      - "//..."
   linux_environment: &linux_environment
     platform: ubuntu2204
     environment:
-      SWIFT_VERSION: "6.0.3"
+      SWIFT_VERSION: "6.3.3"
       SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
       PATH: "$SWIFT_HOME/usr/bin:$PATH"
   linux_common: &linux_common
@@ -24,12 +23,11 @@ x_defaults:
       # https://github.com/bazelbuild/rules_swift/issues/4).
       - "--action_env=PATH"
     build_targets:
-      - "//examples/..."
+      - "//..."
       - "-//examples/apple/..."
     test_flags: *linux_flags
     test_targets:
-      - "//examples/..."
-      - "//test/..."
+      - "//..."
       - "-//examples/apple/..."
       # The following tests require Swift >5.8.
       - "-//test:const_values_empty_const_values_multiple_files"
