@@ -54,7 +54,7 @@ actually build on. Each platform repo name is `<toolchain_name>_<platform>`.
 | `name` | string, required | Repository name of the generated parent toolchain repo. Per-platform repos are named `<name>_<platform>`. |
 | `swift_version` | string | The Swift release version (e.g. `6.2.4`) or a snapshot identifier (see [Snapshots](#snapshot-toolchains)). Mutually exclusive with `swift_version_file`. |
 | `swift_version_file` | label | A label pointing at a file containing the version string (typically a `.swift-version` file checked into the repo). Mutually exclusive with `swift_version`. |
-| `platform_sha256` | string_dict | Optional map of platform → SHA-256. Required for snapshots and any version not present in the bundled `SWIFT_RELEASES` table. When set, it overrides the bundled checksums. |
+| `platform_sha256` | string_dict | Optional map of platform -> SHA-256. Required for snapshots and any version not present in the bundled release metadata. When set, it overrides the bundled checksums. |
 
 ### Supported platforms
 
@@ -104,7 +104,7 @@ swift.toolchain(
 ## Adding versions not bundled with `rules_swift`
 
 `rules_swift` bundles SHA-256 checksums for a curated list of releases (see
-`swift/internal/extensions/swift_releases.bzl`). To use a release that
+`swift/internal/extensions/swift_release_metadata.json`). To use a release that
 isn't bundled, supply your own `platform_sha256` map:
 
 ```bzl
