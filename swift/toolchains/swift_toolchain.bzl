@@ -390,8 +390,7 @@ def _swift_unix_linkopts_cc_info(
         os,
         toolchain_label,
         toolchain_root,
-        additional_inputs,
-        additional_rpaths):
+        additional_inputs):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
     The provider returned by this function will be used as an implicit
@@ -406,7 +405,6 @@ def _swift_unix_linkopts_cc_info(
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
         additional_inputs: depset of File objects to add to link actions.
-        additional_rpaths: list of additional RPATH to add at link time.
 
     Returns:
         A `CcInfo` provider that will provide linker flags to binaries that
@@ -434,9 +432,6 @@ def _swift_unix_linkopts_cc_info(
         "-ldl",
         runtime_object_path,
         "-static-libgcc",
-    ] + [
-        "-Wl,-rpath,{}".format(rpath)
-        for rpath in additional_rpaths
     ]
 
     return CcInfo(
@@ -551,7 +546,6 @@ def _swift_toolchain_impl(ctx):
 
     sdkroot = _resolve_sdkroot(ctx, cc_toolchain)
 
-    additional_rpaths = []
     if ctx.attr.swift_tools:
         if ctx.attr.swift_executable:
             fail("`swift_executable` and `swift_tools` cannot be used concurrently. " +
@@ -563,15 +557,6 @@ def _swift_toolchain_impl(ctx):
                  "The toolchain root will be found relative to these tools automatically.")
 
         toolchain_root = paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.dirname)
-
-        # When swift binaries / tests built with a hermetic toolchain gets executed, they need the
-        # swift standard libs in their runfiles, along with an RPATH to access them.
-        additional_rpaths.append(
-            "{}/lib/swift/{}".format(
-                paths.dirname(paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.short_path)),
-                ctx.attr.os,
-            ),
-        )
 
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
@@ -611,7 +596,6 @@ def _swift_toolchain_impl(ctx):
             ctx.label,
             toolchain_root,
             ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs if ctx.attr.swift_tools else [],
-            additional_rpaths,
         )
 
     swiftcopts = []
