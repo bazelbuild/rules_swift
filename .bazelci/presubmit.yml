@@ -99,7 +99,7 @@ tasks:
   doc_tests:
     name: "Doc tests"
     bazel: latest
-    <<: *linux_environment
+    platform: ubuntu2204
     test_targets:
       - "doc/..."
 
