@@ -31,6 +31,9 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+"""
+
+_EXEC_TOOLCHAIN_PLATFORM = """
 ## Exec toolchains
 toolchain(
     name = "swift_toolchain_exec_{platform}",
@@ -111,6 +114,13 @@ def toolchains_for_platform(platform, toolchain_repository):
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
+
+    if platform != "xcode":
+        content += _EXEC_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
 
     if platform in (
         "ubuntu22.04",
