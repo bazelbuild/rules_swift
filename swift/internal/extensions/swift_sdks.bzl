@@ -252,24 +252,7 @@ def static_linux_linkopts_from_args(
     if include_swiftrt:
         linkopts.append("{}/{}/swiftrt.o".format(linux_static_dir, arch))
     linkopts.append("-L{}".format(linux_static_dir))
-
-    linker_arg_expected = False
-    for arg in args:
-        if linker_arg_expected:
-            if arg.startswith("-undefined=") and arg != "-undefined=":
-                linkopts.append("-Wl,-u," + arg.removeprefix("-undefined="))
-            else:
-                linkopts.extend(["-Xlinker", arg])
-            linker_arg_expected = False
-        elif arg == "-Xlinker":
-            linker_arg_expected = True
-        else:
-            linkopts.append(arg)
-
-    if linker_arg_expected:
-        linkopts.append("-Xlinker")
-
-    return linkopts
+    return linkopts + args
 
 def _static_linux_linkopts_from_sdk(
         repository_ctx,
