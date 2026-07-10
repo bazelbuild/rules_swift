@@ -15,6 +15,9 @@ jobs:
     name: Test
     runs-on: macos-26
     timeout-minutes: 120
+    concurrency:
+      group: macos-latest-xcode-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
     steps:
       - name: Checkout
