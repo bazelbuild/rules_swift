@@ -14,7 +14,6 @@
 
 """Definitions for bzlmod module extensions."""
 
-load("@bazel_features//:features.bzl", "bazel_features")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
 load(
@@ -218,13 +217,7 @@ def _standalone_toolchain_impl(module_ctx):
             build_file_content = toolchains_build_file_content,
         )
 
-    metadata_kwargs = {}
-    if bazel_features.external_deps.extension_metadata_has_reproducible:
-        metadata_kwargs["reproducible"] = True
-
-    return module_ctx.extension_metadata(
-        **metadata_kwargs
-    )
+    return module_ctx.extension_metadata(reproducible = True)
 
 _android_sdk = tag_class(
     attrs = {
