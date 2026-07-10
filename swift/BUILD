@@ -10,6 +10,11 @@ load(":swift_module_mapping.bzl", "swift_module_mapping")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(
+    ["providers.bzl"],
+    visibility = ["//doc:__pkg__"],
+)
+
 licenses(["notice"])
 
 bzl_library(
