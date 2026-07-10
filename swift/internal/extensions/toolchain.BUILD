@@ -5,6 +5,7 @@ load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("@rules_cc//cc/toolchains/args:sysroot.bzl", "cc_sysroot")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
@@ -123,21 +124,19 @@ cc_tool_map(
     },
 )
 
-cc_args(
-    name = "non_hermetic_sysroot_args",
+cc_sysroot(
+    name = "linux_sysroot_args",
     actions = [
         "@rules_cc//cc/toolchains/actions:link_actions",
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    allowlist_absolute_include_directories = [
-        "/usr/include",
-        "/usr/local/include",
-    ],
+    data = ["@swift_linux_sysroot//:root"],
+    sysroot = "@swift_linux_sysroot//:root",
 )
 
 cc_feature(
-    name = "non_hermetic_sysroot",
-    args = [":non_hermetic_sysroot_args"],
+    name = "linux_sysroot",
+    args = [":linux_sysroot_args"],
     feature_name = "sysroot",
 )
 
@@ -145,7 +144,7 @@ apple_cc_toolchain(
     name = "cc_toolchain_exec",
     module_map = None,
     supports_header_parsing = False,
-    sysroot_feature = ":non_hermetic_sysroot",
+    sysroot_feature = ":linux_sysroot",
     target = select({
         "@platforms//cpu:aarch64": "aarch64-unknown-linux-gnu",
         "@platforms//cpu:x86_64": "x86_64-unknown-linux-gnu",

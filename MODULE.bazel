@@ -9,6 +9,7 @@ module(
 
 bazel_dep(name = "abseil-cpp", version = "20250814.1")
 bazel_dep(name = "apple_support", version = "2.6.1")
+bazel_dep(name = "bazel_linux_packages", version = "0.3.1")
 bazel_dep(name = "bazel_features", version = "1.51.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "nlohmann_json", version = "3.12.0.bcr.1")
@@ -17,6 +18,19 @@ bazel_dep(name = "protobuf", version = "34.0.bcr.1")
 bazel_dep(name = "rules_cc", version = "0.2.14")
 bazel_dep(name = "rules_shell", version = "0.3.0")
 bazel_dep(name = "swift_argument_parser", version = "1.7.0")
+
+apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
+apt.ubuntu(
+    name = "swift_linux_sysroot",
+    lockfile = "//swift/internal/extensions:ubuntu22.04_sysroot.lock.json",
+    packages = [
+        "libc6-dev",
+        "libstdc++-11-dev",
+        "linux-libc-dev",
+    ],
+    suites = ["jammy"],
+)
+use_repo(apt, "swift_linux_sysroot")
 
 swift_autoconfiguration = use_repo_rule("//swift/internal:swift_autoconfiguration.bzl", "swift_autoconfiguration")
 
@@ -252,4 +266,11 @@ archive_override(
     urls = [
         "https://github.com/bazelbuild/apple_support/archive/17c7248ee2f4f21b2d1f3668d88e4f40d9453220.tar.gz",
     ],
+)
+
+single_version_override(
+    module_name = "bazel_linux_packages",
+    patch_strip = 1,
+    patches = ["//third_party/patches:bazel-linux-packages-bazel-9.patch"],
+    version = "0.3.1",
 )
