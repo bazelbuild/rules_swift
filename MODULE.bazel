@@ -145,8 +145,6 @@ http_archive(
     urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
 )
 
-register_toolchains("//swift/toolchains:all")
-
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
     # NOTE: This doesn't apply to downstream repos
@@ -212,10 +210,13 @@ register_toolchains(
     "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:cc_toolchain_embedded_xcode",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
+    "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:swift_toolchain_embedded_xcode",
     dev_dependency = True,
 )
+
+register_toolchains("//swift/toolchains:all")
 
 include("//examples/cross_compilation/android_app:android.MODULE.bazel")
 include("//examples/cross_compilation/wasm:wasm.MODULE.bazel")
