@@ -14,7 +14,6 @@ x_defaults:
     build_targets:
       - "//..."
       - "-//examples/apple/..."
-    test_flags: *linux_flags
     test_targets:
       - "//..."
       - "-//examples/apple/..."
