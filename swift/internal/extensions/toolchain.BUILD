@@ -130,8 +130,8 @@ cc_sysroot(
         "@rules_cc//cc/toolchains/actions:link_actions",
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    data = ["@swift_linux_sysroot//:root"],
-    sysroot = "@swift_linux_sysroot//:root",
+    data = ["@swift_ubuntu22.04_sysroot//:root"],
+    sysroot = "@swift_ubuntu22.04_sysroot//:root",
 )
 
 cc_feature(

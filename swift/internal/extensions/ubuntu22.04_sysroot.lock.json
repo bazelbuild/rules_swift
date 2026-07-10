@@ -6,7 +6,8 @@
 		"packages": [
 			"libc6-dev",
 			"libstdc++-11-dev",
-			"linux-libc-dev"
+			"linux-libc-dev",
+			"zlib1g-dev"
 		],
 		"sources": [
 			{
@@ -782,6 +783,176 @@
 			"sha256": "d6e4ef9e5793a271764209047ebb78970404b035fd1490cb513302744cfe9a25",
 			"url": "https://snapshot.ubuntu.com/ubuntu/20250219T154000Z/pool/main/t/tar/tar_1.34+dfsg-1build3_amd64.deb",
 			"version": "1.34+dfsg-1build3"
+		},
+		{
+			"arch": "amd64",
+			"dependencies": [
+				{
+					"key": "debconf_1.5.79ubuntu1_amd64",
+					"name": "debconf",
+					"version": "1.5.79ubuntu1"
+				},
+				{
+					"key": "dpkg_1.21.1ubuntu2_amd64",
+					"name": "dpkg",
+					"version": "1.21.1ubuntu2"
+				},
+				{
+					"key": "gcc-12-base_12-20220319-1ubuntu1_amd64",
+					"name": "gcc-12-base",
+					"version": "12-20220319-1ubuntu1"
+				},
+				{
+					"key": "libacl1_2.3.1-1_amd64",
+					"name": "libacl1",
+					"version": "2.3.1-1"
+				},
+				{
+					"key": "libbz2-1.0_1.0.8-5build1_amd64",
+					"name": "libbz2-1.0",
+					"version": "1.0.8-5build1"
+				},
+				{
+					"key": "libc-dev-bin_2.35-0ubuntu3_amd64",
+					"name": "libc-dev-bin",
+					"version": "2.35-0ubuntu3"
+				},
+				{
+					"key": "libc6-dev_2.35-0ubuntu3_amd64",
+					"name": "libc6-dev",
+					"version": "2.35-0ubuntu3"
+				},
+				{
+					"key": "libc6_2.35-0ubuntu3_amd64",
+					"name": "libc6",
+					"version": "2.35-0ubuntu3"
+				},
+				{
+					"key": "libcom-err2_1.46.5-2ubuntu1_amd64",
+					"name": "libcom-err2",
+					"version": "1.46.5-2ubuntu1"
+				},
+				{
+					"key": "libcrypt-dev_1-4.4.27-1_amd64",
+					"name": "libcrypt-dev",
+					"version": "1:4.4.27-1"
+				},
+				{
+					"key": "libcrypt1_1-4.4.27-1_amd64",
+					"name": "libcrypt1",
+					"version": "1:4.4.27-1"
+				},
+				{
+					"key": "libgcc-s1_12-20220319-1ubuntu1_amd64",
+					"name": "libgcc-s1",
+					"version": "12-20220319-1ubuntu1"
+				},
+				{
+					"key": "libgssapi-krb5-2_1.19.2-2_amd64",
+					"name": "libgssapi-krb5-2",
+					"version": "1.19.2-2"
+				},
+				{
+					"key": "libk5crypto3_1.19.2-2_amd64",
+					"name": "libk5crypto3",
+					"version": "1.19.2-2"
+				},
+				{
+					"key": "libkeyutils1_1.6.1-2ubuntu3_amd64",
+					"name": "libkeyutils1",
+					"version": "1.6.1-2ubuntu3"
+				},
+				{
+					"key": "libkrb5-3_1.19.2-2_amd64",
+					"name": "libkrb5-3",
+					"version": "1.19.2-2"
+				},
+				{
+					"key": "libkrb5support0_1.19.2-2_amd64",
+					"name": "libkrb5support0",
+					"version": "1.19.2-2"
+				},
+				{
+					"key": "liblzma5_5.2.5-2ubuntu1_amd64",
+					"name": "liblzma5",
+					"version": "5.2.5-2ubuntu1"
+				},
+				{
+					"key": "libnsl-dev_1.3.0-2build2_amd64",
+					"name": "libnsl-dev",
+					"version": "1.3.0-2build2"
+				},
+				{
+					"key": "libnsl2_1.3.0-2build2_amd64",
+					"name": "libnsl2",
+					"version": "1.3.0-2build2"
+				},
+				{
+					"key": "libpcre2-8-0_10.39-3build1_amd64",
+					"name": "libpcre2-8-0",
+					"version": "10.39-3build1"
+				},
+				{
+					"key": "libselinux1_3.3-1build2_amd64",
+					"name": "libselinux1",
+					"version": "3.3-1build2"
+				},
+				{
+					"key": "libssl3_3.0.2-0ubuntu1_amd64",
+					"name": "libssl3",
+					"version": "3.0.2-0ubuntu1"
+				},
+				{
+					"key": "libtirpc-common_1.3.2-2build1_amd64",
+					"name": "libtirpc-common",
+					"version": "1.3.2-2build1"
+				},
+				{
+					"key": "libtirpc-dev_1.3.2-2build1_amd64",
+					"name": "libtirpc-dev",
+					"version": "1.3.2-2build1"
+				},
+				{
+					"key": "libtirpc3_1.3.2-2build1_amd64",
+					"name": "libtirpc3",
+					"version": "1.3.2-2build1"
+				},
+				{
+					"key": "libzstd1_1.4.8-p-dfsg-3build1_amd64",
+					"name": "libzstd1",
+					"version": "1.4.8+dfsg-3build1"
+				},
+				{
+					"key": "linux-libc-dev_5.15.0-25.25_amd64",
+					"name": "linux-libc-dev",
+					"version": "5.15.0-25.25"
+				},
+				{
+					"key": "perl-base_5.34.0-3ubuntu1_amd64",
+					"name": "perl-base",
+					"version": "5.34.0-3ubuntu1"
+				},
+				{
+					"key": "rpcsvc-proto_1.4.2-0ubuntu6_amd64",
+					"name": "rpcsvc-proto",
+					"version": "1.4.2-0ubuntu6"
+				},
+				{
+					"key": "tar_1.34-p-dfsg-1build3_amd64",
+					"name": "tar",
+					"version": "1.34+dfsg-1build3"
+				},
+				{
+					"key": "zlib1g_1-1.2.11.dfsg-2ubuntu9_amd64",
+					"name": "zlib1g",
+					"version": "1:1.2.11.dfsg-2ubuntu9"
+				}
+			],
+			"key": "zlib1g-dev_1-1.2.11.dfsg-2ubuntu9_amd64",
+			"name": "zlib1g-dev",
+			"sha256": "ddbadadcbfe2669de79eabac36a990f0f1666bb86a87d1a9cd56fd72620ca2db",
+			"url": "https://snapshot.ubuntu.com/ubuntu/20250219T154000Z/pool/main/z/zlib/zlib1g-dev_1.2.11.dfsg-2ubuntu9_amd64.deb",
+			"version": "1:1.2.11.dfsg-2ubuntu9"
 		},
 		{
 			"arch": "amd64",

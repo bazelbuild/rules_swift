@@ -19,18 +19,20 @@ bazel_dep(name = "rules_cc", version = "0.2.14")
 bazel_dep(name = "rules_shell", version = "0.3.0")
 bazel_dep(name = "swift_argument_parser", version = "1.7.0")
 
+# Regenerate lockfile: bazel run @swift_ubuntu22.04_sysroot//:lock
 apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
 apt.ubuntu(
-    name = "swift_linux_sysroot",
+    name = "swift_ubuntu22.04_sysroot",
     lockfile = "//swift/internal/extensions:ubuntu22.04_sysroot.lock.json",
     packages = [
         "libc6-dev",
         "libstdc++-11-dev",
         "linux-libc-dev",
+        "zlib1g-dev",
     ],
     suites = ["jammy"],
 )
-use_repo(apt, "swift_linux_sysroot")
+use_repo(apt, "swift_ubuntu22.04_sysroot")
 
 swift_autoconfiguration = use_repo_rule("//swift/internal:swift_autoconfiguration.bzl", "swift_autoconfiguration")
 
