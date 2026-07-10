@@ -227,6 +227,12 @@ swift_toolchain(
         "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
+        "swift.lld_gc_workaround",
+        "swift.use_module_wrap",
+        # TODO: This should be removed so that private headers can be used with
+        # explicit modules, but the build targets for CgRPC need to be cleaned up
+        # first because they contain C++ code.
+        "swift.module_map_no_private_headers",
     ],
     os = select({
         "@platforms//os:linux": "linux",
