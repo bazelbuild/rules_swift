@@ -433,8 +433,8 @@ def compile(
             preprocessor defines, header search paths, and so forth. These are
             typically retrieved from a target's dependencies.
         copts: A list of compiler flags that apply to the target being built.
-            These flags, along with those from Bazel's Swift configuration
-            fragment (i.e., `--swiftcopt` command line flags) are scanned to
+            These flags, along with those from the `@rules_swift//swift:copt`
+            build setting (typically passed as `--swiftcopt`) are scanned to
             determine whether whole module optimization is being requested,
             which affects the nature of the output files.
         defines: Symbols that should be defined by passing `-D` to the compiler.
