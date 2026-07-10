@@ -1,4 +1,6 @@
+load("@apple_support//toolchain:cc_toolchain.bzl", apple_cc_toolchain = "cc_toolchain")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
@@ -76,12 +78,32 @@ cc_tool(
 cc_tool(
     name = "clang",
     src = "usr/bin/clang",
+    data = [":swift_sdk_linker_inputs"],
     tags = ["manual"],
 )
 
 cc_tool(
     name = "clang++",
     src = "usr/bin/clang++",
+    data = [":swift_sdk_linker_inputs"],
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_cov",
+    src = "usr/bin/llvm-cov",
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_objcopy",
+    src = "usr/bin/llvm-objcopy",
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_profdata",
+    src = "usr/bin/llvm-profdata",
     tags = ["manual"],
 )
 
@@ -93,8 +115,42 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
         "@rules_cc//cc/toolchains/actions:c_compile": ":clang",
         "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang++",
-        "@rules_cc//cc/toolchains/actions:link_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:link_actions": ":clang++",
+        "@rules_cc//cc/toolchains/actions:llvm_cov": ":llvm_cov",
+        "@rules_cc//cc/toolchains/actions:llvm_profdata": ":llvm_profdata",
+        "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm_objcopy",
+        "@rules_cc//cc/toolchains/actions:strip": ":llvm_objcopy",
     },
+)
+
+cc_args(
+    name = "non_hermetic_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    allowlist_absolute_include_directories = [
+        "/usr/include",
+        "/usr/local/include",
+    ],
+)
+
+cc_feature(
+    name = "non_hermetic_sysroot",
+    args = [":non_hermetic_sysroot_args"],
+    feature_name = "sysroot",
+)
+
+apple_cc_toolchain(
+    name = "cc_toolchain_exec",
+    module_map = None,
+    supports_header_parsing = False,
+    sysroot_feature = ":non_hermetic_sysroot",
+    target = select({
+        "@platforms//cpu:aarch64": "aarch64-unknown-linux-gnu",
+        "@platforms//cpu:x86_64": "x86_64-unknown-linux-gnu",
+    }),
+    tool_map = ":all_tools",
 )
 
 ### Make variables ###

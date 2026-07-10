@@ -207,6 +207,7 @@ register_toolchains(
     # Anyway, for now we will need to update this every time we update the CI environment. Contributors might also
     # have to update this list if they're testing on a different Linux distribution.
     "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04",
+    "@swift_toolchain//:cc_toolchain_exec_ubuntu22.04",
     "@swift_toolchain//:cc_toolchain_embedded_ubuntu22.04-aarch64",
     "@swift_toolchain//:cc_toolchain_embedded_xcode",
     "@swift_toolchain//:swift_toolchain_embedded_ubuntu22.04",
@@ -240,4 +241,15 @@ single_version_override(
     module_name = "stardoc",
     patch_strip = 1,
     patches = ["//third_party/patches:stardoc-revert-load-statements-in-docs.patch"],
+)
+
+# FIXME: Delete after testing
+
+archive_override(
+    module_name = "apple_support",
+    integrity = "sha256-0P41hmvfBnWQwTKNteNnat6byDHlan9B8AdJaprp/Ek=",
+    strip_prefix = "apple_support-17c7248ee2f4f21b2d1f3668d88e4f40d9453220",
+    urls = [
+        "https://github.com/bazelbuild/apple_support/archive/17c7248ee2f4f21b2d1f3668d88e4f40d9453220.tar.gz",
+    ],
 )
