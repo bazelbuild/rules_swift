@@ -148,6 +148,10 @@ sh_test(
 extract_swiftmodule(
     name = "testing_swiftmodule",
     target = "@system_sdk//:Testing",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 # Direct system Swift modules should not embed absolute Xcode paths either,
@@ -185,6 +189,10 @@ system_swiftinterface(
 extract_swiftmodule(
     name = "non_xcode_swiftinterface_swiftmodule",
     target = ":non_xcode_swiftinterface_module",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 # A swiftinterface outside DEVELOPER_DIR can come from an external framework.
@@ -226,6 +234,10 @@ swift_library(
 extract_swiftmodule(
     name = "downstream_with_plugin_swiftmodule",
     target = ":DownstreamWithPlugin",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 sh_test(
@@ -246,6 +258,10 @@ extract_swiftmodule(
     name = "downstream_with_plugin_explicit_swiftmodule",
     extra_features = ["swift.use_explicit_swift_module_map"],
     target = ":DownstreamWithPlugin",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 sh_test(
