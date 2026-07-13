@@ -111,7 +111,14 @@ def toolchains_for_platform(platform, toolchain_repository):
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
-    if platform != "xcode":
+
+    # TODO: Expand based on sysroot compatibility, maybe we should allow users to pass them
+    if platform in (
+        "ubuntu22.04",
+        "ubuntu22.04-aarch64",
+        "ubuntu24.04",
+        "ubuntu24.04-aarch64",
+    ):
         content += _CC_EXEC_TOOLCHAIN_PLATFORM.format(
             exec_compatible_with = _exec_compatible_with_for_platform(platform),
             platform = platform,
