@@ -263,10 +263,10 @@ single_version_override(
 
 archive_override(
     module_name = "apple_support",
-    integrity = "sha256-RhALzZ4bWjKzplgyAfD1CsbAmO7c7jqJCe0e3EgVKjg=",
-    strip_prefix = "apple_support-01f8e8c3bba02ee7aede51935580e90c1c744f08",
+    integrity = "sha256-4YQ7nCqSJ4QcfTF8RLDRQseKtfFS1MTtWKnLlS3bg/U=",
+    strip_prefix = "apple_support-c268c90e7d1efe0d656081e29b11ab05ada9bdda",
     urls = [
-        "https://github.com/bazelbuild/apple_support/archive/01f8e8c3bba02ee7aede51935580e90c1c744f08.tar.gz",
+        "https://github.com/bazelbuild/apple_support/archive/c268c90e7d1efe0d656081e29b11ab05ada9bdda.tar.gz",
     ],
 )
 
