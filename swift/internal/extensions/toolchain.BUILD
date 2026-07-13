@@ -79,6 +79,9 @@ cc_tool(
 cc_tool(
     name = "clang",
     src = "usr/bin/clang",
+    capabilities = [
+        "@rules_cc//cc/toolchains/capabilities:supports_pic",
+    ],
     data = [":swift_sdk_linker_inputs"],
     tags = ["manual"],
 )
@@ -86,6 +89,9 @@ cc_tool(
 cc_tool(
     name = "clang++",
     src = "usr/bin/clang++",
+    capabilities = [
+        "@rules_cc//cc/toolchains/capabilities:supports_pic",
+    ],
     data = [":swift_sdk_linker_inputs"],
     tags = ["manual"],
 )
