@@ -1883,7 +1883,7 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
 
     The compiler emits a single object if it is invoked with whole-module
     optimization enabled and is single-threaded (`-num-threads` is not present
-    or is equal to 1); otherwise, it emits one object file per source file. It
+    or is equal to 0); otherwise, it emits one object file per source file. It
     also emits a single `.swiftmodule` file for WMO builds, _regardless of
     thread count,_ so we have to treat that case separately.
 

@@ -81,7 +81,7 @@ load(
     "get_swift_executable_for_toolchain",
     "is_exec_config",
 )
-load("//swift/internal:wmo.bzl", "wmo_features_from_swiftcopts")
+load("//swift/internal:wmo.bzl", "features_from_swiftcopts")
 load(
     "//swift/toolchains/config:action_config.bzl",
     "ActionConfigInfo",
@@ -835,7 +835,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features = features_for_build_modes(
         ctx,
         cpp_fragment = cpp_fragment,
-    ) + wmo_features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
+    ) + features_from_swiftcopts(swiftcopts = ctx.attr.copts + swiftcopts)
     requested_features.extend(ctx.features)
     requested_features.extend(ctx.attr.default_enabled_features)
     requested_features.extend(default_features_for_toolchain(
