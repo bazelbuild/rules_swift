@@ -22,6 +22,7 @@ toolchain, see `swift.bzl`.
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
 load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain", "use_cc_toolchain")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
@@ -514,6 +515,30 @@ def _parse_target_system_name(*, arch, os, target_system_name):
     else:
         return "%s-unknown-%s" % (arch, os)
 
+def _android_target_system_name(ctx, cc_toolchain):
+    """Returns the Android target system name from the C compiler arguments."""
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    compile_variables = cc_common.create_compile_variables(
+        cc_toolchain = cc_toolchain,
+        feature_configuration = feature_configuration,
+    )
+    compiler_args = cc_common.get_memory_inefficient_command_line(
+        action_name = C_COMPILE_ACTION_NAME,
+        feature_configuration = feature_configuration,
+        variables = compile_variables,
+    )
+    target_arg_prefix = "--target="
+    for arg in compiler_args:
+        if arg.startswith(target_arg_prefix):
+            return arg[len(target_arg_prefix):]
+
+    fail("Android CC toolchain compiler arguments do not contain a `--target=` argument")
+
 def _resolve_sdkroot(ctx, cc_toolchain):
     """Returns the SDK root (sysroot) for `-sdk`.
 
@@ -539,6 +564,12 @@ def _swift_toolchain_impl(ctx):
         os = ctx.attr.os,
         target_system_name = cc_toolchain.target_gnu_system_name,
     )
+
+    # TODO: Use cc_toolchain.target_gnu_system_name once
+    # https://github.com/bazelbuild/rules_android_ndk/pull/147 is available.
+    if ctx.attr.os == "android":
+        target_system_name = _android_target_system_name(ctx, cc_toolchain)
+
     target_triple = target_triples.normalize_for_swift(
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
     )
@@ -902,6 +933,7 @@ The version of XCTest that the toolchain packages.
         },
     ),
     doc = "Represents a Swift compiler toolchain.",
+    fragments = ["cpp"],
     toolchains = use_cc_toolchain(),
     implementation = _swift_toolchain_impl,
 )
