@@ -40,7 +40,7 @@ def _known_sdk_versions(swift_sdk_releases, sdk):
         if sdk in swift_sdk_releases[version]
     ]
 
-def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases):
+def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases, api_level):
     """Creates the repositories for a `swift.android_sdk` tag.
 
     Args:
@@ -49,6 +49,8 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
         swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
+        api_level: The Android API level to target, or empty for the SDK's
+            lowest supported level.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
@@ -68,6 +70,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         repository_name = "{}_android_sdk_{}".format(toolchain_name, platform)
         swift_android_sdk_repository(
             name = repository_name,
+            api_level = api_level,
             paired_swiftc = "@{}_{}//:usr/bin/swiftc".format(toolchain_name, platform),
             sha256 = sha256,
             swift_version = swift_version,
@@ -214,6 +217,7 @@ def _standalone_toolchain_impl(module_ctx):
                 swift_version = swift_version,
                 platforms = platforms,
                 swift_sdk_releases = swift_sdk_releases,
+                api_level = android_sdk_tags[toolchain.name].api_level,
             )
         if toolchain.name in wasm_sdk_tags:
             toolchains_build_file_content += _setup_wasm_sdk(
@@ -233,6 +237,15 @@ def _standalone_toolchain_impl(module_ctx):
 
 _android_sdk = tag_class(
     attrs = {
+        "api_level": attr.string(
+            doc = """\
+The Android API level to target, matching your NDK toolchain's `api_level` (your
+app's `minSdkVersion`). Swift then compiles for
+`<arch>-unknown-linux-android<api_level>`. When omitted, the SDK bundle's lowest
+supported level is used, and a cc toolchain that already pins an API level is
+respected as-is.
+""",
+        ),
         "sha256": attr.string(
             doc = """\
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift

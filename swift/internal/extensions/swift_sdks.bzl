@@ -27,7 +27,7 @@ swift_toolchain(
     os = "{os}",
     parsed_version = "{swift_version}",
     sdkroot = "{sdkroot}",
-    swift_tools = ":tools",
+    swift_tools = ":tools",{target_system_name_attr}
     version_file = ".swift-version",
 )
 """
@@ -138,6 +138,58 @@ ANDROID_ARCHS = [
     "x86_64",
 ]
 
+def _android_api_level(triple):
+    """Returns the trailing Android API level of a triple, or 0 if it has none.
+
+    e.g. `aarch64-unknown-linux-android28` -> 28, `...-android` -> 0.
+    """
+    digits = ""
+    for i in range(len(triple) - 1, -1, -1):
+        c = triple[i]
+        if c.isdigit():
+            digits = c + digits
+        else:
+            break
+    return int(digits) if digits else 0
+
+def _sdk_triple_for_arch(repository_ctx, sdk_dir_relative, arch, api_level):
+    """Returns the SDK bundle's target triple for `arch` at `api_level`.
+
+    The bundle's swift-sdk.json declares the API-level ladder it supports (e.g.
+    `aarch64-unknown-linux-android{28..36}`). When `api_level` is set we select
+    that exact level so Swift matches the NDK/`minSdkVersion` the rest of the
+    build targets. When it's empty we fall back to the bundle's lowest supported
+    level -- the safe minimum, since the prebuilt runtime won't load below it.
+    """
+    sdk_json = json.decode(
+        repository_ctx.read(sdk_dir_relative + "/swift-sdk.json"),
+    )
+    candidates = [
+        triple
+        for triple in sdk_json.get("targetTriples", {}).keys()
+        if triple.startswith(arch + "-")
+    ]
+    if not candidates:
+        fail("No target triple for arch '{}' in {}/swift-sdk.json".format(
+            arch,
+            sdk_dir_relative,
+        ))
+
+    if api_level:
+        wanted = [t for t in candidates if _android_api_level(t) == int(api_level)]
+        if not wanted:
+            fail(
+                "Android API level {} is not offered for arch '{}' in {}/swift-sdk.json (available: {})".format(
+                    api_level,
+                    arch,
+                    sdk_dir_relative,
+                    ", ".join(sorted(candidates)),
+                ),
+            )
+        return wanted[0]
+
+    return min(candidates, key = _android_api_level)
+
 def _swift_android_sdk_impl(repository_ctx):
     bundle_dir = _download_sdk_bundle(repository_ctx)
     toolchain_repo = repository_ctx.attr.toolchain_repo
@@ -210,12 +262,34 @@ def _swift_android_sdk_impl(repository_ctx):
             sdkroot = "",  # Resolved in swift_toolchain.bzl
             suffix = arch,
             swift_version = repository_ctx.attr.swift_version,
+            # The bundle's own triple carries the Android API level (e.g.
+            # aarch64-unknown-linux-android28). The NDK cc toolchain reports a
+            # level-less target_gnu_system_name, which floors Swift availability
+            # below the SDK's real minimum - hand swift_toolchain the leveled
+            # triple, which it uses only when the cc toolchain doesn't already
+            # provide an API level of its own.
+            target_system_name_attr = '\n    target_system_name = "{}",'.format(
+                _sdk_triple_for_arch(
+                    repository_ctx,
+                    sdk_dir_relative,
+                    arch,
+                    repository_ctx.attr.api_level,
+                ),
+            ),
         )
 
     repository_ctx.file("BUILD.bazel", build_content)
 
 swift_android_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
+        "api_level": attr.string(
+            doc = """\
+The Android API level to target, matching the `api_level` of your NDK toolchain
+(i.e. your app's `minSdkVersion`). When set, Swift compiles for
+`<arch>-unknown-linux-android<api_level>`; the SDK bundle offers the range the
+Swift release supports. When empty, the bundle's lowest supported level is used.
+""",
+        ),
         "paired_swiftc": attr.label(
             doc = """\
 The `swiftc` of the standalone toolchain this SDK is paired with, used to locate

@@ -514,6 +514,14 @@ def _parse_target_system_name(*, arch, os, target_system_name):
     else:
         return "%s-unknown-%s" % (arch, os)
 
+def _has_android_api_level(target_system_name):
+    """True if an Android triple already pins an API level (e.g. `...-android28`).
+
+    A level-less Android triple ends in a letter (`aarch64-linux-android`); a
+    leveled one ends in the API-level digits.
+    """
+    return "android" in target_system_name and target_system_name[-1].isdigit()
+
 def _resolve_sdkroot(ctx, cc_toolchain):
     """Returns the SDK root (sysroot) for `-sdk`.
 
@@ -534,13 +542,28 @@ def _resolve_sdkroot(ctx, cc_toolchain):
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root
     cc_toolchain = find_cc_toolchain(ctx)
+
+    # The triple the cc toolchain reports for the target. On Android the NDK's
+    # is level-less (`aarch64-linux-android`), which floors Swift availability
+    # checking below the SDK's real minimum; elsewhere it's authoritative.
+    cc_target_system_name = (
+        ctx.var.get("CC_TARGET_TRIPLE") or cc_toolchain.target_gnu_system_name
+    )
+
+    # An SDK toolchain may supply a leveled Android triple via
+    # `target_system_name`. Use it only to fill in a level the cc toolchain
+    # omits -- never to override one it already carries, which would silently
+    # retarget the API level the rest of the build (clang, the NDK) is using.
+    if ctx.attr.target_system_name and not _has_android_api_level(cc_target_system_name):
+        cc_target_system_name = ctx.attr.target_system_name
+
     target_system_name = _parse_target_system_name(
         arch = ctx.attr.arch,
         os = ctx.attr.os,
-        target_system_name = cc_toolchain.target_gnu_system_name,
+        target_system_name = cc_target_system_name,
     )
     target_triple = target_triples.normalize_for_swift(
-        target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
+        target_triples.parse(target_system_name),
     )
 
     if ctx.attr.os != "windows" and "clang" not in cc_toolchain.compiler and "llvm" not in cc_toolchain.compiler:
@@ -883,6 +906,18 @@ ordinary host toolchain, which computes its own flags.
             "sdkroot": attr.string(
                 doc = """\
 The root of a SDK to be used for building the target.
+""",
+                mandatory = False,
+            ),
+            "target_system_name": attr.string(
+                doc = """\
+A target system name (triple) supplied by an SDK toolchain, used only to fill in
+an API level the C++ toolchain's triple omits. Android's SDK sets this to a
+leveled triple (e.g. `aarch64-unknown-linux-android28`) because the NDK cc
+toolchain's `target_gnu_system_name` typically drops the API level, flooring
+Swift availability below the SDK's real minimum (e.g. `swift-log`'s use of
+`stdout`, which is Android 23+). It is ignored when the cc toolchain already
+provides an API level of its own.
 """,
                 mandatory = False,
             ),
