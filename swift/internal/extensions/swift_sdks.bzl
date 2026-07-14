@@ -27,7 +27,7 @@ swift_toolchain(
     os = "{os}",
     parsed_version = "{swift_version}",
     sdkroot = "{sdkroot}",
-    swift_tools = ":tools",
+    swift_tools = ":tools",{target_system_name_attr}
     version_file = ".swift-version",
 )
 """
@@ -138,6 +138,25 @@ ANDROID_ARCHS = [
     "x86_64",
 ]
 
+def _sdk_triple_for_arch(repository_ctx, sdk_dir_relative, arch):
+    """Returns the SDK bundle's own target triple for `arch`.
+
+    The bundle's swift-sdk.json declares the triples it supports (e.g.
+    `aarch64-unknown-linux-android28`), API level included.
+    """
+    sdk_json = json.decode(
+        repository_ctx.read(sdk_dir_relative + "/swift-sdk.json"),
+    )
+    triples = sdk_json.get("targetTriples", {})
+    for triple in triples.keys():
+        if triple.startswith(arch + "-"):
+            return triple
+    fail("No target triple for arch '{}' in {}/swift-sdk.json (found: {})".format(
+        arch,
+        sdk_dir_relative,
+        ", ".join(triples.keys()),
+    ))
+
 def _swift_android_sdk_impl(repository_ctx):
     bundle_dir = _download_sdk_bundle(repository_ctx)
     toolchain_repo = repository_ctx.attr.toolchain_repo
@@ -210,6 +229,14 @@ def _swift_android_sdk_impl(repository_ctx):
             sdkroot = "",  # Resolved in swift_toolchain.bzl
             suffix = arch,
             swift_version = repository_ctx.attr.swift_version,
+            # The bundle's own triple carries the Android API level (e.g.
+            # aarch64-unknown-linux-android28). The NDK cc toolchain reports a
+            # level-less target_gnu_system_name, which floors Swift
+            # availability below the SDK's real minimum - pass the SDK's
+            # triple explicitly.
+            target_system_name_attr = '\n    target_system_name = "{}",'.format(
+                _sdk_triple_for_arch(repository_ctx, sdk_dir_relative, arch),
+            ),
         )
 
     repository_ctx.file("BUILD.bazel", build_content)

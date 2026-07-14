@@ -537,7 +537,9 @@ def _swift_toolchain_impl(ctx):
     target_system_name = _parse_target_system_name(
         arch = ctx.attr.arch,
         os = ctx.attr.os,
-        target_system_name = cc_toolchain.target_gnu_system_name,
+        target_system_name = (
+            ctx.attr.target_system_name or cc_toolchain.target_gnu_system_name
+        ),
     )
     target_triple = target_triples.normalize_for_swift(
         target_triples.parse(ctx.var.get("CC_TARGET_TRIPLE") or target_system_name),
@@ -779,6 +781,17 @@ A list of `swift_feature_allowlist` targets that allow or prohibit packages from
 requesting or disabling features.
 """,
                 providers = [[SwiftFeatureAllowlistInfo]],
+            ),
+            "target_system_name": attr.string(
+                doc = """\
+The target system name (triple) Swift should compile for, overriding the one
+reported by the C++ toolchain. Toolchains whose platform encodes a minimum OS
+version in the triple (e.g. Android's `aarch64-unknown-linux-android28`) must
+set this: the C++ toolchain's `target_gnu_system_name` typically omits the API
+level, which floors Swift availability checking below the SDK's real minimum
+(e.g. `swift-log` requires the Android 23 availability of `stdout`).
+""",
+                mandatory = False,
             ),
             "os": attr.string(
                 doc = """\
