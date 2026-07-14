@@ -222,7 +222,12 @@ def features_test_suite(name, tags = []):
     default_opt_test(
         name = "{}_default_opt_test".format(name),
         tags = all_tags,
-        expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
+        expected_argv = [
+            "-emit-object",
+            "-O",
+            "-whole-module-optimization",
+            "-num-threads 12",
+        ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
