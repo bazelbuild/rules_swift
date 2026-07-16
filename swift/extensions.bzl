@@ -95,7 +95,23 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         BUILD file content with the `toolchain` declarations to add to the
         toolchains hub repository.
     """
+    threads = tag.threads
+    url = tag.url
     sha256 = tag.sha256
+
+    # swift.org does not publish a `wasm32-unknown-wasip1-threads` SDK bundle, so
+    # the threads variant must be pointed at an explicit bundle (for example a
+    # swiftwasm release) via `url` + `sha256`.
+    if threads and not url:
+        fail("`swift.wasm_sdk` with `threads = True` requires an explicit `url` " +
+             "(and `sha256`), because swift.org does not publish a " +
+             "wasm32-unknown-wasip1-threads SDK bundle. Point it at a swiftwasm " +
+             "release, e.g. https://github.com/swiftwasm/swift/releases.")
+    if url and not sha256:
+        fail("`swift.wasm_sdk` with an explicit `url` also requires `sha256`.")
+
+    if not url:
+        url = swift_sdk_download_url(swift_version, "wasm")
     if not sha256:
         if swift_version not in swift_sdk_releases or "wasm" not in swift_sdk_releases[swift_version]:
             fail("No known WebAssembly Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
@@ -111,8 +127,9 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
             name = repository_name,
             sha256 = sha256,
             swift_version = swift_version,
+            threads = threads,
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
-            url = swift_sdk_download_url(swift_version, "wasm"),
+            url = url,
         )
         build_file_content += wasm_sdk_toolchains_for_platform(
             platform = platform,
@@ -255,17 +272,36 @@ _wasm_sdk = tag_class(
         "sha256": attr.string(
             doc = """\
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
-versions known to this version of rules_swift.
+versions known to this version of rules_swift, but is required when `url` or
+`threads` is set.
+""",
+        ),
+        "threads": attr.bool(
+            default = False,
+            doc = """\
+If `True`, target `wasm32-unknown-wasip1-threads` (WebAssembly with shared
+memory, atomics, and wasi-threads) instead of the single-threaded
+`wasm32-unknown-wasip1`. swift.org does not publish a threads SDK bundle, so
+`url` and `sha256` are required in this mode (for example, a swiftwasm release:
+https://github.com/swiftwasm/swift/releases).
 """,
         ),
         "toolchain_name": attr.string(
             doc = "The name of the `toolchain` tag to add this Swift SDK to.",
             mandatory = True,
         ),
+        "url": attr.string(
+            doc = """\
+An explicit download URL for the SDK artifact bundle, overriding the swift.org
+URL computed from the toolchain's Swift version. Required for the `threads`
+variant. When set, `sha256` is also required.
+""",
+        ),
     },
     doc = """\
 Downloads the WebAssembly Swift SDK matching a `toolchain` tag's Swift version
-and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
+and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1` (or
+`wasm32-unknown-wasip1-threads` when `threads = True`).
 """,
 )
 

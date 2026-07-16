@@ -31,7 +31,7 @@ swift_toolchain(
     arch = "wasm32",
     copts = [
         "-resource-dir",
-        _RESOURCE_DIR,
+        _RESOURCE_DIR,{swift_thread_copts}
     ],
     features = [
         "swift.module_map_no_private_headers",
@@ -61,7 +61,7 @@ swift_toolchain(
         # (`-O`) generic-metadata instantiation reads out of bounds at runtime
         # (`-Onone` happens to tolerate the default).
         "-Wl,--global-base=4096",
-        "-Wl,--table-base=4096",
+        "-Wl,--table-base=4096",{swift_thread_linkopts}
     ],
     os = "wasi",
     parsed_version = "{swift_version}",
@@ -106,7 +106,7 @@ cc_args(
     ],
     args = [
         "--target=wasm32-unknown-wasip1",
-        "--sysroot=" + _WASI_SDK,
+        "--sysroot=" + _WASI_SDK,{cc_thread_compile_args}
     ],
 )
 
@@ -120,7 +120,7 @@ cc_args(
     # directory does not include.
     args = [
         "-resource-dir",
-        _RESOURCE_DIR + "/clang",
+        _RESOURCE_DIR + "/clang",{cc_thread_link_args}
     ],
 )
 

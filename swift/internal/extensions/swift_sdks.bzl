@@ -231,37 +231,142 @@ target Android.
     implementation = _swift_android_sdk_impl,
 )
 
+# Extra compiler/linker flags required to target
+# `wasm32-unknown-wasip1-threads` (shared memory + atomics + wasi-threads).
+# These mirror what the swiftwasm SDK's `toolset.json` passes; rules_swift wires
+# its own wasm cc + Swift toolchains (it does not consume SwiftPM/toolset.json),
+# so the flags are injected into the generated toolchains here.
+#
+# clang flags applied to both C/C++ compile and link actions.
+_WASM_THREADS_CC_COMPILE_FLAGS = [
+    "-matomics",
+    "-mbulk-memory",
+    "-mthread-model",
+    "posix",
+    "-pthread",
+    "-ftls-model=local-exec",
+]
+
+# wasm-ld flags applied to link actions (passed through the clang driver).
+_WASM_THREADS_LINK_FLAGS = [
+    "-Wl,--import-memory",
+    "-Wl,--export-memory",
+    "-Wl,--shared-memory",
+    "-Wl,--max-memory=1073741824",
+]
+
+def _bzl_list_tail(flags, indent):
+    """Formats flags as list elements appended after an existing list entry.
+
+    Each flag becomes its own line (leading newline + `indent`), so the result
+    can be substituted immediately after the trailing comma of the last static
+    element of a BUILD-file list literal.
+    """
+    return "".join(["\n{}\"{}\",".format(indent, flag) for flag in flags])
+
+def _wasm_thread_substitutions(threads):
+    """Returns template substitutions for the wasm threads variant.
+
+    When `threads` is False every placeholder expands to the empty string, so
+    the generated toolchains are byte-for-byte identical to the single-threaded
+    path.
+    """
+    if not threads:
+        return {
+            "{cc_thread_compile_args}": "",
+            "{cc_thread_link_args}": "",
+            "{swift_thread_copts}": "",
+            "{swift_thread_linkopts}": "",
+        }
+
+    # Swift compiler: build a static stdlib and forward the atomics/threads
+    # clang flags to the embedded clang via `-Xcc`.
+    swift_copts = ["-static-stdlib"]
+    for flag in _WASM_THREADS_CC_COMPILE_FLAGS:
+        swift_copts += ["-Xcc", flag]
+
+    return {
+        "{cc_thread_compile_args}": _bzl_list_tail(
+            _WASM_THREADS_CC_COMPILE_FLAGS,
+            "        ",
+        ),
+        "{cc_thread_link_args}": _bzl_list_tail(
+            _WASM_THREADS_LINK_FLAGS,
+            "        ",
+        ),
+        "{swift_thread_copts}": _bzl_list_tail(swift_copts, "        "),
+        "{swift_thread_linkopts}": _bzl_list_tail(
+            _WASM_THREADS_LINK_FLAGS,
+            "        ",
+        ),
+    }
+
+def _wasm_sdk_dir(repository_ctx, bundle_dir, repo_root, triple, threads):
+    """Locates the target-triple SDK directory inside the artifact bundle.
+
+    The swift.org bundle nests the target under
+    `{bundle_name}/{triple}`, where `{bundle_name}` is the bundle directory with
+    its `.artifactbundle` suffix stripped. The swiftwasm threads bundle nests it
+    under a differently-named inner directory (e.g.
+    `6.3-RELEASE-wasm32-unknown-wasip1-threads/wasm32-unknown-wasip1-threads`),
+    so for the threads variant the inner directory is discovered by scanning for
+    the one that contains the target triple.
+    """
+    if not threads:
+        sub_path = "{0}/{1}".format(bundle_dir.removesuffix(".artifactbundle"), triple)
+        return "{}/{}/{}".format(repo_root, bundle_dir, sub_path)
+
+    for entry in repository_ctx.path(bundle_dir).readdir():
+        if entry.get_child(triple).exists:
+            return "{}/{}/{}/{}".format(repo_root, bundle_dir, entry.basename, triple)
+    fail(("The WebAssembly Swift SDK bundle at {} has an unexpected layout; " +
+          "could not find a `{}` directory under {}.").format(
+        repository_ctx.attr.url,
+        triple,
+        bundle_dir,
+    ))
+
 def _swift_wasm_sdk_impl(repository_ctx):
+    threads = repository_ctx.attr.threads
+    triple = "wasm32-unknown-wasip1-threads" if threads else "wasm32-unknown-wasip1"
+
     bundle_dir = _download_sdk_bundle(repository_ctx)
     repo_root = "external/" + repository_ctx.name
-    sdk_dir = "{}/{}/{}".format(
-        repo_root,
-        bundle_dir,
-        "{0}/wasm32-unknown-wasip1".format(bundle_dir.removesuffix(".artifactbundle")),
-    )
+    sdk_dir = _wasm_sdk_dir(repository_ctx, bundle_dir, repo_root, triple, threads)
     if not repository_ctx.path(sdk_dir.removeprefix(repo_root + "/")).exists:
         fail("The WebAssembly Swift SDK bundle has an unexpected layout; missing " + sdk_dir)
+
+    substitutions = {
+        "{bundle_dir}": bundle_dir,
+        "{sdk_dir}": sdk_dir,
+        "{swift_version}": repository_ctx.attr.swift_version,
+        "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
+    }
+    substitutions.update(_wasm_thread_substitutions(threads))
 
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
-        substitutions = {
-            "{bundle_dir}": bundle_dir,
-            "{sdk_dir}": sdk_dir,
-            "{swift_version}": repository_ctx.attr.swift_version,
-            "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
-        },
+        substitutions = substitutions,
     )
 
 swift_wasm_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
+        "threads": attr.bool(
+            default = False,
+            doc = """\
+If `True`, target `wasm32-unknown-wasip1-threads` (shared memory + atomics +
+wasi-threads) instead of the single-threaded `wasm32-unknown-wasip1`.
+""",
+        ),
         "_build_template": attr.label(
             default = "//swift/internal/extensions:wasmsdk.BUILD",
         ),
     },
     doc = """\
 Downloads the WebAssembly Swift SDK artifact bundle and defines Swift and C++
-toolchains that target `wasm32-unknown-wasip1` using a standalone host
+toolchains that target `wasm32-unknown-wasip1` (or
+`wasm32-unknown-wasip1-threads` when `threads = True`) using a standalone host
 toolchain's compiler.
 """,
     implementation = _swift_wasm_sdk_impl,
