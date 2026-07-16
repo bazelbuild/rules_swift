@@ -340,6 +340,7 @@ def _swift_wasm_sdk_impl(repository_ctx):
         "{bundle_dir}": bundle_dir,
         "{sdk_dir}": sdk_dir,
         "{swift_version}": repository_ctx.attr.swift_version,
+        "{target_triple}": triple,
         "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
     }
     substitutions.update(_wasm_thread_substitutions(threads))
