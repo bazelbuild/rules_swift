@@ -105,7 +105,7 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
     args = [
-        "--target=wasm32-unknown-wasip1",
+        "--target={target_triple}",
         "--sysroot=" + _WASI_SDK,{cc_thread_compile_args}
     ],
 )
@@ -126,7 +126,7 @@ cc_args(
 
 cc_make_variable(
     name = "cc_target_triple_wasm32",
-    value = "wasm32-unknown-wasip1",
+    value = "{target_triple}",
     variable_name = "CC_TARGET_TRIPLE",
 )
 
