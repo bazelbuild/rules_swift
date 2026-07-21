@@ -292,7 +292,6 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
@@ -305,7 +304,6 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         not_expected_argv = ["-ObjC"],
@@ -320,7 +318,6 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
@@ -333,7 +330,6 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         not_expected_argv = ["-ObjC"],

@@ -251,12 +251,6 @@ def _swift_linkopts_cc_info(
     ] + [
         "-L{}".format(swift_lib_dir),
         "-L/usr/lib/swift",
-        # TODO(b/112000244): This should get added by the C++ Starlark API,
-        # but we're using the "c++-link-executable" action right now instead
-        # of "objc-executable" because the latter requires additional
-        # variables not provided by cc_common. Figure out how to handle this
-        # correctly.
-        "-Wl,-objc_abi_version,2",
     ])
 
     # Compute the necessary rpaths for back-deployed compatibility libraries.
