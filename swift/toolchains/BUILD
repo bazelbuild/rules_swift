@@ -11,6 +11,12 @@ load(
 
 licenses(["notice"])
 
+label_flag(
+    name = "linux_sysroot_feature",
+    build_setting_default = "//swift/toolchains/sysroot:linux_sysroot",
+    visibility = ["//visibility:public"],
+)
+
 toolchain(
     name = "linux-swift-toolchain_x86_64",
     exec_compatible_with = [
