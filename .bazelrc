@@ -22,6 +22,9 @@ build --worker_sandboxing
 
 build --enable_platform_specific_config
 
+common:macos --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common:linux --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
 common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r27c
 common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=35
 
