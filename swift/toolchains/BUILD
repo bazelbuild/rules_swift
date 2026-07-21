@@ -3,6 +3,7 @@ load(
     "APPLE_PLATFORMS_CONSTRAINTS",
 )
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl", "xcode_swift_toolchain")
 load(
     "//swift/internal:feature_names.bzl",
@@ -11,9 +12,22 @@ load(
 
 licenses(["notice"])
 
+cc_feature(
+    name = "default_linux_sysroot_feature",
+    feature_name = "rules_swift_default_linux_sysroot",
+)
+
 label_flag(
     name = "linux_sysroot_feature",
-    build_setting_default = "//swift/toolchains/sysroot:linux_sysroot",
+    build_setting_default = ":default_linux_sysroot_feature",
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "linux_sysroot_feature_is_default",
+    flag_values = {
+        ":linux_sysroot_feature": ":default_linux_sysroot_feature",
+    },
     visibility = ["//visibility:public"],
 )
 

@@ -1,9 +1,11 @@
 load("@apple_support//toolchain:cc_toolchain.bzl", apple_support_cc_toolchain = "cc_toolchain")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("@rules_cc//cc/toolchains/args:sysroot.bzl", "cc_sysroot")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
@@ -122,11 +124,71 @@ cc_tool_map(
     },
 )
 
+cc_sysroot(
+    name = "linux_aarch64_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    data = ["@swift_ubuntu22.04_aarch64_sysroot//:root"],
+    sysroot = "@swift_ubuntu22.04_aarch64_sysroot//:root",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_feature(
+    name = "linux_aarch64_sysroot",
+    args = [":linux_aarch64_sysroot_args"],
+    feature_name = "sysroot",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_sysroot(
+    name = "linux_x86_64_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    data = ["@swift_ubuntu22.04_sysroot//:root"],
+    sysroot = "@swift_ubuntu22.04_sysroot//:root",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_feature(
+    name = "linux_x86_64_sysroot",
+    args = [":linux_x86_64_sysroot_args"],
+    feature_name = "sysroot",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+alias(
+    name = "linux_sysroot",
+    actual = select({
+        "@platforms//cpu:aarch64": ":linux_aarch64_sysroot",
+        "@platforms//cpu:x86_64": ":linux_x86_64_sysroot",
+    }),
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+alias(
+    name = "selected_linux_sysroot_feature",
+    actual = select({
+        "@rules_swift//swift/toolchains:linux_sysroot_feature_is_default": ":linux_sysroot",
+        "//conditions:default": "@rules_swift//swift/toolchains:linux_sysroot_feature",
+    }),
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
 apple_support_cc_toolchain(
     name = "cc_toolchain_exec",
     module_map = None,
     supports_header_parsing = False,
-    sysroot_feature = "@rules_swift//swift/toolchains:linux_sysroot_feature",
+    sysroot_feature = ":selected_linux_sysroot_feature",
     target = select({
         "@platforms//cpu:aarch64": "aarch64-unknown-linux-gnu",
         "@platforms//cpu:x86_64": "x86_64-unknown-linux-gnu",
