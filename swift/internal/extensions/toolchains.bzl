@@ -112,7 +112,6 @@ def toolchains_for_platform(platform, toolchain_repository):
         toolchain_repository = toolchain_repository,
     )
 
-    # TODO: Expand based on sysroot compatibility, maybe we should allow users to pass them
     if platform in (
         "ubuntu22.04",
         "ubuntu22.04-aarch64",

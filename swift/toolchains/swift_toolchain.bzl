@@ -423,8 +423,6 @@ def _swift_unix_linkopts_cc_info(
 
     linkopts = [
         "-pie",
-        "-L{}".format(platform_lib_dir),
-        "-Wl,-rpath,{}".format(platform_lib_dir),
         "-lm",
         "-lstdc++",
         "-lrt",
@@ -432,6 +430,12 @@ def _swift_unix_linkopts_cc_info(
         runtime_object_path,
         "-static-libgcc",
     ]
+
+    if paths.is_absolute(toolchain_root):
+        linkopts.extend([
+            "-L{}".format(platform_lib_dir),
+            "-Wl,-rpath,{}".format(platform_lib_dir),
+        ])
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
