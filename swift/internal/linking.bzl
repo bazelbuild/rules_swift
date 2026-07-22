@@ -271,6 +271,7 @@ def create_linking_context_from_compilation_outputs(
 
     _, implicit_cc_infos = get_swift_implicit_deps(
         feature_configuration = feature_configuration,
+        include_runtime = False,  # NOTE: Called from swift_library, which should be independent of the final runtime
         swift_toolchain = toolchains.swift,
     )
     extra_linking_contexts = [

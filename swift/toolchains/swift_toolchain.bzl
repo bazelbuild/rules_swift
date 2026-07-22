@@ -50,6 +50,7 @@ load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
@@ -386,67 +387,168 @@ def _swift_windows_linkopts_cc_info(
     )
 
 def _swift_unix_linkopts_cc_info(
+        ctx,
+        cc_toolchain,
         cpu,
         os,
         toolchain_label,
         toolchain_root,
-        additional_inputs):
-    """Returns a `CcInfo` containing flags that should be passed to the linker.
+        swift_tool_inputs,
+        dynamic_runtime_files,
+        static_runtime_files):
+    """Returns the ordinary, dynamic, and static Unix runtime `CcInfo`s.
 
-    The provider returned by this function will be used as an implicit
-    dependency of the toolchain to ensure that any binary containing Swift code
-    will link to the standard libraries correctly.
+    The ordinary provider contains the flags needed by any binary containing
+    Swift code. When shared runtime libraries are available, those libraries
+    and the ordinary provider are combined into the selectable dynamic runtime
+    provider. The static provider contains the complete replacement metadata
+    for static Swift standard library links.
 
     Args:
+        ctx: The rule context.
+        cc_toolchain: The C++ toolchain used to construct library metadata.
         cpu: The CPU architecture, which is used as part of the library path.
         os: The operating system name, which is used as part of the library
             path.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
         toolchain_root: The toolchain's root directory.
-        additional_inputs: depset of File objects to add to link actions.
+        swift_tool_inputs: Swift toolchain files to add to ordinary link
+            actions.
+        dynamic_runtime_files: Shared Swift runtime libraries.
+        static_runtime_files: Static Swift runtime archives and linker files.
+
     Returns:
-        A `CcInfo` provider that will provide linker flags to binaries that
-        depend on Swift targets.
+        A tuple containing the ordinary Swift link options `CcInfo`, the
+        selectable dynamic runtime `CcInfo` or `None`, and the selectable
+        static runtime `CcInfo` or `None`.
     """
 
-    # TODO(#8): Support statically linking the Swift runtime.
-    platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
-        os = os,
-        toolchain_root = toolchain_root,
-    )
-
-    runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
-        cpu = cpu,
-        platform_lib_dir = platform_lib_dir,
-    )
-
-    linkopts = [
+    universal_linkopts = [
         "-pie",
         "-lm",
         "-lstdc++",
         "-lrt",
         "-ldl",
-        runtime_object_path,
         "-static-libgcc",
     ]
 
-    if paths.is_absolute(toolchain_root):
-        linkopts.extend([
-            "-L{}".format(platform_lib_dir),
-            "-Wl,-rpath,{}".format(platform_lib_dir),
-        ])
+    dynamic_platform_lib_dir = "{toolchain_root}/lib/swift/{os}".format(
+        os = os,
+        toolchain_root = toolchain_root,
+    )
+    dynamic_runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
+        cpu = cpu,
+        platform_lib_dir = dynamic_platform_lib_dir,
+    )
+    dynamic_linkopts = universal_linkopts + [
+        dynamic_runtime_object_path,
+        "-L{}".format(dynamic_platform_lib_dir),
+    ]
 
-    return CcInfo(
-        linking_context = cc_common.create_linking_context(
-            linker_inputs = depset([
-                cc_common.create_linker_input(
-                    owner = toolchain_label,
-                    user_link_flags = linkopts,
-                    additional_inputs = depset(additional_inputs),
-                ),
-            ]),
-        ),
+    # Relative toolchain roots are handled by importing the shared libraries
+    # through CcInfo, which lets Bazel compute the correct rpaths so we only
+    # need this for system installs.
+    if paths.is_absolute(toolchain_root):
+        dynamic_linkopts.append("-Wl,-rpath,{}".format(dynamic_platform_lib_dir))
+
+    static_platform_lib_dir = "{toolchain_root}/lib/swift_static/{os}".format(
+        os = os,
+        toolchain_root = toolchain_root,
+    )
+    static_runtime_object_path = "{platform_lib_dir}/{cpu}/swiftrt.o".format(
+        cpu = cpu,
+        platform_lib_dir = static_platform_lib_dir,
+    )
+    static_linkopts = universal_linkopts + [
+        # C++ interoperability archives are shipped alongside the dynamic
+        # runtime rather than under swift_static. The static directory's -L
+        # must be before the dynamic one.
+        "-L{}".format(static_platform_lib_dir),
+        "-L{}".format(dynamic_platform_lib_dir),
+        "@{}/static-stdlib-args.lnk".format(static_platform_lib_dir),
+        static_runtime_object_path,
+
+        # Swift objects are compiled against the ordinary resource directory so
+        # that the same object files can be linked into both dynamic and static
+        # binaries. Because of this we miss out on autolinking info that we
+        # would get if we passed -static-stdlib to compiles. The contents of
+        # these libraries are still lazily loaded so it doesn't affect app size
+        # if they are unused.
+        "-Wl,--push-state,--as-needed",
+        "-lswiftSynchronization",
+        "-l_FoundationICU",
+        "-lCoreFoundation",
+        "-l_CFURLSessionInterface",
+        "-l_CFXMLInterface",
+        "-l_FoundationCShims",
+        "-l_FoundationCollections",
+        "-lcurl",
+        "-lxml2",
+        "-Wl,--pop-state",
+    ]
+
+    dynamic_runtime_cc_info = None
+    if dynamic_runtime_files:
+        feature_configuration = cc_common.configure_features(
+            ctx = ctx,
+            cc_toolchain = cc_toolchain,
+        )
+        libraries = [
+            cc_common.create_library_to_link(
+                actions = ctx.actions,
+                cc_toolchain = cc_toolchain,
+                dynamic_library = runtime,
+                feature_configuration = feature_configuration,
+            )
+            for runtime in dynamic_runtime_files
+        ]
+        dynamic_runtime_cc_info = CcInfo(
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = toolchain_label,
+                        user_link_flags = dynamic_linkopts,
+                        libraries = depset(libraries),
+                        additional_inputs = depset(swift_tool_inputs),
+                    ),
+                ]),
+            ),
+        )
+
+    # If the toolchain provides dynamic runtime files we prefer
+    default_cc_info = None
+    if not dynamic_runtime_cc_info:
+        default_cc_info = CcInfo(
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = toolchain_label,
+                        user_link_flags = dynamic_linkopts,
+                        additional_inputs = depset(swift_tool_inputs),
+                    ),
+                ]),
+            ),
+        )
+
+    static_runtime_cc_info = None
+    if static_runtime_files:
+        static_runtime_cc_info = CcInfo(
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([
+                    cc_common.create_linker_input(
+                        owner = toolchain_label,
+                        user_link_flags = static_linkopts,
+                        additional_inputs = depset(static_runtime_files),
+                    ),
+                ]),
+            ),
+        )
+
+    return (
+        default_cc_info,
+        dynamic_runtime_cc_info,
+        static_runtime_cc_info,
     )
 
 def _swift_sdk_linkopts_cc_info(
@@ -475,32 +577,6 @@ def _swift_sdk_linkopts_cc_info(
                     owner = toolchain_label,
                     user_link_flags = linkopts,
                     additional_inputs = depset(linker_inputs),
-                ),
-            ]),
-        ),
-    )
-
-def _runtime_cc_info(ctx, cc_toolchain):
-    """Returns linker metadata for shared libraries required at runtime."""
-    feature_configuration = cc_common.configure_features(
-        ctx = ctx,
-        cc_toolchain = cc_toolchain,
-    )
-    libraries = [
-        cc_common.create_library_to_link(
-            actions = ctx.actions,
-            cc_toolchain = cc_toolchain,
-            dynamic_library = runtime,
-            feature_configuration = feature_configuration,
-        )
-        for runtime in ctx.files.runtime
-    ]
-    return CcInfo(
-        linking_context = cc_common.create_linking_context(
-            linker_inputs = depset([
-                cc_common.create_linker_input(
-                    owner = ctx.label,
-                    libraries = depset(libraries),
                 ),
             ]),
         ),
@@ -587,6 +663,8 @@ def _swift_toolchain_impl(ctx):
 
         toolchain_root = paths.dirname(ctx.attr.swift_tools[SwiftToolsInfo].swift_driver.dirname)
 
+    dynamic_runtime_cc_info = None
+    static_runtime_cc_info = None
     if ctx.attr.os == "windows":
         swift_linkopts_cc_info = _swift_windows_linkopts_cc_info(
             ctx.attr.arch,
@@ -619,12 +697,20 @@ def _swift_toolchain_impl(ctx):
             ctx.files.linker_inputs,
         )
     else:
-        swift_linkopts_cc_info = _swift_unix_linkopts_cc_info(
+        (
+            swift_linkopts_cc_info,
+            dynamic_runtime_cc_info,
+            static_runtime_cc_info,
+        ) = _swift_unix_linkopts_cc_info(
+            ctx,
+            cc_toolchain,
             ctx.attr.arch,
             ctx.attr.os,
             ctx.label,
             toolchain_root,
             ctx.attr.swift_tools[SwiftToolsInfo].additional_inputs if ctx.attr.swift_tools else [],
+            ctx.files.dynamic_runtime,
+            ctx.files.static_runtime,
         )
 
     swiftcopts = []
@@ -695,6 +781,13 @@ def _swift_toolchain_impl(ctx):
     else:
         env = ctx.attr.env
 
+    unsupported_features = ctx.disabled_features + [
+        SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+        SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
+    ]
+    if not static_runtime_cc_info:
+        unsupported_features.append(SWIFT_FEATURE_STATIC_STDLIB)
+
     # TODO(allevato): Move some of the remaining hardcoded values, like object
     # format and Obj-C interop support, to attributes so that we can remove the
     # assumptions that are only valid on Linux.
@@ -723,10 +816,7 @@ def _swift_toolchain_impl(ctx):
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
             [],
-            additional_cc_infos = [
-                swift_linkopts_cc_info,
-                _runtime_cc_info(ctx, cc_toolchain),
-            ],
+            additional_cc_infos = [swift_linkopts_cc_info] if swift_linkopts_cc_info else [],
         ),
         package_configurations = [
             target[SwiftPackageConfigurationInfo]
@@ -734,6 +824,8 @@ def _swift_toolchain_impl(ctx):
         ],
         requested_features = requested_features,
         root_dir = toolchain_root,
+        dynamic_runtime_cc_info = dynamic_runtime_cc_info,
+        static_runtime_cc_info = static_runtime_cc_info,
         system_modules = collect_implicit_deps_providers([]),
         implicit_system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
@@ -746,10 +838,7 @@ def _swift_toolchain_impl(ctx):
             test_linking_contexts = [],
         ),
         tool_configs = all_tool_configs,
-        unsupported_features = ctx.disabled_features + [
-            SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-            SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
-        ],
+        unsupported_features = unsupported_features,
     )
 
     return [
@@ -812,9 +901,17 @@ configuration options that are applied to targets on a per-package basis.
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
             "root": attr.string(),
-            "runtime": attr.label_list(
+            "dynamic_runtime": attr.label_list(
                 doc = """\
-Shared libraries that should be added to the linking context of Swift targets.
+Shared Swift runtime libraries that are added to the dynamic runtime linking
+context.
+""",
+                allow_files = True,
+            ),
+            "static_runtime": attr.label_list(
+                doc = """\
+Static Swift runtime archives and supporting linker files that are passed to
+static runtime link actions.
 """,
                 allow_files = True,
             ),

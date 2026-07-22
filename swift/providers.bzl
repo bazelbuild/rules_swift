@@ -438,8 +438,19 @@ These features determine various compilation and debugging behaviors of the
 Swift build rules, and they are also passed to the C++ APIs used when linking
 (so features defined in CROSSTOOL may be used here).
 """,
+        "dynamic_runtime_cc_info": """\
+The `CcInfo` that selects the toolchain's ordinary dynamic Swift runtime, or
+`None` if the toolchain supplies its runtime through implicit dependencies.
+Final links select this provider unless `swift.static_stdlib` is enabled; it is
+not propagated by libraries.
+""",
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
+""",
+        "static_runtime_cc_info": """\
+A `CcInfo` that selects the static Swift runtime, or `None` if the toolchain
+does not support static Swift runtime linking. Final links select this provider
+when `swift.static_stdlib` is enabled; it is not propagated by libraries.
 """,
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the

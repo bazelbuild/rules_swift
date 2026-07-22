@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:public"])
 ### Convenience target. Only useful for test / debug. ###
 exports_files([
     "usr/bin/llvm-objcopy",
+    "usr/bin/llvm-objdump",
 ])
 
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
@@ -322,6 +323,13 @@ swift_toolchain(
         "@platforms//cpu:aarch64": "aarch64",
         "@platforms//cpu:x86_64": "x86_64",
     }),
+    dynamic_runtime = glob(
+        [
+            "usr/lib/swift/linux/*.so*",
+            "usr/lib/swift/macosx/*.dylib",
+        ],
+        allow_empty = True,
+    ),
     features = [
         "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
@@ -338,13 +346,17 @@ swift_toolchain(
         "@platforms//os:macos": "macos",
     }),
     parsed_version = "{swift_version}",
-    runtime = glob(
-        [
-            "usr/lib/swift/linux/*.so",
-            "usr/lib/swift/macosx/*.dylib",
-        ],
-        allow_empty = True,
-    ),
+    static_runtime = select({
+        "@platforms//os:linux": glob(
+            [
+                "usr/lib/swift/linux/*.a",
+                "usr/lib/swift_static/linux/*.a",
+                "usr/lib/swift_static/linux/*.lnk",
+                "usr/lib/swift_static/linux/*/*.o",
+            ],
+        ),
+        "//conditions:default": [],
+    }),
     swift_tools = "tools",
     version_file = ".swift-version",
 )

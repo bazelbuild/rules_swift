@@ -29,7 +29,9 @@ apt.ubuntu(
     lockfile = "//swift/internal/extensions:ubuntu22.04_sysroot.lock.json",
     packages = [
         "libc6-dev",
+        "libcurl4-openssl-dev",
         "libstdc++-11-dev",
+        "libxml2-dev",
         "linux-libc-dev",
         "zlib1g-dev",
     ],
@@ -41,7 +43,9 @@ apt.ubuntu(
     lockfile = "//swift/internal/extensions:ubuntu22.04_aarch64_sysroot.lock.json",
     packages = [
         "libc6-dev",
+        "libcurl4-openssl-dev",
         "libstdc++-11-dev",
+        "libxml2-dev",
         "linux-libc-dev",
         "zlib1g-dev",
     ],

@@ -33,6 +33,7 @@ load(
     "SWIFT_FEATURE_OBJC_LINK_FLAGS",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
@@ -326,6 +327,7 @@ def default_features_for_toolchain(target_triple):
     if target_triples.unversioned_os(target_triple) == "linux":
         features.extend([
             SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+            SWIFT_FEATURE_STATIC_STDLIB,
         ])
 
     return features

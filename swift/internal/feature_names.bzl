@@ -379,6 +379,10 @@ SWIFT_FEATURE_USE_PCH_OUTPUT_DIR = "swift.use_pch_output_dir"
 # minor binary size improvements
 SWIFT_FEATURE_LLD_GC_WORKAROUND = "swift.lld_gc_workaround"
 
+# If enabled, use the static Swift runtime archives instead of dynamically
+# linking the Swift runtime libraries.
+SWIFT_FEATURE_STATIC_STDLIB = "swift.static_stdlib"
+
 # Enable the default -ObjC link flags that otherwise wouldn't be passed to
 # non-Apple binary top level targets. Disable this to avoid over-linking
 # objects if you know that isn't required.
