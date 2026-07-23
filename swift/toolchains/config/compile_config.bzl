@@ -738,12 +738,15 @@ def compile_action_configs(
         ),
 
         # Configure how implicit modules are handled--either using the module
-        # cache, or disabled completely when using explicit modules.
+        # cache, or disabled completely when using explicit modules. Symbol
+        # graph extraction always uses implicit modules because
+        # `swift-symbolgraph-extract` cannot consume explicit modules (see
+        # below), so it gets a module cache configuration even when
+        # `swift.use_c_modules` is enabled.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_global_module_cache_configurator],
             features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
@@ -753,10 +756,15 @@ def compile_action_configs(
             ],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_global_module_cache_configurator],
+            features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
+            not_features = [SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR],
+        ),
+        ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [_tmpdir_module_cache_configurator],
             features = [
@@ -766,10 +774,17 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_tmpdir_module_cache_configurator],
+            features = [
+                SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
+                SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR,
+            ],
+        ),
+        ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 add_arg("-Xwrapped-swift=-ephemeral-module-cache"),
@@ -778,6 +793,13 @@ def compile_action_configs(
                 [SWIFT_FEATURE_USE_C_MODULES],
                 [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
             ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [
+                add_arg("-Xwrapped-swift=-ephemeral-module-cache"),
+            ],
+            not_features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names() + [
@@ -789,13 +811,14 @@ def compile_action_configs(
 
         # When using C modules, disable the implicit search for module map files
         # because all of them, including system dependencies, will be provided
-        # explicitly.
+        # explicitly. Symbol graph extraction is excluded because
+        # `swift-symbolgraph-extract` cannot consume explicit modules (see
+        # below), so it must be allowed to compile modules implicitly.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -804,11 +827,13 @@ def compile_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
+        # `swift-symbolgraph-extract` only supports a small allowlist of
+        # arguments and rejects `-Xfrontend`, so these flags must not be passed
+        # to symbol graph extraction.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -825,7 +850,6 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -1072,10 +1096,23 @@ def compile_action_configs(
         ),
         ActionConfigInfo(
             actions = [
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modules_configurator],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+
+        # `swift-symbolgraph-extract` cannot consume explicit modules: it does
+        # not read the explicit Swift module map JSON, so system Clang modules
+        # are never provided explicitly, and it does not apply `-clang-target`
+        # to its ClangImporter instance, so precompiled modules built for a
+        # shared clang target are rejected as a configuration mismatch. Fall
+        # back to module maps with implicit module compilation for this action,
+        # the same configuration it uses when `swift.use_c_modules` is
+        # disabled.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [_dependencies_clang_modulemaps_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         # These actions do not support reading system modules from the
