@@ -354,6 +354,8 @@ swift_toolchain(
                 "usr/lib/swift_static/linux/*.lnk",
                 "usr/lib/swift_static/linux/*/*.o",
             ],
+            # NOTE: This shouldn't ever be empty but fails when this select() isn't even hit
+            allow_empty = True,
         ),
         "//conditions:default": [],
     }),
