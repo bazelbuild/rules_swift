@@ -621,15 +621,13 @@ def _swift_toolchain_impl(ctx):
             ["--sysroot={}".format(sdkroot)] + ctx.attr.linkopts,
             ctx.files.linker_inputs,
         )
-    elif ctx.attr.linkopts or ctx.attr.linker_inputs:
-        # A toolchain whose Swift runtime comes from a Swift SDK (e.g.
-        # WebAssembly) provides the *complete* set of runtime link flags via
-        # `linkopts`/`linker_inputs`, replacing — not adding to — the defaults
-        # computed below. Those defaults are specific to a Linux *host* toolchain
-        # (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's own
-        # `-L`/rpath and `swiftrt.o`); for a cross-compiled SDK target they are
-        # at best wrong and at worst invalid (wasm-ld rejects `-pie`, and a
-        # second `swiftrt.o` would conflict with the SDK's own).
+    elif ctx.attr.os == "wasi":
+        # A WebAssembly Swift SDK provides the complete set of runtime link
+        # flags via `linkopts`/`linker_inputs`, replacing — not adding to — the
+        # defaults computed below. Those defaults are specific to a Unix host
+        # toolchain (`-pie`, `-static-libgcc`, `-lrt`, and the host toolchain's
+        # own `-L`/rpath and `swiftrt.o`); wasm-ld rejects some of them, and a
+        # second `swiftrt.o` would conflict with the SDK's own.
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
             ctx.attr.linkopts,
