@@ -112,6 +112,14 @@ disable_objc_test = make_action_command_line_test_rule(
     },
 )
 
+ios_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": [
+            str(Label("@apple_support//platforms:ios_arm64")),
+        ],
+    },
+)
+
 embedded_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -351,6 +359,21 @@ def features_test_suite(name, tags = []):
         ],
         mnemonic = "CppLink",
         target_under_test = "//test/fixtures/xctest_runner:PassingUnitTests",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    ios_test(
+        name = "{}_ios_link_omits_developer_dir_symlink_rpaths_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-Wl,-rpath,/usr/lib/swift",
+        ],
+        not_expected_argv = [
+            "-Wl,-rpath,/private/var/select/developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/iphoneos",
+            "-Wl,-rpath,/var/db/xcode_select_link/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/iphoneos",
+        ],
+        mnemonic = "CppLink",
+        target_under_test = "//test/fixtures/linking:bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 

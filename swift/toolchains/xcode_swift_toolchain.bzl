@@ -119,6 +119,12 @@ _DEVELOPER_DIR_SYMLINKS = [
     "/var/db/xcode_select_link",
 ]
 
+def _developer_dir_symlinks_for_target(target_triple):
+    """Returns the developer directory symlinks that are valid for a target."""
+    if target_triples.unversioned_os(target_triple) == "macos":
+        return _DEVELOPER_DIR_SYMLINKS
+    return []
+
 def _platform_developer_framework_dir(
         developer_dir,
         target_triple):
@@ -269,7 +275,7 @@ def _swift_linkopts_cc_info(
     )
     rpaths = ["/usr/lib/swift"] + [
         paths.join(developer_dir_symlink, compatibility_dir)
-        for developer_dir_symlink in _DEVELOPER_DIR_SYMLINKS
+        for developer_dir_symlink in _developer_dir_symlinks_for_target(target_triple)
         for compatibility_dir in swift_compatibility_lib_dirs
     ]
     linkopts += [
@@ -319,7 +325,7 @@ def _test_linking_context(target_triple, toolchain_label):
     # libraries are found if Xcode is installed in a different location on the
     # machine that runs the tests than the machine used to link them.
     linkopts = []
-    for developer_dir in _DEVELOPER_DIR_SYMLINKS:
+    for developer_dir in _developer_dir_symlinks_for_target(target_triple):
         platform_developer_framework_dir = _platform_developer_framework_dir(
             developer_dir,
             target_triple,
