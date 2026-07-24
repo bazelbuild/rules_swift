@@ -24,6 +24,7 @@ load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
+    "SWIFT_FEATURE_STATIC_STDLIB",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
@@ -90,7 +91,9 @@ def _swift_binary_impl(ctx):
         ctx = ctx,
         requested_features = ctx.features,
         toolchains = toolchains,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + (
+            [SWIFT_FEATURE_STATIC_STDLIB] if ctx.attr.linkshared else []
+        ),
     )
 
     is_wasm = _is_wasm(ctx)

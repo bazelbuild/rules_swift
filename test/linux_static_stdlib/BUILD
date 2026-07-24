@@ -37,6 +37,14 @@ swift_binary(
     deps = [":foundation_library"],
 )
 
+swift_binary(
+    name = "uses_foundation_shared",
+    srcs = ["FoundationLibrary.swift"],
+    linkshared = True,
+    module_name = "FoundationSharedLibrary",
+    tags = ["manual"],
+)
+
 swift_test(
     name = "foundation_library_test",
     srcs = ["FoundationLibraryTests.swift"],
@@ -52,6 +60,23 @@ sh_test(
     ],
     data = [
         ":uses_dynamic_foundation",
+        "@swift_toolchain_ubuntu22.04//:usr/bin/llvm-objdump",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+)
+
+sh_test(
+    name = "linux_linkshared_dynamic_stdlib_test",
+    srcs = ["linux_linkshared_dynamic_stdlib_test.sh"],
+    args = [
+        "$(rootpath :uses_foundation_shared)",
+        "$(rootpath @swift_toolchain_ubuntu22.04//:usr/bin/llvm-objdump)",
+    ],
+    data = [
+        ":uses_foundation_shared",
         "@swift_toolchain_ubuntu22.04//:usr/bin/llvm-objdump",
     ],
     target_compatible_with = [
