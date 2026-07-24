@@ -43,6 +43,18 @@ toolchain(
 
 """
 
+_CC_EXEC_TOOLCHAIN_PLATFORM = """
+# C++ exec toolchain from repository: `{toolchain_repository}`
+toolchain(
+    name = "cc_toolchain_exec_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {exec_compatible_with},
+    toolchain = "@{toolchain_repository}//:cc_toolchain_exec",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+"""
+
 _SDK_TOOLCHAIN_PLATFORM = """
 # Swift SDK toolchain from repository: `{sdk_repository}`
 toolchain(
@@ -94,11 +106,24 @@ def _exec_compatible_with_for_platform(platform):
     ]
 
 def toolchains_for_platform(platform, toolchain_repository):
-    return _TOOLCHAIN_PLATFORM.format(
+    content = _TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
+
+    if platform in (
+        "ubuntu22.04",
+        "ubuntu22.04-aarch64",
+        "ubuntu24.04",
+        "ubuntu24.04-aarch64",
+    ):
+        content += _CC_EXEC_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
+    return content
 
 def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
     """Returns Swift `toolchain` declarations for an Android Swift SDK.

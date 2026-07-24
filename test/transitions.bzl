@@ -5,6 +5,7 @@ load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 
 _COMPILATION_MODE = "//command_line_option:compilation_mode"
+_EXTRA_TOOLCHAINS = "//command_line_option:extra_toolchains"
 _FEATURES = "//command_line_option:features"
 _HOST_FEATURES = "//command_line_option:host_features"
 _IOS_MINIMUM_OS = "//command_line_option:ios_minimum_os"
@@ -14,6 +15,7 @@ _TVOS_MINIMUM_OS = "//command_line_option:tvos_minimum_os"
 
 _TRANSITION_OPTIONS = [
     _COMPILATION_MODE,
+    _EXTRA_TOOLCHAINS,
     _FEATURES,
     _HOST_FEATURES,
     _IOS_MINIMUM_OS,
@@ -25,6 +27,7 @@ _TRANSITION_OPTIONS = [
 def _transition_impl(settings, attr):
     return {
         _COMPILATION_MODE: attr.compilation_mode or settings[_COMPILATION_MODE],
+        _EXTRA_TOOLCHAINS: settings[_EXTRA_TOOLCHAINS] + attr.extra_toolchains,
         _FEATURES: settings[_FEATURES] + attr.transitive_features,
         _HOST_FEATURES: settings[_HOST_FEATURES] + attr.transitive_features,
         _IOS_MINIMUM_OS: attr.ios_minimum_os or settings[_IOS_MINIMUM_OS],
@@ -47,6 +50,9 @@ _TRANSITION_ATTRS = {
             "`opt`). Empty (the default) leaves the inherited setting alone."
         ),
         values = ["", "dbg", "fastbuild", "opt"],
+    ),
+    "extra_toolchains": attr.string_list(
+        doc = "Toolchains appended to --extra_toolchains for the transitioned target.",
     ),
     "minimum_os": attr.string(
         doc = "Optional value to set `--macos_minimum_os` to.",

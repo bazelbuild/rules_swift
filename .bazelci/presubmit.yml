@@ -9,32 +9,14 @@ x_defaults:
       - "//..."
     test_targets:
       - "//..."
-  linux_environment: &linux_environment
-    platform: ubuntu2204
-    environment:
-      SWIFT_VERSION: "6.3.3"
-      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
-      PATH: "$SWIFT_HOME/usr/bin:$PATH"
   linux_common: &linux_common
-    <<: *linux_environment
-    build_flags: &linux_flags
-      # On Linux, we look for Swift toolchain binaries on the path. We may be
-      # able to change this when we start auto-downloading toolchains (see
-      # https://github.com/bazelbuild/rules_swift/issues/4).
-      - "--action_env=PATH"
+    platform: ubuntu2204
     build_targets:
       - "//..."
       - "-//examples/apple/..."
-    test_flags: *linux_flags
     test_targets:
       - "//..."
       - "-//examples/apple/..."
-      # The following tests require Swift >5.8.
-      - "-//test:const_values_empty_const_values_multiple_files"
-      - "-//test:const_values_empty_const_values_single_file"
-      - "-//test:const_values_expected_argv"
-      - "-//test:const_values_wmo_single_values_file"
-      - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
     build_targets:
@@ -75,29 +57,37 @@ tasks:
   ubuntu2204_latest:
     name: "Current LTS"
     bazel: latest
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu2204_rolling:
     name: "Latest rolling"
     bazel: rolling
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu2204_last_green:
     name: "Last Green Bazel"
     bazel: last_green
+    <<: *linux_common
+
+  ubuntu2204_latest_non_hermetic:
+    name: "Current LTS non-hermetic toolchain"
+    bazel: latest
+    platform: ubuntu2204
+    environment:
+      SWIFT_VERSION: "6.3.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
+      PATH: "$SWIFT_HOME/usr/bin:$PATH"
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
-    <<: *linux_common
+    build_targets:
+      - "//examples/xplatform/hello_world"
+      - "//examples/xplatform/shared_library"
+    test_targets:
+      - "//examples/xplatform/xctest:xctest"
+      - "//test/linux_static_stdlib:linux_non_hermetic_dynamic_stdlib_test"
+      - "//test/linux_static_stdlib:linux_non_hermetic_linkshared_dynamic_stdlib_test"
 
   windows:
     name: "Current LTS"
@@ -128,11 +118,7 @@ tasks:
   doc_tests:
     name: "Doc tests"
     bazel: latest
-    <<: *linux_environment
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    platform: ubuntu2204
     test_targets:
       - "doc/..."
 

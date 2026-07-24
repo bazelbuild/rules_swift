@@ -57,6 +57,7 @@ load(
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
@@ -859,6 +860,7 @@ def _xcode_swift_toolchain_impl(ctx):
     requested_features.append(SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES)
 
     unsupported_features = ctx.disabled_features + [
+        SWIFT_FEATURE_STATIC_STDLIB,
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
     ]
     unsupported_features.extend(ctx.attr.default_unsupported_features)
@@ -956,7 +958,8 @@ def _xcode_swift_toolchain_impl(ctx):
             for target in ctx.attr.package_configurations
         ],
         requested_features = requested_features,
-        runtime = depset(),
+        dynamic_runtime_cc_info = None,
+        static_runtime_cc_info = None,
         system_modules = collect_implicit_deps_providers(
             [ctx.attr.system_modules] if ctx.attr.system_modules else [],
         ),

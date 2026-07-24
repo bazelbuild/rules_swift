@@ -1,8 +1,11 @@
+load("@apple_support//toolchain:cc_toolchain.bzl", apple_support_cc_toolchain = "cc_toolchain")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:make_variable.bzl", "cc_make_variable")
 load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("@rules_cc//cc/toolchains/args:sysroot.bzl", "cc_sysroot")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
@@ -11,6 +14,7 @@ package(default_visibility = ["//visibility:public"])
 ### Convenience target. Only useful for test / debug. ###
 exports_files([
     "usr/bin/llvm-objcopy",
+    "usr/bin/llvm-objdump",
 ])
 
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
@@ -76,12 +80,32 @@ cc_tool(
 cc_tool(
     name = "clang",
     src = "usr/bin/clang",
+    data = [":swift_sdk_linker_inputs"],
     tags = ["manual"],
 )
 
 cc_tool(
     name = "clang++",
     src = "usr/bin/clang++",
+    data = [":swift_sdk_linker_inputs"],
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_cov",
+    src = "usr/bin/llvm-cov",
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_objcopy",
+    src = "usr/bin/llvm-objcopy",
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "llvm_profdata",
+    src = "usr/bin/llvm-profdata",
     tags = ["manual"],
 )
 
@@ -93,8 +117,84 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
         "@rules_cc//cc/toolchains/actions:c_compile": ":clang",
         "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang++",
-        "@rules_cc//cc/toolchains/actions:link_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:link_actions": ":clang++",
+        "@rules_cc//cc/toolchains/actions:llvm_cov": ":llvm_cov",
+        "@rules_cc//cc/toolchains/actions:llvm_profdata": ":llvm_profdata",
+        "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm_objcopy",
+        "@rules_cc//cc/toolchains/actions:strip": ":llvm_objcopy",
     },
+)
+
+cc_sysroot(
+    name = "linux_aarch64_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    data = ["@swift_ubuntu22.04_aarch64_sysroot//:root"],
+    sysroot = "@swift_ubuntu22.04_aarch64_sysroot//:root",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_feature(
+    name = "linux_aarch64_sysroot",
+    args = [":linux_aarch64_sysroot_args"],
+    feature_name = "sysroot",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_sysroot(
+    name = "linux_x86_64_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    data = ["@swift_ubuntu22.04_sysroot//:root"],
+    sysroot = "@swift_ubuntu22.04_sysroot//:root",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+cc_feature(
+    name = "linux_x86_64_sysroot",
+    args = [":linux_x86_64_sysroot_args"],
+    feature_name = "sysroot",
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+alias(
+    name = "linux_sysroot",
+    actual = select({
+        "@platforms//cpu:aarch64": ":linux_aarch64_sysroot",
+        "@platforms//cpu:x86_64": ":linux_x86_64_sysroot",
+    }),
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+alias(
+    name = "selected_linux_sysroot_feature",
+    actual = select({
+        "@rules_swift//swift/toolchains:linux_sysroot_feature_is_default": ":linux_sysroot",
+        "//conditions:default": "@rules_swift//swift/toolchains:linux_sysroot_feature",
+    }),
+    tags = ["manual"],
+    visibility = ["//visibility:private"],
+)
+
+apple_support_cc_toolchain(
+    name = "cc_toolchain_exec",
+    module_map = None,
+    supports_header_parsing = False,
+    sysroot_feature = ":selected_linux_sysroot_feature",
+    target = select({
+        "@platforms//cpu:aarch64": "aarch64-unknown-linux-gnu",
+        "@platforms//cpu:x86_64": "x86_64-unknown-linux-gnu",
+    }),
+    tool_map = ":all_tools",
 )
 
 ### Make variables ###
@@ -223,23 +323,42 @@ swift_toolchain(
         "@platforms//cpu:aarch64": "aarch64",
         "@platforms//cpu:x86_64": "x86_64",
     }),
+    dynamic_runtime = glob(
+        [
+            "usr/lib/swift/linux/*.so*",
+            "usr/lib/swift/macosx/*.dylib",
+        ],
+        allow_empty = True,
+    ),
     features = [
         "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
         "swift.use_autolink_extract",
+        "swift.lld_gc_workaround",
+        "swift.use_module_wrap",
+        # TODO: This should be removed so that private headers can be used with
+        # explicit modules, but the build targets for CgRPC need to be cleaned up
+        # first because they contain C++ code.
+        "swift.module_map_no_private_headers",
     ],
     os = select({
         "@platforms//os:linux": "linux",
         "@platforms//os:macos": "macos",
     }),
     parsed_version = "{swift_version}",
-    runtime = glob(
-        [
-            "usr/lib/swift/**/*.dylib",  # On MacOS
-            "usr/lib/swift/**/*.so",  # On Linux
-        ],
-        allow_empty = True,
-    ),
+    static_runtime = select({
+        "@platforms//os:linux": glob(
+            [
+                "usr/lib/swift/linux/*.a",
+                "usr/lib/swift_static/linux/*.a",
+                "usr/lib/swift_static/linux/*.lnk",
+                "usr/lib/swift_static/linux/*/*.o",
+            ],
+            # NOTE: This shouldn't ever be empty but fails when this select() isn't even hit
+            allow_empty = True,
+        ),
+        "//conditions:default": [],
+    }),
     swift_tools = "tools",
     version_file = ".swift-version",
 )
