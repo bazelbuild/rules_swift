@@ -165,6 +165,9 @@ def _swift_android_sdk_impl(repository_ctx):
         ]),
         toolchain_repo = toolchain_repo,
     )
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = True)
+    return None
 
     for arch in ANDROID_ARCHS:
         resource_dir = "{}/swift_static-{}".format(lib_dir, arch)
@@ -252,6 +255,9 @@ def _swift_wasm_sdk_impl(repository_ctx):
             "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
         },
     )
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = True)
+    return None
 
 swift_wasm_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
