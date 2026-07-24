@@ -8,7 +8,7 @@ module(
 )
 
 bazel_dep(name = "abseil-cpp", version = "20250814.1")
-bazel_dep(name = "apple_support", version = "2.6.1")
+bazel_dep(name = "apple_support", version = "2.8.0")
 bazel_dep(name = "bazel_linux_packages", version = "0.4.1")
 bazel_dep(name = "bazel_features", version = "1.51.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
@@ -280,15 +280,4 @@ single_version_override(
     module_name = "stardoc",
     patch_strip = 1,
     patches = ["//third_party/patches:stardoc-revert-load-statements-in-docs.patch"],
-)
-
-# FIXME: Delete after testing
-
-archive_override(
-    module_name = "apple_support",
-    integrity = "sha256-4YQ7nCqSJ4QcfTF8RLDRQseKtfFS1MTtWKnLlS3bg/U=",
-    strip_prefix = "apple_support-c268c90e7d1efe0d656081e29b11ab05ada9bdda",
-    urls = [
-        "https://github.com/bazelbuild/apple_support/archive/c268c90e7d1efe0d656081e29b11ab05ada9bdda.tar.gz",
-    ],
 )
