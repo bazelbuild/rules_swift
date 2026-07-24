@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 
+#include "tools/common/file_system.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
@@ -33,29 +34,7 @@
 
 namespace {
 
-#if defined(_WIN32)
-// On Windows, `std::filesystem` honors the legacy MAX_PATH (260 character) limit
-// unless a path uses the extended-length "\\?\" prefix. The incremental storage
-// area (`bazel-out/.../_swift_incremental/...`) routinely produces paths longer
-// than that, so normalize to an absolute, normalized, backslash-separated path
-// with the prefix applied before performing filesystem operations.
-std::filesystem::path LongPath(const std::filesystem::path& path) {
-  std::error_code ec;
-  std::filesystem::path absolute = std::filesystem::absolute(path, ec);
-  if (ec) {
-    return path;
-  }
-  std::wstring native = absolute.lexically_normal().make_preferred().wstring();
-  if (native.compare(0, 4, L"\\\\?\\") != 0) {
-    native.insert(0, L"\\\\?\\");
-  }
-  return std::filesystem::path(native);
-}
-#else
-std::filesystem::path LongPath(const std::filesystem::path& path) {
-  return path;
-}
-#endif
+using bazel_rules_swift::LongPath;
 
 bool copy_file(const std::filesystem::path& from,
                const std::filesystem::path& to, std::error_code& ec) noexcept {
@@ -70,57 +49,6 @@ bool copy_file(const std::filesystem::path& from,
 #else
   return std::filesystem::copy_file(LongPath(from), LongPath(to), ec);
 #endif
-}
-
-static bool TouchFile(const std::filesystem::path& path,
-                      std::ostringstream& output) {
-  std::error_code ec;
-  if (!path.parent_path().empty()) {
-    std::filesystem::create_directories(LongPath(path.parent_path()), ec);
-    if (ec) {
-      output << "swift_worker: Could not create directory "
-             << path.parent_path() << " (" << ec.message() << ")\n";
-      return false;
-    }
-  }
-
-  std::ofstream stream(LongPath(path));
-  if (!stream) {
-    output << "swift_worker: Could not create " << path << "\n";
-    return false;
-  }
-
-  return true;
-}
-
-static bool CreateVerifyOutputs(const std::string& output_file_map_path,
-                                const std::string& emit_module_path,
-                                std::ostringstream& output) {
-  if (!output_file_map_path.empty()) {
-    OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path, "", "");
-    for (const auto& expected_output_pair :
-         output_file_map.incremental_outputs()) {
-      if (!TouchFile(expected_output_pair.first, output)) {
-        return false;
-      }
-    }
-  }
-
-  if (!emit_module_path.empty()) {
-    if (!TouchFile(emit_module_path, output)) {
-      return false;
-    }
-
-    std::string swiftdoc_path = std::filesystem::path(emit_module_path)
-                                    .replace_extension(".swiftdoc")
-                                    .string();
-    if (!TouchFile(swiftdoc_path, output)) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 static void FinalizeWorkRequest(
@@ -161,7 +89,6 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
-  bool is_verify = false;
   bool emit_swift_source_info = false;
 
   std::string prev_arg;
@@ -176,8 +103,6 @@ void WorkProcessor::ProcessWorkRequest(
       arg.clear();
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
-    } else if (arg == "-verify") {
-      is_verify = true;
     } else if (prev_arg == "-output-file-map") {
       // Peel off the `-output-file-map` argument, so we can rewrite it if
       // necessary later.
@@ -331,12 +256,6 @@ void WorkProcessor::ProcessWorkRequest(
   int exit_code = swift_runner.Run(&stderr_stream, /*stdout_to_stderr=*/true);
   if (exit_code != 0) {
     FinalizeWorkRequest(request, response, exit_code, stderr_stream);
-    return;
-  }
-
-  if (is_verify && !CreateVerifyOutputs(output_file_map_path, emit_module_path,
-                                        stderr_stream)) {
-    FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
     return;
   }
 

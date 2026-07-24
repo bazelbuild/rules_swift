@@ -307,6 +307,36 @@ void PrintVerboseInvocation(const std::vector<std::string>& args,
   (*stderr_stream) << '\n';
 }
 
+// `swiftc -frontend -verify` validates diagnostics without emitting the
+// compilation outputs that Bazel declared. Create those outputs after a
+// successful invocation so this works with every execution strategy.
+bool CreateVerifyOutputs(const std::string& output_file_map_path,
+                         const std::string& emit_module_path,
+                         std::ostream* stderr_stream) {
+  if (!output_file_map_path.empty()) {
+    OutputFileMap output_file_map;
+    output_file_map.ReadFromPath(output_file_map_path, "", "");
+    for (const auto& expected_output_pair :
+         output_file_map.incremental_outputs()) {
+      if (!TouchFile(expected_output_pair.first, stderr_stream)) {
+        return false;
+      }
+    }
+  }
+
+  if (!emit_module_path.empty()) {
+    if (!TouchFile(emit_module_path, stderr_stream)) {
+      return false;
+    }
+    std::filesystem::path swiftdoc_path =
+        std::filesystem::path(emit_module_path).replace_extension(".swiftdoc");
+    if (!TouchFile(swiftdoc_path, stderr_stream)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 struct LayeringCheckModules {
   absl::btree_set<std::string> direct_modules;
   absl::btree_set<std::string> transitive_modules;
@@ -430,6 +460,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       index_import_path_(index_import_path),
       force_response_file_(force_response_file),
       is_dump_ast_(false),
+      is_verify_(false),
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
@@ -479,6 +510,11 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
 
   if (exit_code != 0) {
     return exit_code;
+  }
+
+  if (is_verify_ && !CreateVerifyOutputs(output_file_map_path_,
+                                         emit_module_path_, stderr_stream)) {
+    return EXIT_FAILURE;
   }
 
   if (!generated_header_rewriter_path_.empty()) {
@@ -735,8 +771,11 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
       out_args.push_back(*it);
     } else if (arg == "-dump-ast") {
       is_dump_ast_ = true;
+    } else if (arg == "-verify") {
+      is_verify_ = true;
     } else if (arg == "-emit-module-path") {
       ++it;
+      emit_module_path_ = *it;
       std::filesystem::path module_path(*it);
       swift_source_info_path_ =
           module_path.replace_extension(".swiftsourceinfo").string();
