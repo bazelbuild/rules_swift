@@ -16,42 +16,6 @@ with; the `swift` module extension enforces this by deriving both from the same
 `swift.toolchain` tag.
 """
 
-_SWIFT_TOOLCHAIN_TEMPLATE = """
-swift_toolchain(
-    name = "swift_toolchain_{suffix}",
-    arch = "{arch}",
-    copts = {copts},
-    features = {features},
-    linker_inputs = {linker_inputs},
-    linkopts = {linkopts},
-    os = "{os}",
-    parsed_version = "{swift_version}",
-    sdkroot = "{sdkroot}",
-    swift_tools = ":tools",
-    version_file = ".swift-version",
-)
-"""
-
-_BUILD_HEADER_TEMPLATE = """\
-load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
-load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
-
-package(default_visibility = ["//visibility:public"])
-
-filegroup(
-    name = "sdk_files",
-    srcs = glob(["{bundle_dir}/**"]),
-)
-
-swift_tools(
-    name = "tools",
-    swift_driver = "@{toolchain_repo}//:usr/bin/swiftc",
-    swift_autolink_extract = "@{toolchain_repo}//:usr/bin/swift-autolink-extract",
-    swift_symbolgraph_extract = "@{toolchain_repo}//:usr/bin/swift-symbolgraph-extract",
-    additional_inputs = {compiler_inputs},
-)
-"""
-
 def _execroot_relative_path(path):
     """Returns the execution-root-relative path for an external repository path.
 
@@ -71,16 +35,6 @@ def _execroot_relative_path(path):
 
     # buildifier: disable=external-path
     return "external/" + path_str.rsplit("/external/", 1)[1]
-
-def _build_list(items, indent = "    "):
-    """Formats a list of strings as a multi-line BUILD file list literal."""
-    if not items:
-        return "[]"
-    lines = ["["]
-    for item in items:
-        lines.append("{}    \"{}\",".format(indent, item))
-    lines.append(indent + "]")
-    return "\n".join(lines)
 
 def _download_sdk_bundle(repository_ctx):
     """Downloads and extracts the Swift SDK artifact bundle for a repository.
@@ -130,24 +84,13 @@ this SDK is paired with.
         ),
     }
 
-# Mirrored from https://github.com/bazelbuild/rules_android_ndk/blob/27b38742eade7e8000b9ed0f320c9f277a0e89d1/target_systems.bzl.tpl
-# Swift doesn't support any other ones
-ANDROID_ARCHS = [
-    "aarch64",
-    "armv7",
-    "x86_64",
-]
-
 def _swift_android_sdk_impl(repository_ctx):
     bundle_dir = _download_sdk_bundle(repository_ctx)
-    toolchain_repo = repository_ctx.attr.toolchain_repo
-
     repo_root = "external/" + repository_ctx.name
     sdk_dir_relative = bundle_dir + "/swift-android"
     if not repository_ctx.path(sdk_dir_relative + "/swift-sdk.json").exists:
         fail("The Android Swift SDK bundle has an unexpected layout; " +
              "missing {}/{}/swift-sdk.json".format(repo_root, sdk_dir_relative))
-    lib_dir = "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative)
 
     # The clang headers are provided by the Swift toolchain, not the Android SDK bundle
     paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
@@ -157,65 +100,23 @@ def _swift_android_sdk_impl(repository_ctx):
              "toolchain, found: " + str(clang_versions))
     clang_builtin_headers = _execroot_relative_path(clang_versions[0].get_child("include"))
 
-    build_content = _BUILD_HEADER_TEMPLATE.format(
-        bundle_dir = bundle_dir,
-        compiler_inputs = _build_list([
-            ":sdk_files",
-            "@{}//:swift_sdk_compiler_inputs".format(toolchain_repo),
-        ]),
-        toolchain_repo = toolchain_repo,
+    repository_ctx.template(
+        "BUILD.bazel",
+        repository_ctx.attr._build_template,
+        substitutions = {
+            "{bundle_dir}": bundle_dir,
+            "{clang_builtin_headers}": clang_builtin_headers,
+            "{lib_dir}": "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative),
+            "{swift_version}": repository_ctx.attr.swift_version,
+            "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
+        },
     )
-
-    for arch in ANDROID_ARCHS:
-        resource_dir = "{}/swift_static-{}".format(lib_dir, arch)
-
-        build_content += _SWIFT_TOOLCHAIN_TEMPLATE.format(
-            arch = arch,
-            copts = _build_list([
-                "-resource-dir",
-                resource_dir,
-                "-Xcc",
-                "-I" + clang_builtin_headers,
-            ]),
-            features = _build_list([
-                "swift.lld_gc_workaround",
-                "swift.module_map_no_private_headers",
-                "swift.use_autolink_extract",
-                "swift.use_module_wrap",
-            ]),
-            linker_inputs = _build_list([":sdk_files"]),
-            # Swift defines linkopts for android in
-            # `swift_static-{arch}/android/static-stdlib-args.lnk`, we add the
-            # ones that matter here removing the ones that rules_android_ndk
-            # already passes.
-            linkopts = _build_list([
-                "{}/android/{}/swiftrt.o".format(resource_dir, arch),
-                "-L{}/android".format(resource_dir),
-                "-llog",
-                "-lswiftCore",
-                # Swift Concurrency's global executor lives on libdispatch,
-                # but the dependency comes from C++ objects inside
-                # libswift_Concurrency.a, so it is never autolinked. Link it
-                # (and its BlocksRuntime) explicitly from the same SDK
-                # directory; lld only extracts referenced members, so this is
-                # free for binaries that don't use concurrency.
-                "-ldispatch",
-                "-lBlocksRuntime",
-                "-Wl,-export-dynamic",
-                "-Wl,--exclude-libs,ALL",
-                # TODO: Remove once https://github.com/bazelbuild/rules_android_ndk/commit/efc0c191796477c540e87e0f6bb5d88d6a58cc1f is in a release
-                "-Wl,-z,max-page-size=16384",
-            ]),
-            os = "android",
-            sdkroot = "",  # Resolved in swift_toolchain.bzl
-            suffix = arch,
-            swift_version = repository_ctx.attr.swift_version,
-        )
-
-    repository_ctx.file("BUILD.bazel", build_content)
 
 swift_android_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
+        "_build_template": attr.label(
+            default = "//swift/internal/extensions:androidsdk.BUILD",
+        ),
         "paired_swiftc": attr.label(
             doc = """\
 The `swiftc` of the standalone toolchain this SDK is paired with, used to locate
