@@ -145,7 +145,10 @@ http_archive(
     urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
 )
 
-register_toolchains("//swift/toolchains:all")
+register_toolchains(
+    "//swift/toolchains:all",
+    dev_dependency = True,
+)
 
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
