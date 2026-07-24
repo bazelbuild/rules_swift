@@ -6,7 +6,7 @@ bazel_dep(name = "rules_jvm_external", version = "7.0", dev_dependency = True)
 bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
 
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
-swift.android_sdk(toolchain_name = "swift_toolchain")
+swift.android_sdk()
 
 rules_java_toolchains = use_extension(
     "@rules_java//java:extensions.bzl",
