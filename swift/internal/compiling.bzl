@@ -207,6 +207,37 @@ def create_compilation_context(defines, srcs, transitive_modules):
         swiftmodules = tuple(swiftmodules),
     )
 
+def _clang_module_map_info(swift_infos):
+    """Returns Clang module maps and include dirs from Swift deps."""
+
+    module_maps = []
+    include_dirs = []
+    seen_module_maps = {}
+    for swift_info in swift_infos:
+        for module in swift_info.direct_modules:
+            clang_module = module.clang
+            if not clang_module:
+                continue
+
+            module_map = clang_module.module_map
+            if type(module_map) != "File":
+                continue
+
+            if module_map.path in seen_module_maps:
+                continue
+
+            seen_module_maps[module_map.path] = None
+            module_maps.append(module_map)
+            include_dirs.append(module_map.dirname)
+
+    if not module_maps:
+        return None
+
+    return struct(
+        include_dirs = include_dirs,
+        module_maps = module_maps,
+    )
+
 def compile_module_interface(
         *,
         actions,
@@ -671,6 +702,13 @@ def compile(
         cc_info.compilation_context
         for cc_info in cc_infos
     ]
+
+    generated_header_module_map_info = None
+    if generated_header_name:
+        generated_header_module_map_info = _clang_module_map_info(
+            generated_module_deps_swift_infos,
+        )
+
     merged_cc_info = cc_common.merge_cc_infos(
         cc_infos = cc_infos + private_cc_infos +
                    implicit_cc_infos,
@@ -918,6 +956,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         includes = [compile_outputs.generated_module_map_file.dirname]
     else:
         includes = []
+
+    if generated_header_module_map_info:
+        public_hdrs.extend(generated_header_module_map_info.module_maps)
+        includes.extend(generated_header_module_map_info.include_dirs)
 
     module_context = create_swift_module_context(
         name = module_name,
