@@ -2,6 +2,7 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_test.bzl", "swift_test")
+load("//test:transitions.bzl", "transition_test")
 load("//test/rules:provider_test.bzl", "provider_test")
 
 swift_library(
@@ -83,6 +84,56 @@ sh_test(
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],
+)
+
+sh_test(
+    name = "_linux_non_hermetic_dynamic_stdlib_test",
+    srcs = ["linux_non_hermetic_dynamic_stdlib_test.sh"],
+    args = [
+        "$(rootpath :uses_dynamic_foundation)",
+        "--execute",
+    ],
+    data = [":uses_dynamic_foundation"],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+sh_test(
+    name = "_linux_non_hermetic_linkshared_dynamic_stdlib_test",
+    srcs = ["linux_non_hermetic_dynamic_stdlib_test.sh"],
+    args = ["$(rootpath :uses_foundation_shared)"],
+    data = [":uses_foundation_shared"],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+# These wrappers select the host Swift toolchains automatically. Keep them
+# manual so hermetic //... builds do not select a host toolchain.
+transition_test(
+    name = "linux_non_hermetic_dynamic_stdlib_test",
+    args = [
+        "test/linux_static_stdlib/uses_dynamic_foundation",
+        "--execute",
+    ],
+    extra_toolchains = [
+        "//swift/toolchains:linux-swift-toolchain_aarch64",
+        "//swift/toolchains:linux-swift-toolchain_x86_64",
+    ],
+    tags = ["manual"],
+    target = ":_linux_non_hermetic_dynamic_stdlib_test",
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+transition_test(
+    name = "linux_non_hermetic_linkshared_dynamic_stdlib_test",
+    args = ["test/linux_static_stdlib/libuses_foundation_shared.so"],
+    extra_toolchains = [
+        "//swift/toolchains:linux-swift-toolchain_aarch64",
+        "//swift/toolchains:linux-swift-toolchain_x86_64",
+    ],
+    tags = ["manual"],
+    target = ":_linux_non_hermetic_linkshared_dynamic_stdlib_test",
+    target_compatible_with = ["@platforms//os:linux"],
 )
 
 sh_test(

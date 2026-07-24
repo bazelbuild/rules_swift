@@ -69,6 +69,26 @@ tasks:
     bazel: last_green
     <<: *linux_common
 
+  ubuntu2204_latest_non_hermetic:
+    name: "Current LTS non-hermetic toolchain"
+    bazel: latest
+    platform: ubuntu2204
+    environment:
+      SWIFT_VERSION: "6.3.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
+      PATH: "$SWIFT_HOME/usr/bin:$PATH"
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    build_targets:
+      - "//examples/xplatform/hello_world"
+      - "//examples/xplatform/shared_library"
+    test_targets:
+      - "//examples/xplatform/xctest:xctest"
+      - "//test/linux_static_stdlib:linux_non_hermetic_dynamic_stdlib_test"
+      - "//test/linux_static_stdlib:linux_non_hermetic_linkshared_dynamic_stdlib_test"
+
   windows:
     name: "Current LTS"
     bazel: latest
