@@ -208,10 +208,13 @@ def _main() -> None:
     )
     generated_sdks = _sdk_releases(releases)
 
-    _write_json(_METADATA_JSON, {
-        "toolchains": generated_toolchains,
-        "sdks": generated_sdks,
-    })
+    _write_json(
+        _METADATA_JSON,
+        {
+            "toolchains": generated_toolchains,
+            "sdks": generated_sdks,
+        },
+    )
 
     print(
         "Wrote "
