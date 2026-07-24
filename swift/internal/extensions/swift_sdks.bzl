@@ -231,37 +231,260 @@ target Android.
     implementation = _swift_android_sdk_impl,
 )
 
+def _relative_metadata_path(value, field, triple):
+    """Validates a path read from SDK metadata."""
+    if type(value) != "string" or not value:
+        fail("Expected `{}` for `{}` in swift-sdk.json to be a non-empty string.".format(
+            field,
+            triple,
+        ))
+    if value.startswith("/") or ".." in value.split("/"):
+        fail("Expected `{}` for `{}` in swift-sdk.json to be a relative path below the SDK directory, got `{}`.".format(
+            field,
+            triple,
+            value,
+        ))
+    return value
+
+def _swift_sdk_json_path(repository_ctx, bundle_dir):
+    """Locates the default `swift-sdk.json` via the bundle's `info.json`.
+
+    An artifact bundle's `info.json` lists one or more `swiftSDK` artifacts,
+    each with a variant path to a `swift-sdk.json` metadata file. Bundles that
+    also ship an Embedded Swift variant name its metadata
+    `embedded-swift-sdk.json`; the default (full-stdlib) artifact is the one
+    whose metadata file is named exactly `swift-sdk.json`.
+
+    Returns:
+        The path of the default artifact's `swift-sdk.json`, relative to the
+        repository root.
+    """
+    info = json.decode(repository_ctx.read(bundle_dir + "/info.json"))
+    artifacts = info.get("artifacts")
+    if type(artifacts) != "dict":
+        fail("The Swift SDK bundle has an unexpected layout; " +
+             "info.json is missing `artifacts`.")
+
+    candidates = []
+    for artifact in artifacts.values():
+        if artifact.get("type") != "swiftSDK":
+            continue
+        for variant in artifact.get("variants", []):
+            path = variant.get("path", "")
+            if path.split("/")[-1] == "swift-sdk.json":
+                candidates.append(path)
+    if len(candidates) != 1:
+        fail(("The Swift SDK bundle has an unexpected layout; expected " +
+              "info.json to reference exactly one `swift-sdk.json` variant, " +
+              "found: {}").format(candidates))
+    return "{}/{}".format(bundle_dir, candidates[0])
+
+def _swift_sdk_target_settings(repository_ctx, sdk_json_path):
+    """Parses a `swift-sdk.json`, returning its single triple and settings.
+
+    Returns:
+        A `(triple, settings)` tuple, where `settings` is the decoded
+        per-triple dictionary (`sdkRootPath`, `swiftStaticResourcesPath`,
+        `toolsetPaths`, ...).
+    """
+    metadata = json.decode(repository_ctx.read(sdk_json_path))
+    target_triples = metadata.get("targetTriples")
+    if type(target_triples) != "dict":
+        fail("The Swift SDK bundle has an unexpected layout; " +
+             "{} is missing `targetTriples`.".format(sdk_json_path))
+    if len(target_triples) != 1:
+        fail(("Expected {} to declare exactly one target triple, " +
+              "got: {}").format(sdk_json_path, target_triples.keys()))
+    triple = target_triples.keys()[0]
+    return triple, target_triples[triple]
+
+def merged_toolset_options(toolsets, context):
+    """Merges decoded `toolset.json` dictionaries into per-tool option lists.
+
+    A Swift SDK's `swift-sdk.json` may reference several toolset files via
+    `toolsetPaths`; SwiftPM applies them in order, with `extraCLIOptions`
+    accumulating. `rootPath` and per-tool executable overrides are ignored:
+    the generated toolchains always drive the paired standalone toolchain's
+    own `swiftc`/`clang`.
+
+    Args:
+        toolsets: Decoded `toolset.json` dictionaries, in `toolsetPaths` order.
+        context: A human-readable location (bundle URL or path) for error
+            messages.
+
+    Returns:
+        A `struct` with `c_compiler`, `cxx_compiler`, `linker`, and
+        `swift_compiler` fields, each the merged `extraCLIOptions` list for
+        that tool.
+    """
+    merged = {
+        "cCompiler": [],
+        "cxxCompiler": [],
+        "linker": [],
+        "swiftCompiler": [],
+    }
+    for toolset in toolsets:
+        for tool, options in merged.items():
+            extra = toolset.get(tool, {}).get("extraCLIOptions", [])
+            for option in extra:
+                if type(option) != "string":
+                    fail(("Expected `{}.extraCLIOptions` in the toolset " +
+                          "metadata of {} to be a list of strings, " +
+                          "got: {}").format(tool, context, extra))
+            options.extend(extra)
+    return struct(
+        c_compiler = merged["cCompiler"],
+        cxx_compiler = merged["cxxCompiler"],
+        linker = merged["linker"],
+        swift_compiler = merged["swiftCompiler"],
+    )
+
+def linker_options_to_clang_args(options, context):
+    """Translates raw linker options from a toolset into clang driver args.
+
+    SwiftPM invokes the linker named by the toolset directly, so a toolset's
+    `linker.extraCLIOptions` are raw `wasm-ld`/`ld` flags. The generated
+    toolchains link through the clang driver instead, so each option is
+    forwarded with `-Wl,`.
+
+    Args:
+        options: The toolset's merged `linker.extraCLIOptions`.
+        context: A human-readable location (bundle URL or path) for error
+            messages.
+
+    Returns:
+        The options wrapped for the clang driver.
+    """
+    for option in options:
+        if "," in option:
+            fail(("Linker option `{}` from the toolset metadata of {} " +
+                  "contains a comma and cannot be forwarded via " +
+                  "`-Wl,`.").format(option, context))
+    return ["-Wl," + option for option in options]
+
+def _toolset_options(repository_ctx, sdk_dir_relative, target_settings, triple, context):
+    """Reads and merges the toolsets referenced by a `swift-sdk.json`."""
+    toolsets = []
+    for toolset_path in target_settings.get("toolsetPaths", []):
+        toolsets.append(json.decode(repository_ctx.read("{}/{}".format(
+            sdk_dir_relative,
+            _relative_metadata_path(toolset_path, "toolsetPaths", triple),
+        ))))
+    return merged_toolset_options(toolsets, context)
+
+def _bzl_list_tail(flags, indent):
+    """Formats flags as list elements appended after an existing list entry.
+
+    Each flag becomes its own line (leading newline + `indent`), so the result
+    can be substituted immediately after the trailing comma of the last static
+    element of a BUILD-file list literal.
+    """
+    return "".join(["\n{}\"{}\",".format(indent, flag) for flag in flags])
+
+def _wasm_toolset_substitutions(toolset, context):
+    """Returns BUILD-template substitutions carrying the SDK's toolset options.
+
+    The C compiler options apply to both C and C++ compilations (the wasm cc
+    toolchain does not distinguish them); a toolset with *different* C++
+    options is rejected rather than half-applied. For the single-threaded
+    swift.org bundle the toolset carries only `-static-stdlib` for `swiftc`;
+    the wasi-threads bundle additionally carries the atomics/pthread compile
+    flags and the shared-memory link flags.
+    """
+    if toolset.cxx_compiler and toolset.cxx_compiler != toolset.c_compiler:
+        fail(("The toolset metadata of {} has `cxxCompiler` options that " +
+              "differ from its `cCompiler` options; this is not " +
+              "supported.").format(context))
+    link_args = linker_options_to_clang_args(toolset.linker, context)
+    return {
+        "{cc_toolset_compile_args}": _bzl_list_tail(
+            toolset.c_compiler,
+            "        ",
+        ),
+        "{cc_toolset_link_args}": _bzl_list_tail(link_args, "        "),
+        "{swift_toolset_copts}": _bzl_list_tail(
+            toolset.swift_compiler,
+            "        ",
+        ),
+        "{swift_toolset_linkopts}": _bzl_list_tail(link_args, "        "),
+    }
+
 def _swift_wasm_sdk_impl(repository_ctx):
+    threads = repository_ctx.attr.threads
+    expected_triple = "wasm32-unknown-wasip1-threads" if threads else "wasm32-unknown-wasip1"
+
     bundle_dir = _download_sdk_bundle(repository_ctx)
     repo_root = "external/" + repository_ctx.name
-    sdk_dir = "{}/{}/{}".format(
-        repo_root,
-        bundle_dir,
-        "{0}/wasm32-unknown-wasip1".format(bundle_dir.removesuffix(".artifactbundle")),
+    context = repository_ctx.attr.url
+
+    sdk_json_path = _swift_sdk_json_path(repository_ctx, bundle_dir)
+    sdk_dir_relative = sdk_json_path.rsplit("/", 1)[0]
+    triple, target_settings = _swift_sdk_target_settings(
+        repository_ctx,
+        sdk_json_path,
     )
-    if not repository_ctx.path(sdk_dir.removeprefix(repo_root + "/")).exists:
-        fail("The WebAssembly Swift SDK bundle has an unexpected layout; missing " + sdk_dir)
+    if triple != expected_triple:
+        fail(("The WebAssembly Swift SDK bundle at {} targets `{}`, but this " +
+              "repository was configured for `{}`; pass `threads = {}` to " +
+              "`swift.wasm_sdk` to match the bundle.").format(
+            context,
+            triple,
+            expected_triple,
+            "False" if threads else "True",
+        ))
+
+    sdk_dir = "{}/{}".format(repo_root, sdk_dir_relative)
+    resource_dir = "{}/{}".format(sdk_dir, _relative_metadata_path(
+        target_settings.get("swiftStaticResourcesPath"),
+        "swiftStaticResourcesPath",
+        triple,
+    ))
+    sdkroot = "{}/{}".format(sdk_dir, _relative_metadata_path(
+        target_settings.get("sdkRootPath"),
+        "sdkRootPath",
+        triple,
+    ))
+    toolset = _toolset_options(
+        repository_ctx,
+        sdk_dir_relative,
+        target_settings,
+        triple,
+        context,
+    )
+
+    substitutions = {
+        "{bundle_dir}": bundle_dir,
+        "{resource_dir}": resource_dir,
+        "{sdkroot}": sdkroot,
+        "{swift_version}": repository_ctx.attr.swift_version,
+        "{target_triple}": triple,
+        "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
+    }
+    substitutions.update(_wasm_toolset_substitutions(toolset, context))
 
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
-        substitutions = {
-            "{bundle_dir}": bundle_dir,
-            "{sdk_dir}": sdk_dir,
-            "{swift_version}": repository_ctx.attr.swift_version,
-            "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
-        },
+        substitutions = substitutions,
     )
 
 swift_wasm_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
+        "threads": attr.bool(
+            default = False,
+            doc = """\
+If `True`, target `wasm32-unknown-wasip1-threads` (shared memory + atomics +
+wasi-threads) instead of the single-threaded `wasm32-unknown-wasip1`.
+""",
+        ),
         "_build_template": attr.label(
             default = "//swift/internal/extensions:wasmsdk.BUILD",
         ),
     },
     doc = """\
 Downloads the WebAssembly Swift SDK artifact bundle and defines Swift and C++
-toolchains that target `wasm32-unknown-wasip1` using a standalone host
+toolchains that target `wasm32-unknown-wasip1` (or
+`wasm32-unknown-wasip1-threads` when `threads = True`) using a standalone host
 toolchain's compiler.
 """,
     implementation = _swift_wasm_sdk_impl,
