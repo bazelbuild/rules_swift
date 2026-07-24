@@ -166,6 +166,9 @@ class SwiftRunner {
   // This is used to avoid implicitly adding incompatible flags.
   bool is_dump_ast_;
 
+  // Whether this is a frontend diagnostic verification invocation.
+  bool is_verify_;
+
   // Whether `-file-prefix-map PWD=.` is set.
   bool file_prefix_pwd_is_dot_;
 
@@ -199,6 +202,9 @@ class SwiftRunner {
 
   // The path of the output map file
   std::string output_file_map_path_;
+
+  // The path where the Swift module will be written.
+  std::string emit_module_path_;
 
   // The index store path argument passed to the runner
   std::string index_store_path_;

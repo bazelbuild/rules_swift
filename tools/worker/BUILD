@@ -26,6 +26,7 @@ cc_library(
     deps = [
         ":swift_runner",
         ":worker_protocol",
+        "//tools/common:file_system",
         "//tools/common:temp_file",
     ],
 )
