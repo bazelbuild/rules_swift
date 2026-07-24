@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cerrno>
-#include <nlohmann/json.hpp>
 #include <streambuf>
+
+// NOTE: Must come below streambuf
+#include <nlohmann/json.hpp>
 
 namespace Test {
 using json = nlohmann::json;
