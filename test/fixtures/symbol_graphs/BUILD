@@ -6,6 +6,7 @@ load(
     "//swift:swift_library.bzl",
     "swift_library",
 )
+load("//test:transitions.bzl", "transition_binary")
 load(
     "//test/fixtures:common.bzl",
     "FIXTURE_TAGS",
@@ -65,5 +66,23 @@ swift_extract_symbol_graph(
     targets = [
         ":importing_module",
         ":some_module",
+    ],
+)
+
+# Verifies that symbol graph extraction works in a build that uses explicit
+# modules, since `swift-symbolgraph-extract` only supports a small allowlist
+# of compiler arguments and cannot consume explicit modules itself.
+transition_binary(
+    name = "importing_module_symbol_graph_explicit_modules",
+    tags = FIXTURE_TAGS,
+    target = ":importing_module_symbol_graph",
+    target_compatible_with = select({
+        "//test:apple_build_tests_enabled": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    transitive_features = [
+        "swift.emit_c_module",
+        "swift.use_c_modules",
+        "swift.use_explicit_swift_module_map",
     ],
 )

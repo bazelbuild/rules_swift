@@ -15,6 +15,10 @@
 """Tests for extracting symbol graphs."""
 
 load("//test/rules:directory_test.bzl", "directory_test")
+load(
+    "//test/rules:symbol_graph_action_command_line_test.bzl",
+    "symbol_graph_action_command_line_test",
+)
 
 def symbol_graphs_test_suite(name, tags = []):
     """Test suite for extracting symbol graphs.
@@ -85,6 +89,63 @@ def symbol_graphs_test_suite(name, tags = []):
         },
         tags = all_tags,
         target_under_test = "//test/fixtures/symbol_graphs:all_symbol_graphs",
+    )
+
+    # Verify that symbol graph extraction in an explicit modules build does
+    # not pass flags that `swift-symbolgraph-extract` does not support, and
+    # falls back to module maps with an implicit module cache.
+    symbol_graph_action_command_line_test(
+        name = "{}_explicit_modules_uses_implicit_modules".format(name),
+        expected_argv = [
+            "-module-cache-path",
+        ],
+        features_under_test = [
+            "swift.emit_c_module",
+            "swift.use_c_modules",
+            "swift.use_explicit_swift_module_map",
+        ],
+        not_expected_argv = [
+            "-Xfrontend -disable-building-interface",
+            "-Xfrontend -disable-implicit-swift-modules",
+            "-Xcc -fno-implicit-module-maps",
+            "-Xcc -fno-implicit-modules",
+            "-Xcc -fmodule-file",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/symbol_graphs:some_module",
+    )
+
+    # Verify that symbol graph extraction in an explicit modules build uses an
+    # ephemeral module cache when the global module cache is disabled.
+    symbol_graph_action_command_line_test(
+        name = "{}_explicit_modules_uses_ephemeral_module_cache".format(name),
+        expected_argv = [
+            "-Xwrapped-swift=-ephemeral-module-cache",
+        ],
+        features_under_test = [
+            "swift.emit_c_module",
+            "swift.use_c_modules",
+            "-swift.use_global_module_cache",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/symbol_graphs:some_module",
+    )
+
+    # Verify that symbol graph extraction succeeds in a build that uses
+    # explicit modules.
+    directory_test(
+        name = "{}_extract_rule_succeeds_with_explicit_modules".format(name),
+        expected_directories = {
+            "test/fixtures/symbol_graphs/importing_module_symbol_graph.symbolgraphs": [
+                "ImportingModule.symbols.json",
+            ],
+        },
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/symbol_graphs:importing_module_symbol_graph_explicit_modules",
     )
 
     native.test_suite(
