@@ -4,7 +4,7 @@ load(
 )
 
 swift_library(
-    name = "test_observer",
+    name = "test_runner",
     testonly = 1,
     srcs = [
         "BazelXMLTestObserver.swift",
@@ -16,8 +16,8 @@ swift_library(
         "ShardingFilteringTestCollector.swift",
         "StringInterpolation+XMLEscaping.swift",
         "SwiftTestingRunner.swift",
+        "TestRunnerMain.swift",
         "XUnitTestRecorder.swift",
     ],
-    module_name = "BazelTestObservation",
     visibility = ["//visibility:public"],
 )

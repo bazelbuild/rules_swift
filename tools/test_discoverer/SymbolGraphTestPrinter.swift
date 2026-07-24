@@ -14,6 +14,11 @@
 
 import Foundation
 
+private let availabilityAttribute = """
+  @available(*, deprecated, message: "Not actually deprecated. Marked as deprecated to allow \
+  inclusion of deprecated tests (which test deprecated functionality) without warnings.")
+  """
+
 /// Returns a Swift expression used to populate the function references in the `XCTestCaseEntry`
 /// array for the given test method.
 ///
@@ -128,22 +133,11 @@ struct SymbolGraphTestPrinter {
 
   /// Returns the Swift source code for the test runner.
   func testRunnerSource() -> String {
-    guard !discoveredTests.modules.isEmpty else {
-      // If no tests were discovered, the user likely wrote non-XCTest-style tests that pass or fail
-      // based on the exit code of the process. Generate an empty source file here, which will be
-      // harmlessly compiled as an empty module, and the user's `main` from their own sources will
-      // be used instead.
-      return """
-        @MainActor
-        private func __allDiscoveredXCTests() -> [XCTestCaseEntry] { [] }
-
-        """
-    }
-
     var contents = """
       \(availabilityAttribute)
       @MainActor
-      private func __allDiscoveredXCTests() -> [XCTestCaseEntry] {
+      @_silgen_name("bazel_rules_swift_allDiscoveredXCTests")
+      func __allDiscoveredXCTests() -> [XCTestCaseEntry] {
         var allTests: [XCTestCaseEntry] = []
 
       """

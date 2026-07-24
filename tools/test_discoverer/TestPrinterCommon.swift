@@ -14,11 +14,6 @@
 
 import Foundation
 
-let availabilityAttribute = """
-  @available(*, deprecated, message: "Not actually deprecated. Marked as deprecated to allow \
-  inclusion of deprecated tests (which test deprecated functionality) without warnings.")
-  """
-
 /// Creates a text file with the given contents at a file URL.
 func createTextFile(at url: URL, contents: String) {
   FileManager.default.createFile(atPath: url.path, contents: contents.data(using: .utf8)!)

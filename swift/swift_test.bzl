@@ -80,7 +80,6 @@ def _generate_test_discovery_srcs(
         actions,
         deps,
         name,
-        objc_test_discovery,
         owner_module_name,
         owner_symbol_graph_dir = None,
         test_discoverer):
@@ -96,8 +95,6 @@ def _generate_test_discovery_srcs(
         deps: The list of direct dependencies of the test target.
         name: The name of the target being built, which will be used to derive
             the basename of the directory containing the generated files.
-        objc_test_discovery: If `True`, the runner should use Objective-C-based
-            XCTest discovery instead of symbol graphs.
         owner_module_name: The name of the owner module (the target being
             built).
         owner_symbol_graph_dir: A directory-type `File` containing the extracted
@@ -114,59 +111,56 @@ def _generate_test_discovery_srcs(
     modules_to_scan = []
     args = actions.args()
 
-    if objc_test_discovery:
-        args.add("--objc-test-discovery")
-    else:
-        if owner_symbol_graph_dir:
-            inputs.append(owner_symbol_graph_dir)
-            modules_to_scan.append(owner_module_name)
+    if owner_symbol_graph_dir:
+        inputs.append(owner_symbol_graph_dir)
+        modules_to_scan.append(owner_module_name)
 
-        for dep in deps:
-            if SwiftTestDiscoverySymbolGraphInfo not in dep:
-                continue
+    for dep in deps:
+        if SwiftTestDiscoverySymbolGraphInfo not in dep:
+            continue
 
-            symbol_graph_info = (
-                dep[SwiftTestDiscoverySymbolGraphInfo].symbol_graph_info
-            )
+        symbol_graph_info = (
+            dep[SwiftTestDiscoverySymbolGraphInfo].symbol_graph_info
+        )
 
-            # Only include the direct symbol graphs if the owner didn't have any
-            # sources.
-            if not owner_symbol_graph_dir:
-                modules_to_scan.extend([
-                    symbol_graph.module_name
-                    for symbol_graph in symbol_graph_info.direct_symbol_graphs
-                ])
+        # Only include the direct symbol graphs if the owner didn't have any
+        # sources.
+        if not owner_symbol_graph_dir:
+            modules_to_scan.extend([
+                symbol_graph.module_name
+                for symbol_graph in symbol_graph_info.direct_symbol_graphs
+            ])
 
-            # Always include the transitive symbol graphs; if a library depends
-            # on a support class that inherits from `XCTestCase`, we need to be
-            # able to detect that.
-            for symbol_graph in (
-                symbol_graph_info.transitive_symbol_graphs.to_list()
-            ):
-                inputs.append(symbol_graph.symbol_graph_dir)
+        # Always include the transitive symbol graphs; if a library depends
+        # on a support class that inherits from `XCTestCase`, we need to be
+        # able to detect that.
+        for symbol_graph in (
+            symbol_graph_info.transitive_symbol_graphs.to_list()
+        ):
+            inputs.append(symbol_graph.symbol_graph_dir)
 
-        if not modules_to_scan:
-            fail("Failed to find any modules to inspect for tests.")
+    if not modules_to_scan:
+        fail("Failed to find any modules to inspect for tests.")
 
-        # For each direct dependency/module that we have a symbol graph for
-        # (i.e., every testonly dependency), declare a `.swift` source file
-        # where the discovery tool will generate an extension that lists the
-        # test entries for the classes/methods found in that module.
-        for module_name in modules_to_scan:
-            output_file = actions.declare_file(
-                "{target}_test_discovery_srcs/{module}.entries.swift".format(
-                    module = module_name,
-                    target = name,
-                ),
-            )
-            outputs.append(output_file)
-            args.add(
-                "--module-output",
-                "{module}={path}".format(
-                    module = module_name,
-                    path = output_file.path,
-                ),
-            )
+    # For each direct dependency/module that we have a symbol graph for
+    # (i.e., every testonly dependency), declare a `.swift` source file
+    # where the discovery tool will generate an extension that lists the
+    # test entries for the classes/methods found in that module.
+    for module_name in modules_to_scan:
+        output_file = actions.declare_file(
+            "{target}_test_discovery_srcs/{module}.entries.swift".format(
+                module = module_name,
+                target = name,
+            ),
+        )
+        outputs.append(output_file)
+        args.add(
+            "--module-output",
+            "{module}={path}".format(
+                module = module_name,
+                path = output_file.path,
+            ),
+        )
 
     # Also declare a single `main.swift` file where the discovery tool will
     # generate the main runner.
@@ -371,19 +365,17 @@ def _swift_test_impl(ctx):
         swift_infos_including_owner = deps_swift_infos
 
     # If requested, discover tests and generate a runner for them.
-    if discover_tests:
+    if discover_tests and not objc_test_discovery:
         discovery_srcs = _generate_test_discovery_srcs(
             actions = ctx.actions,
             deps = ctx.attr.deps,
             name = ctx.label.name,
-            objc_test_discovery = objc_test_discovery,
             owner_module_name = module_name,
             owner_symbol_graph_dir = owner_symbol_graph_dir,
             test_discoverer = ctx.executable._test_discoverer,
         )
         discovery_compile_result = _do_compile(
             ctx = ctx,
-            # The generated test runner uses `@main`.
             additional_copts = ["-parse-as-library"],
             compilation_contexts = test_runner_deps_compilation_contexts,
             feature_configuration = feature_configuration,
@@ -525,7 +517,7 @@ environment when the test is executed by `bazel test`.
         ),
         "_test_runner_deps": attr.label_list(
             default = [
-                "@build_bazel_rules_swift//tools/test_observer",
+                "@build_bazel_rules_swift//tools/test_runner",
             ],
         ),
     },

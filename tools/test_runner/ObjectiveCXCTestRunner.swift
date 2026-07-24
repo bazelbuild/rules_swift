@@ -45,7 +45,7 @@
       }
     }
 
-    public static func run(_ unused: ()) throws {
+    public static func run() throws {
       XCTestObservationCenter.shared.addTestObserver(BazelXMLTestObserver.default)
       try shard(XCTestSuite.default).run()
     }

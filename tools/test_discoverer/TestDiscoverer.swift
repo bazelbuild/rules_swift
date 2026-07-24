@@ -43,12 +43,6 @@ struct TestDiscoverer: ParsableCommand {
   @Option(help: "The path to the '.swift' file where the main test runner should be generated.")
   var mainOutput: String
 
-  @Flag(help: """
-    If true, tests are discovered by asking the Objective-C runtime instead of scanning symbol \
-    graphs.
-    """)
-  var objcTestDiscovery: Bool = false
-
   @Option(
     help: .init(
       """
@@ -60,28 +54,11 @@ struct TestDiscoverer: ParsableCommand {
   var moduleOutput: [ModuleOutput] = []
 
   func validate() throws {
-    if objcTestDiscovery {
-      guard moduleOutput.isEmpty else {
-        throw ValidationError(
-          "'--module-output' cannot be provided if '--objc-test-discovery' is passed.")
-      }
-      guard symbolGraphDirectories.isEmpty else {
-        throw ValidationError(
-          "No symbol graph directories can be provided if '--objc-test-discovery' is passed.")
-      }
-    } else {
-      guard !moduleOutput.isEmpty else {
-        throw ValidationError("""
-          At least one '--module-output' must be provided if '--objc-test-discovery' is not \
-          passed.
-          """)
-      }
-      guard !symbolGraphDirectories.isEmpty else {
-        throw ValidationError("""
-          At least one symbol graph directory must be provided if '--objc-test-discovery' is not \
-          passed.
-          """)
-      }
+    guard !moduleOutput.isEmpty else {
+      throw ValidationError("At least one '--module-output' must be provided.")
+    }
+    guard !symbolGraphDirectories.isEmpty else {
+      throw ValidationError("At least one symbol graph directory must be provided.")
     }
   }
 
@@ -103,72 +80,20 @@ struct TestDiscoverer: ParsableCommand {
       }
     }
 
-    // These shenanigans are necessary because `XCTestSuite.default.run()` doesn't like to be called
-    // from an `async main()` (it crashes in the runtime's stack allocator if it tries to run an
-    // async test method), but we have to do async work to run swift-testing tests. See
-    // https://forums.swift.org/t/74010 for additional context.
     var contents = """
-      import BazelTestObservation
-      import Foundation
       import XCTest
-
-      \(availabilityAttribute)
-      @main
-      struct Main {
-        static func main() {
-          do {
-            try XCTestRunner.run(__allDiscoveredXCTests())
-          } catch {
-            print("Fatal error running XCTest tests: \\(error)")
-            exit(1)
-          }
-          Task {
-            do {
-              try await SwiftTestingRunner.run()
-            } catch {
-              print("Fatal error running swift-testing tests: \\(error)")
-              exit(1)
-            }
-            let recorder = XUnitTestRecorder.shared
-            guard recorder.didTestsRun else {
-              print("ERROR: No tests were discovered.")
-              exit(1)
-            }
-            do {
-              try recorder.writeXML()
-            } catch {
-              print("Fatal error writing test results to XML: \\(error)")
-              exit(1)
-            }
-            exit(recorder.hasFailure ? 1 : 0)
-          }
-          _asyncMainDrainQueue()
-        }
-      }
 
       """
 
-    let mainFileURL = URL(fileURLWithPath: mainOutput)
-    if objcTestDiscovery {
-      // On Darwin platforms, tests are discovered by the Objective-C runtime, so we don't need to
-      // generate anything. We use a dummy parameter to keep the call site the same on both
-      // platforms.
-      contents.append("""
-        // Unused by the Objective-C XCTestRunner; tests are discovered by the runtime.
-        private func __allDiscoveredXCTests() {}
-
-        """)
-    } else {
-      // For each module, print the list of test entries that were discovered in a source file that
-      // extends that module.
-      let testPrinter = SymbolGraphTestPrinter(discoveredTests: collector.discoveredTests())
-      for output in moduleOutput {
-        testPrinter.printTestEntries(forModule: output.moduleName, toFileAt: output.outputURL)
-      }
-      // Print the runner source file, which implements the `@main` type that executes the tests.
-      contents.append(testPrinter.testRunnerSource())
+    // For each module, print the list of test entries that were discovered in a source file that
+    // extends that module.
+    let testPrinter = SymbolGraphTestPrinter(discoveredTests: collector.discoveredTests())
+    for output in moduleOutput {
+      testPrinter.printTestEntries(forModule: output.moduleName, toFileAt: output.outputURL)
     }
+    // Print the runner source file, which implements the `@main` type that executes the tests.
+    contents.append(testPrinter.testRunnerSource())
 
-    createTextFile(at: mainFileURL, contents: contents)
+    createTextFile(at: URL(fileURLWithPath: mainOutput), contents: contents)
   }
 }
