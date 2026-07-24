@@ -20,10 +20,12 @@
 #include <iostream>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/strings/substitute.h"
@@ -309,6 +311,7 @@ void PrintVerboseInvocation(const std::vector<std::string>& args,
 
 struct LayeringCheckModules {
   absl::btree_set<std::string> direct_modules;
+  std::vector<absl::btree_set<std::string>> direct_module_groups_to_check;
   absl::btree_set<std::string> transitive_modules;
 };
 
@@ -325,6 +328,17 @@ LayeringCheckModules ReadLayeringCheckModules(absl::string_view path) {
       modules.transitive_modules.insert(std::string(value));
     } else if (absl::ConsumePrefix(&value, "transitive:")) {
       modules.transitive_modules.insert(std::string(value));
+    } else if (absl::ConsumePrefix(&value, "unused-check:")) {
+      absl::btree_set<std::string> direct_module_group;
+      for (absl::string_view module_name : absl::StrSplit(value, ',')) {
+        if (!module_name.empty()) {
+          direct_module_group.insert(std::string(module_name));
+        }
+      }
+      if (!direct_module_group.empty()) {
+        modules.direct_module_groups_to_check.push_back(
+            std::move(direct_module_group));
+      }
     } else {
       // Compatibility with the original file format, which contained one
       // direct module name per line.
@@ -411,8 +425,10 @@ bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
 // modules.
 static const absl::flat_hash_set<absl::string_view>
     kModulesIgnorableForLayeringCheck = {
-        "Builtin",      "Swift",        "SwiftOnoneSupport",
-        "_Backtracing", "_Concurrency", "_StringProcessing",
+        "Builtin",           "Swift",
+        "SwiftOnoneSupport", "SwiftShims",
+        "_Backtracing",      "_Concurrency",
+        "_StringProcessing", "_SwiftConcurrencyShims",
 };
 
 // Returns true if the module can be ignored for the purposes of layering check
@@ -853,25 +869,55 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
   // Use a `btree_set` so that the output is automatically sorted
   // lexicographically.
   absl::btree_set<std::string> missing_deps;
+  absl::btree_set<std::string> imported_modules;
   std::ifstream imported_modules_stream(imported_modules_path);
   std::string module_name;
+  auto diagnostic_module_name = [this](const std::string& module_name) {
+    // Swift's `-emit-imported-modules` output reports resolved aliased module
+    // names. Map them back to the names users write in source before reporting
+    // diagnostics.
+    if (auto alias_and_source_name = alias_to_source_mapping_.find(module_name);
+        alias_and_source_name != alias_to_source_mapping_.end()) {
+      return alias_and_source_name->second;
+    }
+    return module_name;
+  };
+
   while (std::getline(imported_modules_stream, module_name)) {
+    imported_modules.insert(module_name);
+
     // A module can import itself when the Swift module has an underlying Clang
     // module, such as with `@_exported import X` in a Swift overlay for X.
     if (module_name != module_name_ &&
         !IsModuleIgnorableForLayeringCheck(module_name) &&
         layering_check_modules.transitive_modules.contains(module_name) &&
         !layering_check_modules.direct_modules.contains(module_name)) {
-      // Swift's `-emit-imported-modules` output reports resolved aliased module
-      // names. Map them back to the names users write in source before
-      // reporting missing deps.
-      if (auto alias_and_source_name =
-              alias_to_source_mapping_.find(module_name);
-          alias_and_source_name != alias_to_source_mapping_.end()) {
-        missing_deps.insert(alias_and_source_name->second);
-      } else {
-        missing_deps.insert(module_name);
+      missing_deps.insert(diagnostic_module_name(module_name));
+    }
+  }
+
+  absl::btree_set<std::string> unused_deps;
+  for (const auto& direct_module_group :
+       layering_check_modules.direct_module_groups_to_check) {
+    bool has_checkable_module = false;
+    bool has_imported_module = false;
+    absl::btree_set<std::string> unused_modules_in_group;
+    for (const std::string& module_name : direct_module_group) {
+      if (module_name == module_name_ ||
+          IsModuleIgnorableForLayeringCheck(module_name)) {
+        continue;
       }
+
+      has_checkable_module = true;
+      unused_modules_in_group.insert(diagnostic_module_name(module_name));
+      if (imported_modules.contains(module_name)) {
+        has_imported_module = true;
+      }
+    }
+
+    if (has_checkable_module && !has_imported_module) {
+      unused_deps.insert(unused_modules_in_group.begin(),
+                         unused_modules_in_group.end());
     }
   }
 
@@ -893,6 +939,29 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
     WithColor(stderr_stream, Color::kBold)
         << "Please add the correct 'deps' to " << target_label_
         << " to import those modules." << std::endl;
+  }
+
+  if (!unused_deps.empty()) {
+    stderr_stream << std::endl;
+    WithColor(stderr_stream, Color::kBoldRed) << "error: ";
+    WithColor(stderr_stream, Color::kBold) << "Unused dependencies in ";
+    WithColor(stderr_stream, Color::kBoldGreen) << target_label_ << std::endl;
+    stderr_stream
+        << "The following modules are provided by direct dependencies, but "
+        << "they were not imported:" << std::endl
+        << std::endl;
+
+    for (const std::string& module_name : unused_deps) {
+      stderr_stream << "    " << module_name << std::endl;
+    }
+    stderr_stream << std::endl;
+
+    WithColor(stderr_stream, Color::kBold)
+        << "Please remove the unused 'deps' from " << target_label_ << "."
+        << std::endl;
+  }
+
+  if (!missing_deps.empty() || !unused_deps.empty()) {
     return 1;
   }
 
