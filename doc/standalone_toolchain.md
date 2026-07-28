@@ -151,9 +151,9 @@ bazel run @rules_swift//tools/swift-releases -- list \
 The `swift` module extension can be used to download the Swift Android
 SDK for writing NDK code in Swift.
 
-Add the `android_sdk` tag, referencing the `toolchain` tag by name (the
-Swift module format is not stable across compiler versions, so the SDK
-is always downloaded for exactly the toolchain's version):
+Add the `android_sdk` tag alongside the `toolchain` tag (the Swift module
+format is not stable across compiler versions, so the SDK is always downloaded
+for exactly the toolchain's version):
 
 ```bzl
 swift.toolchain(
@@ -161,7 +161,7 @@ swift.toolchain(
     swift_version = "6.3.2",
 )
 
-swift.android_sdk(toolchain_name = "swift_toolchain")
+swift.android_sdk()
 
 # rules_swift provides only the Swift toolchain; register an Android C/C++ cc
 # toolchain too. For example, @androidndk//:all from hermetic_android_toolchains:
@@ -209,12 +209,17 @@ The `swift` module extension can also download the Swift WebAssembly SDK,
 which defines matching Swift and C/C++ toolchains targeting
 `wasm32-unknown-wasip1`.
 
-Add the `wasm_sdk` tag, referencing the `toolchain` tag by name (the Swift
-module format is not stable across compiler versions, so the SDK is always
-downloaded for exactly the toolchain's version):
+Add the `wasm_sdk` tag alongside the `toolchain` tag (the Swift module format
+is not stable across compiler versions, so the SDK is always downloaded for
+exactly the toolchain's version):
 
 ```bzl
-swift.wasm_sdk(toolchain_name = "swift_toolchain")
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.wasm_sdk()
 
 register_toolchains(
     "@swift_toolchain//:swift_toolchain_wasm32_xcode",

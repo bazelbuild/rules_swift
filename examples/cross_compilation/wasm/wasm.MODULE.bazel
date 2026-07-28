@@ -1,5 +1,5 @@
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
-swift.wasm_sdk(toolchain_name = "swift_toolchain")
+swift.wasm_sdk()
 
 register_toolchains(
     # We register only the host platforms used by CI rather than

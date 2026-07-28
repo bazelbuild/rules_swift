@@ -120,17 +120,14 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         )
     return build_file_content
 
-def _sdk_tags_by_toolchain_name(tags, kind):
-    """Groups SDK tags by the toolchain they extend, rejecting duplicates."""
-    tags_by_name = {}
+def _single_sdk_tag(tags, kind):
+    """Returns the SDK tag if present, rejecting duplicates."""
+    sdk_tag = None
     for tag in tags:
-        if tag.toolchain_name in tags_by_name:
-            fail("Only one `{}` tag may be used per toolchain, got multiple for `{}`.".format(
-                kind,
-                tag.toolchain_name,
-            ))
-        tags_by_name[tag.toolchain_name] = tag
-    return tags_by_name
+        if sdk_tag != None:
+            fail("Only one `{}` tag may be used.".format(kind))
+        sdk_tag = tag
+    return sdk_tag
 
 def _standalone_toolchain_impl(module_ctx):
     root_module = None
@@ -148,31 +145,23 @@ def _standalone_toolchain_impl(module_ctx):
     swift_releases = swift_release_metadata["toolchains"]
     swift_sdk_releases = swift_release_metadata["sdks"]
 
-    android_sdk_tags = _sdk_tags_by_toolchain_name(
+    android_sdk_tag = _single_sdk_tag(
         root_module.tags.android_sdk,
         "android_sdk",
     )
-    wasm_sdk_tags = _sdk_tags_by_toolchain_name(
+    wasm_sdk_tag = _single_sdk_tag(
         root_module.tags.wasm_sdk,
         "wasm_sdk",
     )
 
-    toolchain_names = [
-        toolchain.name
-        for toolchain in root_module.tags.toolchain
-    ]
-    for toolchain_name in android_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `android_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
-    for toolchain_name in wasm_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `wasm_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
+    if len(root_module.tags.toolchain) > 1:
+        fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
+
+    if not root_module.tags.toolchain:
+        if android_sdk_tag:
+            fail("The `android_sdk` tag requires a `toolchain` tag.")
+        if wasm_sdk_tag:
+            fail("The `wasm_sdk` tag requires a `toolchain` tag.")
 
     toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
@@ -207,17 +196,17 @@ def _standalone_toolchain_impl(module_ctx):
             )
 
         platforms = [platform for platform, _ in toolchain_releases]
-        if toolchain.name in android_sdk_tags:
+        if android_sdk_tag:
             toolchains_build_file_content += _setup_android_sdk(
-                tag = android_sdk_tags[toolchain.name],
+                tag = android_sdk_tag,
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
                 swift_sdk_releases = swift_sdk_releases,
             )
-        if toolchain.name in wasm_sdk_tags:
+        if wasm_sdk_tag:
             toolchains_build_file_content += _setup_wasm_sdk(
-                tag = wasm_sdk_tags[toolchain.name],
+                tag = wasm_sdk_tag,
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
@@ -239,10 +228,6 @@ The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
 versions known to this version of rules_swift.
 """,
         ),
-        "toolchain_name": attr.string(
-            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
-            mandatory = True,
-        ),
     },
     doc = """\
 Downloads the Android Swift SDK matching a `toolchain` tag's Swift version and
@@ -257,10 +242,6 @@ _wasm_sdk = tag_class(
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
 versions known to this version of rules_swift.
 """,
-        ),
-        "toolchain_name": attr.string(
-            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
-            mandatory = True,
         ),
     },
     doc = """\
