@@ -38,6 +38,16 @@ archive_override(
     ],
 )
 
+# TODO: Remove once https://github.com/bazelbuild/rules_android/commit/57ad9e4898b726c3938c5173a3f3f9adef9384dc is in a release
+archive_override(
+    module_name = "rules_android",
+    integrity = "sha256-koIx40jK5V/o9qC8zaOc5Jbgp+nY7QG0dpak9FT4VWA=",
+    strip_prefix = "rules_android-71c053c203ea875f069092b989d4704ddecb5caf",
+    urls = [
+        "https://github.com/bazelbuild/rules_android/archive/71c053c203ea875f069092b989d4704ddecb5caf.tar.gz",
+    ],
+)
+
 rules_java_toolchains = use_extension(
     "@rules_java//java:extensions.bzl",
     "toolchains",
