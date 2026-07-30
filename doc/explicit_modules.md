@@ -148,7 +148,7 @@ this local scanning to happen, you can provide the computed `BUILD` file
 yourself:
 
 ```bzl
-system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
+system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_xcode(
     build_file = "//path/to/vendored.BUILD",
     version = "26.4.0.17E192",
