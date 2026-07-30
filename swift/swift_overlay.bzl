@@ -215,4 +215,5 @@ almost always an anti-pattern.
     },
     fragments = ["cpp"],
     implementation = _swift_overlay_impl,
+    provides = [SwiftOverlayCompileInfo],
 )

@@ -14,6 +14,10 @@
 
 """Implementation of the `swift_interop_hint` rule."""
 
+load(
+    "@build_bazel_rules_swift//swift/internal:swift_interop_info.bzl",
+    "SwiftInteropInfo",
+)
 load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 visibility("public")
@@ -198,4 +202,5 @@ explicit module will be generated for it, nor will any Swift information from
 its transitive dependencies be propagated.
 """,
     implementation = _swift_interop_hint_impl,
+    provides = [SwiftInteropInfo],
 )

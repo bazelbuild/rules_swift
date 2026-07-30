@@ -921,6 +921,10 @@ it propagates for its targets.
             [apple_common.Objc],
             [CcInfo],
         ],
+        required_aspect_hints_providers = [
+            [SwiftInteropInfo],
+            [SwiftOverlayCompileInfo],
+        ],
         toolchains = use_all_toolchains(
             toolchain_type = toolchain_type,
         ),
