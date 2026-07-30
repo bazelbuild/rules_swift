@@ -88,10 +88,10 @@ def symbol_graphs_test_suite(name, tags = []):
     )
 
     directory_test(
-        name = "{}_extract_rule_succeeds_with_explicit_modules".format(name),
+        name = "{}_extract_rule_succeeds_with_explicit_modules_and_system_module".format(name),
         expected_directories = {
-            "test/fixtures/symbol_graphs/importing_module_symbol_graph.symbolgraphs": [
-                "ImportingModule.symbols.json",
+            "test/fixtures/symbol_graphs/sqlite_importing_module_symbol_graph.symbolgraphs": [
+                "SQLiteImportingModule.symbols.json",
             ],
         },
         tags = all_tags,
@@ -99,7 +99,7 @@ def symbol_graphs_test_suite(name, tags = []):
             "//test:apple_build_tests_enabled": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
-        target_under_test = "//test/fixtures/symbol_graphs:importing_module_symbol_graph_explicit_modules",
+        target_under_test = "//test/fixtures/symbol_graphs:sqlite_importing_module_symbol_graph_explicit_modules",
     )
 
     native.test_suite(
