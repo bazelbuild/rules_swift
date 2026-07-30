@@ -472,6 +472,17 @@ def _all_action_configs(
             ],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
+            configurators = [
+                # https://github.com/swiftlang/swift/pull/91039
+                # `swift-symbolgraph-extract` accepts `-clang-target` but does
+                # not apply it to ClangImporter, so pass the shared SDK target
+                # directly to Clang as well.
+                add_arg("-Xcc", "--target={}".format(sdk_version_triple)),
+            ],
+            features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
     ])
 
     action_configs.extend([

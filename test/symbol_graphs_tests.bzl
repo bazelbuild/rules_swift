@@ -87,6 +87,21 @@ def symbol_graphs_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/symbol_graphs:all_symbol_graphs",
     )
 
+    directory_test(
+        name = "{}_extract_rule_succeeds_with_explicit_modules_and_system_module".format(name),
+        expected_directories = {
+            "test/fixtures/symbol_graphs/sqlite_importing_module_symbol_graph.symbolgraphs": [
+                "SQLiteImportingModule.symbols.json",
+            ],
+        },
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/symbol_graphs:sqlite_importing_module_symbol_graph_explicit_modules",
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,
