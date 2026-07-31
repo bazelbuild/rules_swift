@@ -231,7 +231,7 @@ def _mixed_language_library_impl(ctx):
         cc_info,
         coverage_common.instrumented_files_info(
             ctx,
-            dependency_attributes = ["deps"],
+            dependency_attributes = ["clang_target", "deps", "swift_target"],
         ),
         swift_info,
     ]
