@@ -421,11 +421,16 @@ def _handle_module(
 
     # Private -D flags might be needed to compile the PCM
     # TODO: Only grab local_defines once that has existed for long enough
-    local_defines = [
-        copt
-        for copt in getattr(attr, "copts", [])
-        if copt.startswith("-D") and "$(" not in copt
-    ]
+    local_defines = []
+    for copt in getattr(attr, "copts", []):
+        if copt.startswith("-D") and "$(" not in copt:
+            # Match the Bourne shell tokenization applied by C/C++ rules so
+            # that the PCM action receives the same argument value.
+            if "no_copts_tokenization" in aspect_ctx.features:
+                local_defines.append(copt)
+            else:
+                # TODO: https://github.com/bazelbuild/bazel/issues/8389
+                local_defines.extend(aspect_ctx.tokenize(copt))
     for define in getattr(attr, "local_defines", []):
         local_defines.append("-D" + define)
 
