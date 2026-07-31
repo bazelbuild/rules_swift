@@ -426,7 +426,7 @@ def _handle_module(
         if copt.startswith("-D") and "$(" not in copt:
             # Match the Bourne shell tokenization applied by C/C++ rules so
             # that the PCM action receives the same argument value.
-            if "no_copts_tokenization" in aspect_ctx.features:
+            if is_feature_enabled(feature_configuration, "no_copts_tokenization"):
                 local_defines.append(copt)
             else:
                 # TODO: https://github.com/bazelbuild/bazel/issues/8389
