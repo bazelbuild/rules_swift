@@ -308,6 +308,7 @@ def _handle_module(
         feature_configuration,
         module_map_file,
         module_name,
+        requested_features,
         direct_swift_infos,
         swift_infos,
         toolchains,
@@ -327,6 +328,7 @@ def _handle_module(
             legacy support).
         module_name: The name of the module, or None if it should be inferred
             from other properties of the target (for legacy support).
+        requested_features: The features requested for the current target.
         direct_swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
@@ -421,11 +423,20 @@ def _handle_module(
 
     # Private -D flags might be needed to compile the PCM
     # TODO: Only grab local_defines once that has existed for long enough
-    local_defines = [
-        copt
-        for copt in getattr(attr, "copts", [])
-        if copt.startswith("-D") and "$(" not in copt
-    ]
+    tokenization = not (
+        is_feature_enabled(feature_configuration, "no_copts_tokenization") or
+        "no_copts_tokenization" in requested_features
+    )
+    local_defines = []
+    for copt in getattr(attr, "copts", []):
+        if copt.startswith("-D") and "$(" not in copt:
+            # Match the Bourne shell tokenization applied by C/C++ rules so
+            # that the PCM action receives the same argument value.
+            if tokenization:
+                # TODO: https://github.com/bazelbuild/bazel/issues/8389
+                local_defines.extend(aspect_ctx.tokenize(copt))
+            else:
+                local_defines.append(copt)
     for define in getattr(attr, "local_defines", []):
         local_defines.append("-D" + define)
 
@@ -819,6 +830,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
             module_name = module_name,
+            requested_features = requested_features,
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
             toolchains = toolchains,
