@@ -22,6 +22,8 @@ load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_EMBEDDED",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -374,9 +376,30 @@ def _handle_module(
 
     if not module_map_file:
         if all_swift_infos:
+            # Passing every dep SwiftInfo through as *direct* (upstream
+            # b054a972) is only needed so the Swift layering check can see
+            # through targets without module maps. `_swift_info_init`
+            # materializes each direct provider's `direct_modules` into a fresh
+            # per-node list, so this snowballs through chains of
+            # module-map-less aggregate targets and OOMs analysis at monorepo
+            # scale. Keep the pass-through only where a layering-check feature
+            # can actually consume it.
+            if is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+            ) or is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
+            ):
+                return [
+                    SwiftInfo(
+                        direct_swift_infos = direct_swift_infos + swift_infos,
+                    ),
+                ]
             return [
                 SwiftInfo(
-                    direct_swift_infos = direct_swift_infos + swift_infos,
+                    direct_swift_infos = direct_swift_infos,
+                    swift_infos = swift_infos,
                 ),
             ]
         else:
