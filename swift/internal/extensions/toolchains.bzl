@@ -31,6 +31,9 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+"""
+
+_EXEC_TOOLCHAIN_PLATFORM = """
 ## Exec toolchains
 toolchain(
     name = "swift_toolchain_exec_{platform}",
@@ -106,11 +109,28 @@ def _exec_compatible_with_for_platform(platform):
     ]
 
 def toolchains_for_platform(platform, toolchain_repository):
+    """Returns `toolchain` declarations for a standalone Swift toolchain.
+
+    Args:
+        platform: The platform name (e.g. "xcode" or "ubuntu22.04").
+        toolchain_repository: The name of the repository containing the
+            standalone Swift toolchain.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
     content = _TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
+
+    if platform != "xcode":
+        content += _EXEC_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
 
     if platform in (
         "ubuntu22.04",
