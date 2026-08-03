@@ -14,6 +14,12 @@ swift_interop_hint(
     tags = FIXTURE_TAGS,
 )
 
+swift_interop_hint(
+    name = "NoCoptsTokenization_hint",
+    module_name = "NoCoptsTokenization",
+    tags = FIXTURE_TAGS,
+)
+
 cc_library(
     name = "Defines",
     srcs = [
@@ -24,9 +30,24 @@ cc_library(
     aspect_hints = [":Defines_hint"],
     copts = [
         "-DFIXTURE_FROM_COPTS=1",
+        "-DFIXTURE_FROM_COPTS_WITH_SPACES=rules\\ swift\\ fixture",
+        "-DFIXTURE_FROM_QUOTED_COPTS='quoted rules swift fixture'",
         "-include$(location :Defines.h)",
     ],
     local_defines = ["FIXTURE_FROM_LOCAL_DEFINES=1"],
+    tags = FIXTURE_TAGS,
+)
+
+cc_library(
+    name = "NoCoptsTokenization",
+    srcs = [
+        "NoCoptsTokenization.c",
+        "NoCoptsTokenization.h",
+    ],
+    hdrs = ["NoCoptsTokenization.h"],
+    aspect_hints = [":NoCoptsTokenization_hint"],
+    copts = ["-DFIXTURE_NO_COPTS_TOKENIZATION=rules swift fixture"],
+    features = ["no_copts_tokenization"],
     tags = FIXTURE_TAGS,
 )
 
@@ -34,7 +55,10 @@ swift_binary(
     name = "user",
     srcs = ["main.swift"],
     tags = FIXTURE_TAGS,
-    deps = [":Defines"],
+    deps = [
+        ":Defines",
+        ":NoCoptsTokenization",
+    ],
 )
 
 transition_binary(
