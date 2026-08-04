@@ -63,6 +63,7 @@ load(
     "SWIFT_FEATURE_THIN_LTO",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
+    "SWIFT_FEATURE_USE_SWIFTINTERFACE_FOR_CACHING",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
@@ -123,7 +124,17 @@ def _explicit_swift_module_map_info(
         feature_configuration,
         target_name,
         transitive_modules):
-    """Returns the explicit Swift module map file and matching Swift inputs."""
+    """Returns the explicit Swift module map file and matching Swift inputs.
+
+    Also returns a `unused_inputs` list. When
+    `swift.use_swiftinterface_for_caching` is enabled and every included module
+    has a swiftinterface, the returned `inputs` only carry the swiftinterface
+    files (participating in the action cache key) and the swiftmodule files are
+    moved into `unused_inputs` — sandboxed in but stripped from the cache key
+    via Bazel's `unused_inputs_list` mechanism. Modules lacking swiftinterface
+    (e.g., without `library_evolution`) fall back to swiftmodule going into
+    `inputs`, keeping correctness.
+    """
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
@@ -142,11 +153,11 @@ def _explicit_swift_module_map_info(
             if module.is_system
         ]
         if not module_contexts:
-            return struct(file = None, inputs = [])
+            return struct(file = None, inputs = [], unused_inputs = [])
 
         filename = "{}.swift-system-explicit-module-map.json".format(target_name)
     else:
-        return struct(file = None, inputs = [])
+        return struct(file = None, inputs = [], unused_inputs = [])
 
     explicit_swift_module_map_file = actions.declare_file(filename)
     write_explicit_swift_module_map_file(
@@ -154,9 +165,37 @@ def _explicit_swift_module_map_info(
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         module_contexts = module_contexts,
     )
+    use_swiftinterface_for_caching = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_SWIFTINTERFACE_FOR_CACHING,
+    )
+    if use_swiftinterface_for_caching:
+        inputs = []
+        unused_inputs = []
+        for module in module_contexts:
+            swift_module = module.swift
+            if not swift_module:
+                continue
+            interface_file = (
+                swift_module.private_swiftinterface or
+                swift_module.swiftinterface
+            )
+            if interface_file:
+                inputs.append(interface_file)
+                if type(swift_module.swiftmodule) == "File":
+                    unused_inputs.append(swift_module.swiftmodule)
+            elif type(swift_module.swiftmodule) == "File":
+                # Fallback: no interface, keep swiftmodule in cache-key inputs.
+                inputs.append(swift_module.swiftmodule)
+        return struct(
+            file = explicit_swift_module_map_file,
+            inputs = inputs,
+            unused_inputs = unused_inputs,
+        )
     return struct(
         file = explicit_swift_module_map_file,
         inputs = transitive_swift_dependency_inputs(module_contexts),
+        unused_inputs = [],
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):
@@ -311,6 +350,28 @@ def compile_module_interface(
     # than the same `depset` being flattened and re-merged multiple times up
     # the build graph.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
+
+    # Collect each transitive Swift dep's swiftinterface and swiftmodule as
+    # two parallel lists, so that when `swift.use_swiftinterface_for_caching`
+    # is enabled, configurators can route the swiftinterfaces into `inputs`
+    # (participating in the action cache key) and the swiftmodules into
+    # `unused_inputs` (still sandboxed for the compiler, but excluded from the
+    # cache key). `private_swiftinterface` is preferred over `swiftinterface`,
+    # matching the selection in `transitive_swift_dependency_inputs`.
+    transitive_swiftinterfaces = []
+    transitive_swiftmodules_only = []
+    for module in transitive_modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+        interface_file = (
+            swift_module.private_swiftinterface or
+            swift_module.swiftinterface
+        )
+        if interface_file:
+            transitive_swiftinterfaces.append(interface_file)
+        if type(swift_module.swiftmodule) == "File":
+            transitive_swiftmodules_only.append(swift_module.swiftmodule)
     transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
         transitive_modules,
     )
@@ -339,12 +400,19 @@ def compile_module_interface(
     else:
         indexstore_directory = None
 
+    # Determine if we should use swiftinterface files for caching
+    use_swiftinterface_for_caching = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_SWIFTINTERFACE_FOR_CACHING,
+    )
+
     prerequisites = struct(
         additional_inputs = additional_inputs,
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_unused_inputs = explicit_swift_module_map_info.unused_inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         is_swift = True,
@@ -355,6 +423,9 @@ def compile_module_interface(
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_swiftinterfaces = transitive_swiftinterfaces,
+        transitive_swiftmodules_only = transitive_swiftmodules_only,
+        use_swiftinterface_for_caching = use_swiftinterface_for_caching,
         user_compile_flags = copts,
     )
 
@@ -677,10 +748,24 @@ def compile(
     )
 
     defines_set = sets.make(defines)
+
+    # See the matching loop in `compile_module_interface` for the rationale.
+    # `private_swiftinterface` is preferred, matching
+    # `transitive_swift_dependency_inputs`.
+    transitive_swiftinterfaces = []
+    transitive_swiftmodules_only = []
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
+        interface_file = (
+            swift_module.private_swiftinterface or
+            swift_module.swiftinterface
+        )
+        if interface_file:
+            transitive_swiftinterfaces.append(interface_file)
+        if type(swift_module.swiftmodule) == "File":
+            transitive_swiftmodules_only.append(swift_module.swiftmodule)
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -783,6 +868,13 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     upcoming_features, experimental_features = upcoming_and_experimental_features(
         feature_configuration = feature_configuration,
     )
+
+    # Determine if we should use swiftinterface files for caching
+    use_swiftinterface_for_caching = is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_USE_SWIFTINTERFACE_FOR_CACHING,
+    )
+
     prerequisites = struct(
         additional_inputs = additional_inputs + toolchains.cc.all_files.to_list(),
         always_include_headers = is_feature_enabled(
@@ -800,6 +892,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         experimental_features = experimental_features,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_unused_inputs = explicit_swift_module_map_info.unused_inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
@@ -811,7 +904,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_swiftinterfaces = transitive_swiftinterfaces,
+        transitive_swiftmodules_only = transitive_swiftmodules_only,
         upcoming_features = upcoming_features,
+        use_swiftinterface_for_caching = use_swiftinterface_for_caching,
         user_compile_flags = copts,
         workspace_name = workspace_name,
         # Merge the compile outputs into the prerequisites.

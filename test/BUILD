@@ -31,6 +31,7 @@ load(":split_derived_files_tests.bzl", "split_derived_files_test_suite")
 load(":swift_binary_linking_tests.bzl", "swift_binary_linking_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":swift_toolchain_tests.bzl", "swift_toolchain_test_suite")
+load(":swiftinterface_for_caching_tests.bzl", "swiftinterface_for_caching_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
 load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
 load(":utils_tests.bzl", "utils_test_suite")
@@ -91,6 +92,8 @@ swift_binary_linking_test_suite(name = "swift_binary_rules")
 swift_through_non_swift_test_suite(name = "swift_through_non_swift")
 
 swift_toolchain_test_suite(name = "swift_toolchain")
+
+swiftinterface_for_caching_test_suite(name = "swiftinterface_for_caching")
 
 symbol_graphs_test_suite(name = "symbol_graphs")
 
