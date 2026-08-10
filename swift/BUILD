@@ -212,6 +212,7 @@ bzl_library(
     deps = [
         ":providers",
         ":swift_clang_module_aspect",
+        ":swift_overlay_helpers",
         "//swift/internal:attrs",
         "//swift/internal:feature_names",
         "//swift/internal:providers",

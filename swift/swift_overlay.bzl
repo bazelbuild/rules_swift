@@ -40,6 +40,7 @@ load(
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":providers.bzl", "SwiftInfo", "SwiftOverlayInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load(":swift_overlay_helpers.bzl", "SwiftOverlayTargetInfo")
 
 visibility("public")
 
@@ -52,29 +53,35 @@ def _swift_overlay_impl(ctx):
         features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
         features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
 
-    return [SwiftOverlayCompileInfo(
-        label = ctx.label,
-        srcs = ctx.files.srcs,
-        additional_inputs = ctx.files.swiftc_inputs,
-        copts = ctx.attr.copts,
-        defines = ctx.attr.defines,
-        disabled_features = ctx.disabled_features,
-        enabled_features = ctx.features,
-        library_evolution = ctx.attr.library_evolution,
-        linkopts = ctx.attr.linkopts,
-        plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
-        private_deps = struct(
-            cc_infos = get_providers(private_deps, CcInfo),
-            swift_infos = get_providers(private_deps, SwiftInfo),
-            swift_overlay_infos = get_providers(private_deps, SwiftOverlayInfo),
+    return [
+        SwiftOverlayCompileInfo(
+            label = ctx.label,
+            srcs = ctx.files.srcs,
+            additional_inputs = ctx.files.swiftc_inputs,
+            copts = ctx.attr.copts,
+            defines = ctx.attr.defines,
+            disabled_features = ctx.disabled_features,
+            enabled_features = ctx.features,
+            library_evolution = ctx.attr.library_evolution,
+            linkopts = ctx.attr.linkopts,
+            plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
+            private_deps = struct(
+                cc_infos = get_providers(private_deps, CcInfo),
+                swift_infos = get_providers(private_deps, SwiftInfo),
+                swift_overlay_infos = get_providers(
+                    private_deps,
+                    SwiftOverlayInfo,
+                ),
+            ),
+            alwayslink = ctx.attr.alwayslink,
+            deps = struct(
+                cc_infos = get_providers(deps, CcInfo),
+                swift_infos = get_providers(deps, SwiftInfo),
+                swift_overlay_infos = get_providers(deps, SwiftOverlayInfo),
+            ),
         ),
-        alwayslink = ctx.attr.alwayslink,
-        deps = struct(
-            cc_infos = get_providers(deps, CcInfo),
-            swift_infos = get_providers(deps, SwiftInfo),
-            swift_overlay_infos = get_providers(deps, SwiftOverlayInfo),
-        ),
-    )]
+        SwiftOverlayTargetInfo(),
+    ]
 
 def _swift_overlay_attrs():
     """Returns the attribute dictionary for the `swift_overlay` rule."""

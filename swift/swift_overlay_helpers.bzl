@@ -21,6 +21,19 @@ load(
 
 visibility("public")
 
+SwiftOverlayTargetInfo = provider(
+    doc = """\
+An empty marker provider used to identify `swift_overlay` targets.
+
+NOTE: This provider only exists to support the new requirement that aspects
+only visit aspect hints that list one of the hinted target's providers in their
+`required_aspect_hints_providers` attribute, because we do not want to leak an
+internal provider that contains more information for this purpose. We are
+hopeful that improvements to that API will make this provider obsolete.
+""",
+    fields = {},
+)
+
 def is_swift_overlay(target):
     """Returns a value indicating whether the given target is a `swift_overlay`.
 
