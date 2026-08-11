@@ -30,10 +30,7 @@ namespace bazel_rules_swift::worker_protocol {
 
 namespace {
 
-// Which wire format the peer speaks. Bazel selects JSON via the
-// requires-worker-protocol execution requirement, but that requirement is
-// client-side only: remote persistent worker runners (e.g. EngFlow) always
-// speak the original length-delimited protobuf encoding. Detect the encoding
+// Which wire format the peer speaks. Detect the encoding
 // from the first byte of the first request: JSON requests are
 // newline-delimited objects that begin with '{' (0x7b), while protobuf
 // frames begin with a varint message length (a 123-byte request would be
