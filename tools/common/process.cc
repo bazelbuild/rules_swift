@@ -248,8 +248,8 @@ int RunSubProcess(const std::vector<std::string>& args,
 
 #else
 #include <fcntl.h>
+#include <poll.h>
 #include <spawn.h>
-#include <sys/poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
