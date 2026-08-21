@@ -190,33 +190,44 @@ system_sdk.configure_sdks(
     exclude_modules = {
         "AppleTVOS": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
         "AppleTVSimulator": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
         "iPhoneSimulator": [
             "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
             "CoreAudio_Private",
+            "MobileGestaltPrivate",
         ],
         "iPhoneOS": [
             "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
+        ],
+        "MacOSX": [
+            "MobileGestaltPrivate",
         ],
         "XROS": [
             "AccessoryTransportExtension",
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
         "XRSimulator": [
             "AccessoryTransportExtension",
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
         "WatchOS": [
             "BrowserEngineKit",
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
         "WatchSimulator": [
             "BrowserEngineKit",
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+            "MobileGestaltPrivate",
         ],
     },
     include_all = True,
