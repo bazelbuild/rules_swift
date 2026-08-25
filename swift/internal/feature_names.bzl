@@ -407,6 +407,15 @@ SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR = "swift._supports_developer_dir"
 # Enabled by default for Swift 5.10+ on macOS.
 SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX = "swift.disable_swift_sandbox"
 
+# If enabled, compiler plugins are loaded only by the module that declares them
+# and modules that directly depend on it. This improves incremental build
+# performance when plugin implementations change, but it is incompatible with
+# code that relies on transitive plugin loading, such as macro use through a
+# transitive import or a macro-expanded default argument.
+SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES = (
+    "swift.load_plugins_from_direct_dependencies"
+)
+
 # Pass -suppress-warnings to the compiler.
 SWIFT_FEATURE_SUPPRESS_WARNINGS = "swift.suppress_warnings"
 

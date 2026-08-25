@@ -171,7 +171,9 @@ target.
                 cfg = "exec",
                 doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
-when compiling any modules that directly depend on this target.
+when compiling any modules that depend on this target. Enable the
+`swift.load_plugins_from_direct_dependencies` feature to load them only for
+modules that directly depend on this target.
 """,
                 providers = [[SwiftCompilerPluginInfo]],
             ),

@@ -145,7 +145,9 @@ Swift 5.9+.
                 cfg = config.exec(exec_group = "swift_plugins"),
                 doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
-when compiling this module and any modules that directly depend on it.
+when compiling this module and any modules that depend on it. Enable the
+`swift.load_plugins_from_direct_dependencies` feature to load them only for
+this module and modules that directly depend on it.
 """,
                 providers = [SwiftCompilerPluginInfo],
             ),
