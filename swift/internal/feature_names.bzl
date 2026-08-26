@@ -412,9 +412,7 @@ SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX = "swift.disable_swift_sandbox"
 # performance when plugin implementations change, but it is incompatible with
 # code that relies on transitive plugin loading, such as macro use through a
 # transitive import or a macro-expanded default argument.
-SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES = (
-    "swift.load_plugins_from_direct_dependencies"
-)
+SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES = "swift.load_plugins_from_direct_dependencies"
 
 # Pass -suppress-warnings to the compiler.
 SWIFT_FEATURE_SUPPRESS_WARNINGS = "swift.suppress_warnings"
