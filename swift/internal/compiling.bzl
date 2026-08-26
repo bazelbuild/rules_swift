@@ -273,7 +273,9 @@ def compile_module_interface(
     return struct(
         module_context = module_context,
         supplemental_outputs = struct(
+            const_values_files = [],
             indexstore_directory = indexstore_directory,
+            macro_expansion_directories = [],
         ),
     )
 
@@ -398,10 +400,10 @@ def compile(
                 the indexstore output files created when the feature
                 `swift.index_while_building` is enabled.
 
-            *   `macro_expansion_directory`: A directory-type `File` that
-                represents the location where macro expansion files were written
-                (only in debug/fastbuild and only when the toolchain supports
-                macros).
+            *   `macro_expansion_directories`: A list of directory-type `File`s
+                that represent the locations where macro expansion files were
+                written for each codegen batch (only in debug/fastbuild and only
+                when the toolchain supports macros).
     """
 
     validate_swift_module_name(
@@ -639,23 +641,25 @@ def compile(
         feature_configuration = feature_configuration,
         user_compile_flags = copts,
     ):
-        _execute_compile_plan(
+        macro_expansion_directories = _execute_compile_plan(
             actions = actions,
             compile_plan = compile_plan,
             exec_group = exec_group,
             feature_configuration = feature_configuration,
             prerequisites = prerequisites,
             swift_toolchain = toolchains.swift,
+            target_name = target_name,
             toolchain_type = toolchain_type,
         )
     else:
-        _plan_legacy_swift_compilation(
+        macro_expansion_directories = _plan_legacy_swift_compilation(
             actions = actions,
             compile_outputs = compile_plan.outputs,
             exec_group = exec_group,
             feature_configuration = feature_configuration,
             prerequisites = prerequisites,
             swift_toolchain = toolchains.swift,
+            target_name = target_name,
             toolchain_type = toolchain_type,
         )
 
@@ -742,9 +746,7 @@ def compile(
         supplemental_outputs = struct(
             const_values_files = compile_outputs.const_values_files,
             indexstore_directory = compile_outputs.indexstore_directory,
-            macro_expansion_directory = (
-                compile_outputs.macro_expansion_directory
-            ),
+            macro_expansion_directories = macro_expansion_directories,
         ),
         swift_info = SwiftInfo(
             modules = [module_context],
@@ -820,6 +822,7 @@ def _execute_compile_plan(
         feature_configuration,
         prerequisites,
         swift_toolchain,
+        target_name,
         toolchain_type):
     """Executes the planned actions needed to compile a Swift module.
 
@@ -834,6 +837,7 @@ def _execute_compile_plan(
         prerequisites: A `dict` containing the common prerequisites for the
             compilation action.
         swift_toolchain: The Swift toolchain being used to build.
+        target_name: The name of the target being built.
         toolchain_type: A toolchain type of the `swift_toolchain` which is used
             for the proper selection of the execution platform inside
             `run_toolchain_action`.
@@ -845,7 +849,6 @@ def _execute_compile_plan(
         # will be predictable.
         compile_plan.module_outputs.swiftmodule_file,
         compile_plan.module_outputs.generated_header_file,
-        compile_plan.module_outputs.macro_expansion_directory,
         compile_plan.module_outputs.swiftdoc_file,
         compile_plan.module_outputs.swiftinterface_file,
         compile_plan.module_outputs.swiftsourceinfo_file,
@@ -875,6 +878,7 @@ def _execute_compile_plan(
         compile_plan = compile_plan,
         feature_configuration = feature_configuration,
     )
+    macro_expansion_directories = []
     for number, batch in enumerate(batches, 1):
         object_prereqs = dict(prerequisites)
         object_prereqs["batch_number"] = number
@@ -920,6 +924,22 @@ def _execute_compile_plan(
             # target so that we can emit one indexstore per batch instead.
             batch_outputs.append(compile_plan.outputs.indexstore_directory)
 
+        if not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_OPT,
+        ):
+            if len(batches) == 1:
+                macro_expansion_dir = actions.declare_directory(
+                    "{}.macro-expansions".format(target_name),
+                )
+            else:
+                macro_expansion_dir = actions.declare_directory(
+                    "{}-{}.macro-expansions".format(target_name, number),
+                )
+            object_prereqs["macro_expansion_directory"] = macro_expansion_dir
+            batch_outputs.append(macro_expansion_dir)
+            macro_expansion_directories.append(macro_expansion_dir)
+
         run_toolchain_action(
             actions = actions,
             action_name = SWIFT_ACTION_COMPILE_CODEGEN,
@@ -931,6 +951,8 @@ def _execute_compile_plan(
             swift_toolchain = swift_toolchain,
             toolchain_type = toolchain_type,
         )
+
+    return macro_expansion_directories
 
 def _compute_codegen_batches(
         batch_size,
@@ -951,7 +973,6 @@ def _compute_codegen_batches(
         to be registered.
     """
     codegen_outputs = compile_plan.codegen_outputs
-    codegen_count = len(codegen_outputs)
 
     # TODO: b/351801556 - Update the APIs to support multiple indexstore
     # directories per target so that we can emit one indexstore per batch. For
@@ -999,6 +1020,7 @@ def _plan_legacy_swift_compilation(
         feature_configuration,
         prerequisites,
         swift_toolchain,
+        target_name,
         toolchain_type):
     """Plans the single driver invocation needed to compile a Swift module.
 
@@ -1016,10 +1038,26 @@ def _plan_legacy_swift_compilation(
         prerequisites: A `dict` containing the common prerequisites for the
             compilation action.
         swift_toolchain: The Swift toolchain being used to build.
+        target_name: The name of the target being built.
         toolchain_type: A toolchain type of the `swift_toolchain` which is used
             for the proper selection of the execution platform inside
             `run_toolchain_action`.
     """
+    if not is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_OPT,
+    ):
+        macro_expansion_dir = actions.declare_directory(
+            "{}.macro-expansions".format(target_name),
+        )
+        macro_expansion_directories = [macro_expansion_dir]
+    else:
+        macro_expansion_directories = []
+
+    compile_prereqs = dict(prerequisites)
+    if macro_expansion_directories:
+        compile_prereqs["macro_expansion_directory"] = macro_expansion_directories[0]
+
     all_compile_outputs = compact([
         # The `.swiftmodule` file is explicitly listed as the first output
         # because it will always exist and because Bazel uses it as a key for
@@ -1031,8 +1069,7 @@ def _plan_legacy_swift_compilation(
         compile_outputs.swiftsourceinfo_file,
         compile_outputs.generated_header_file,
         compile_outputs.indexstore_directory,
-        compile_outputs.macro_expansion_directory,
-    ]) + compile_outputs.object_files + compile_outputs.const_values_files
+    ]) + compile_outputs.object_files + compile_outputs.const_values_files + macro_expansion_directories
 
     run_toolchain_action(
         actions = actions,
@@ -1040,13 +1077,15 @@ def _plan_legacy_swift_compilation(
         exec_group = exec_group,
         feature_configuration = feature_configuration,
         outputs = all_compile_outputs,
-        prerequisites = struct(**prerequisites),
+        prerequisites = struct(**compile_prereqs),
         progress_message = "Compiling Swift module {}".format(
             prerequisites["module_name"],
         ),
         swift_toolchain = swift_toolchain,
         toolchain_type = toolchain_type,
     )
+
+    return macro_expansion_directories
 
 def _compile_clang_module_for_swift_module(
         actions,
@@ -1826,21 +1865,10 @@ def _construct_compile_plan(
         output_file_map = output_info.output_file_map
         codegen_outputs = output_info.codegen_outputs
 
-    if not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_OPT,
-    ):
-        macro_expansion_directory = actions.declare_directory(
-            "{}.macro-expansions".format(target_name),
-        )
-    else:
-        macro_expansion_directory = None
-
     compile_outputs = struct(
         const_values_files = const_values_files,
         generated_header_file = generated_header,
         indexstore_directory = indexstore_directory,
-        macro_expansion_directory = macro_expansion_directory,
         object_files = object_files,
         output_file_map = output_file_map,
         swiftdoc_file = swiftdoc_file,
@@ -1857,9 +1885,6 @@ def _construct_compile_plan(
         ),
         module_outputs = struct(
             generated_header_file = generated_header,
-            # TODO: b/351801556 - Verify that this is correct; it may need to be
-            # done by the codegen actions.
-            macro_expansion_directory = macro_expansion_directory,
             swiftdoc_file = swiftdoc_file,
             swiftinterface_file = swiftinterface_file,
             swiftmodule_file = swiftmodule_file,

@@ -638,10 +638,8 @@ def compile_action_configs(
         ),
         ActionConfigInfo(
             actions = [
-                # TODO: b/351801556 - Verify that this is correct; it may need
-                # to be done by the codegen actions.
                 SWIFT_ACTION_COMPILE,
-                SWIFT_ACTION_COMPILE_MODULE,
+                SWIFT_ACTION_COMPILE_CODEGEN,
             ],
             configurators = [_macro_expansion_configurator],
             # The compiler only generates these in debug builds, unless we pass
@@ -1660,10 +1658,16 @@ def _plugins_configurator(prerequisites, args):
 
 def _macro_expansion_configurator(prerequisites, args):
     """Adds flags to control where macro expansions are generated."""
-    args.add(
-        prerequisites.macro_expansion_directory.path,
-        format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+    macro_expansion_directory = getattr(
+        prerequisites,
+        "macro_expansion_directory",
+        None,
     )
+    if macro_expansion_directory:
+        args.add(
+            macro_expansion_directory.path,
+            format = "-Xwrapped-swift=-macro-expansion-dir=%s",
+        )
 
     return None
 
