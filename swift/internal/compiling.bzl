@@ -52,6 +52,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_GENERATED_MODULE_MAP",
@@ -754,14 +755,18 @@ def compile(
     else:
         deps_modules_file = None
 
-    # As of the time of this writing (Xcode 15.0), macros are the only kind of
-    # plugins that are available. Since macros do source-level transformations,
-    # we only need to load plugins directly used by the module being compiled.
-    # Plugins that are only used by transitive dependencies do *not* need to be
-    # passed; the compiler does not attempt to load them when deserializing
-    # modules.
     used_plugins = list(plugins)
-    for module_context in transitive_modules:
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES,
+    ):
+        plugin_module_contexts = []
+        for swift_info in swift_infos + private_swift_infos:
+            plugin_module_contexts.extend(swift_info.direct_modules)
+    else:
+        plugin_module_contexts = transitive_modules
+
+    for module_context in plugin_module_contexts:
         if module_context.swift and module_context.swift.plugins:
             used_plugins.extend(module_context.swift.plugins)
 
