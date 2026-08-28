@@ -128,7 +128,8 @@ SWIFT_FEATURE_MODULAR_INDEXING = "swift.modular_indexing"
 SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS = "swift.layering_check_for_c_deps"
 
 # If enabled, an error will be emitted when compiling Swift code if it imports
-# any module that is not listed among the direct dependencies of the target.
+# any module that is not listed among the direct dependencies of the target, or
+# if it declares a direct dependency that is never imported.
 SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
 
 # If enabled with `swift.layering_check_swift`, Swift layering checks will also

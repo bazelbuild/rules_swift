@@ -103,6 +103,14 @@ swift_library(
     deps = [":DirectDependency"],
 )
 
+swift_library(
+    name = "unused_dependency",
+    srcs = ["UnusedDependency.swift"],
+    module_name = "UnusedDependency",
+    tags = FIXTURE_TAGS,
+    deps = [":DirectDependency"],
+)
+
 transition_binary(
     name = "layering_violation_explicit_modules",
     tags = FIXTURE_TAGS,
