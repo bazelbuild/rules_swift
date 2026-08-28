@@ -460,6 +460,7 @@ def compile_action_configs(
         # Disable Swift sandbox.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [
