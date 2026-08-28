@@ -227,6 +227,17 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
+    disable_swift_sandbox_test(
+        name = "{}_disable_swift_sandbox_module_interface_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-disable-sandbox",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
     default_opt_test(
         name = "{}_default_opt_test".format(name),
         tags = all_tags,
