@@ -501,6 +501,7 @@ def _handle_module(
                     create_swift_module_context(
                         name = module_name,
                         clang = clang_module_context,
+                        label = target.label,
                     ),
                 ],
                 direct_swift_infos = direct_swift_infos,
@@ -533,6 +534,7 @@ def _handle_module(
                 create_swift_module_context(
                     name = module_name,
                     clang = clang_module_context,
+                    label = target.label,
                     swift = overlay_swift_module,
                 ),
             ],

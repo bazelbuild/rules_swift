@@ -25,6 +25,7 @@ def _system_swiftmodule_impl(ctx):
         name = ctx.attr.module_name,
         is_framework = ctx.attr.is_framework,
         is_system = True,
+        label = ctx.label,
         swift = create_swift_module_inputs(
             swiftdoc = None,
             swiftinterface = None,
