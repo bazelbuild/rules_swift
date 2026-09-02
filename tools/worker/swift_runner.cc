@@ -18,12 +18,14 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <utility>
 
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/strings/substitute.h"
@@ -340,10 +342,11 @@ bool CreateVerifyOutputs(const std::string& output_file_map_path,
 struct LayeringCheckModules {
   absl::btree_set<std::string> direct_modules;
   absl::btree_set<std::string> transitive_modules;
+  std::map<std::string, absl::btree_set<std::string>> labels;
 };
 
-// Reads the direct and transitive dependency module names of the code being
-// compiled.
+// Reads the direct and transitive dependency modules of the code being
+// compiled. Transitive entries also contain the module's owning Bazel label.
 LayeringCheckModules ReadLayeringCheckModules(absl::string_view path) {
   LayeringCheckModules modules;
   std::ifstream deps_file_stream(std::string(path.data(), path.size()));
@@ -354,12 +357,12 @@ LayeringCheckModules ReadLayeringCheckModules(absl::string_view path) {
       modules.direct_modules.insert(std::string(value));
       modules.transitive_modules.insert(std::string(value));
     } else if (absl::ConsumePrefix(&value, "transitive:")) {
-      modules.transitive_modules.insert(std::string(value));
-    } else {
-      // Compatibility with the original file format, which contained one
-      // direct module name per line.
-      modules.direct_modules.insert(line);
-      modules.transitive_modules.insert(line);
+      std::pair<std::string, std::string> module_and_label =
+          absl::StrSplit(value, absl::MaxSplits('\t', 1));
+      modules.transitive_modules.insert(module_and_label.first);
+      if (!module_and_label.second.empty()) {
+        modules.labels[module_and_label.first].insert(module_and_label.second);
+      }
     }
   }
   return modules;
@@ -904,10 +907,17 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
       // Swift's `-emit-imported-modules` output reports resolved aliased module
       // names. Map them back to the names users write in source before
       // reporting missing deps.
+      auto labels = layering_check_modules.labels.find(module_name);
       if (auto alias_and_source_name =
               alias_to_source_mapping_.find(module_name);
           alias_and_source_name != alias_to_source_mapping_.end()) {
-        missing_deps.insert(alias_and_source_name->second);
+        module_name = alias_and_source_name->second;
+      }
+
+      if (labels != layering_check_modules.labels.end()) {
+        for (const std::string& label : labels->second) {
+          missing_deps.insert(absl::Substitute("$0 ($1)", module_name, label));
+        }
       } else {
         missing_deps.insert(module_name);
       }

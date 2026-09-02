@@ -87,6 +87,7 @@ def _system_clang_module_impl(ctx):
                     name = ctx.attr.module_name,
                     clang = clang_module_context,
                     is_system = True,
+                    label = ctx.label,
                 ),
             ],
             swift_infos = swift_infos,

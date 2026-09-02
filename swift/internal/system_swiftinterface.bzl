@@ -82,6 +82,7 @@ def _system_swiftinterface_impl(ctx):
         clang = compile_result.module_context.clang,
         is_framework = ctx.attr.is_framework,
         is_system = True,
+        label = ctx.label,
         swift = create_swift_module_inputs(
             swiftdoc = None,
             swiftinterface = None,

@@ -320,6 +320,7 @@ def compile_module_interface(
         transitive_modules.append(create_swift_module_context(
             name = module_name,
             clang = clang_module,
+            label = feature_configuration._label,
         ))
 
     explicit_swift_module_map_info = _explicit_swift_module_map_info(
@@ -382,6 +383,7 @@ def compile_module_interface(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
         ),
+        label = feature_configuration._label,
         swift = create_swift_module_inputs(
             indexstore = indexstore_directory,
             swiftdoc = None,
@@ -728,8 +730,8 @@ def compile(
             feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
         )
 
-        transitive_module_names = [
-            module_context.name
+        layering_check_transitive_modules = [
+            module_context
             for module_context in transitive_modules
             # If we want to validate system modules that happens below
             if not module_context.is_system
@@ -738,10 +740,9 @@ def compile(
             # Default precompiled modules are disabled, so SDK modules are no
             # longer implicit imports and should participate in layering checks.
             for swift_info in toolchains.swift.system_modules.swift_infos:
-                transitive_module_names.extend([
-                    module_context.name
-                    for module_context in swift_info.transitive_modules.to_list()
-                ])
+                layering_check_transitive_modules.extend(
+                    swift_info.transitive_modules.to_list(),
+                )
 
         deps_modules_file = actions.declare_file(
             "{}.deps-module-mapping".format(target_name),
@@ -750,7 +751,7 @@ def compile(
             actions = actions,
             deps_modules_file = deps_modules_file,
             direct_module_names = direct_module_names,
-            transitive_module_names = transitive_module_names,
+            transitive_modules = layering_check_transitive_modules,
         )
     else:
         deps_modules_file = None
@@ -942,6 +943,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         ),
         compilation_context = compilation_context,
         is_system = False,
+        label = feature_configuration._label,
         swift = create_swift_module_inputs(
             ast_files = compile_outputs.ast_files,
             defines = defines,
@@ -1939,8 +1941,8 @@ def _write_deps_modules_file(
         actions,
         deps_modules_file,
         direct_module_names,
-        transitive_module_names):
-    """Writes a file containing the module names of direct dependencies.
+        transitive_modules):
+    """Writes a file containing dependency module names and owning labels.
 
     This file is used by the Swift worker process to perform layering checks.
     Direct modules are the modules that the Swift code is allowed to import
@@ -1954,13 +1956,21 @@ def _write_deps_modules_file(
             imported module names.
         direct_module_names: The list of names of modules that are the direct
             dependencies of the code being compiled.
-        transitive_module_names: The list of names of modules in the target's
+        transitive_modules: The list of module contexts in the target's
             transitive dependency graph.
     """
     deps_mapping = actions.args()
     deps_mapping.set_param_file_format("multiline")
     deps_mapping.add_all(direct_module_names, format_each = "direct:%s")
-    deps_mapping.add_all(transitive_module_names, format_each = "transitive:%s")
+    for module_context in transitive_modules:
+        deps_mapping.add_joined(
+            [
+                module_context.name,
+                getattr(module_context, "label", None) or "",
+            ],
+            format_joined = "transitive:%s",
+            join_with = "\t",
+        )
 
     actions.write(
         content = deps_mapping,

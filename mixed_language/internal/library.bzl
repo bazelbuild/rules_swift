@@ -210,6 +210,7 @@ def _mixed_language_library_impl(ctx):
                     module_map = extended_module_map,
                     precompiled_module = precompiled_module,
                 ),
+                label = ctx.label,
                 swift = swift_module.swift,
             ),
         ],

@@ -119,6 +119,7 @@ def _swift_import_impl(ctx):
                 compilation_context = cc_info.compilation_context,
                 module_map = None,
             ),
+            label = ctx.label,
             swift = create_swift_module_inputs(
                 plugins = [
                     plugin[SwiftCompilerPluginInfo]

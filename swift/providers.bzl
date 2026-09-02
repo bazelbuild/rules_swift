@@ -566,6 +566,7 @@ def create_swift_module_context(
         compilation_context = None,
         is_framework = False,
         is_system = False,
+        label = None,
         swift = None):
     """Creates a value containing Clang/Swift module artifacts of a dependency.
 
@@ -614,6 +615,9 @@ def create_swift_module_context(
             Therefore, it is assumed that any module with `is_system == True`
             must be able to be found using import search paths in order for
             implicit module builds to succeed.
+        label: The Bazel label of the target that owns the module. This is used
+            to produce actionable diagnostics for Swift layering violations.
+            May be `None` for modules that are not owned by a Bazel target.
         swift: A value returned by `create_swift_module_inputs` that
             contains artifacts related to Swift modules, such as the
             `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted
@@ -629,6 +633,7 @@ def create_swift_module_context(
         compilation_context = compilation_context,
         is_framework = is_framework,
         is_system = is_system,
+        label = label,
         name = name,
         swift = swift,
     )

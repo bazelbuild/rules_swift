@@ -362,7 +362,7 @@ A `struct` containing the values provided as arguments.
 
 <pre>
 create_swift_module_context(*, <a href="#create_swift_module_context-name">name</a>, <a href="#create_swift_module_context-clang">clang</a>, <a href="#create_swift_module_context-const_gather_protocols">const_gather_protocols</a>, <a href="#create_swift_module_context-compilation_context">compilation_context</a>,
-                            <a href="#create_swift_module_context-is_framework">is_framework</a>, <a href="#create_swift_module_context-is_system">is_system</a>, <a href="#create_swift_module_context-swift">swift</a>)
+                            <a href="#create_swift_module_context-is_framework">is_framework</a>, <a href="#create_swift_module_context-is_system">is_system</a>, <a href="#create_swift_module_context-label">label</a>, <a href="#create_swift_module_context-swift">swift</a>)
 </pre>
 
 Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -395,6 +395,7 @@ the set of transitive module names that are propagated by dependencies
 | <a id="create_swift_module_context-compilation_context"></a>compilation_context |  A value returned from `swift_common.create_compilation_context` that contains the context needed to compile the module being built. This may be `None` if the module wasn't compiled from sources.   |  `None` |
 | <a id="create_swift_module_context-is_framework"></a>is_framework |  Indictates whether the module is a framework module. The default value is `False`.   |  `False` |
 | <a id="create_swift_module_context-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is `False`. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via `-fmodule-map-file` should be treated as system modules even if they aren't declared with the `[system]` attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with `is_system == True` must be able to be found using import search paths in order for implicit module builds to succeed.   |  `False` |
+| <a id="create_swift_module_context-label"></a>label |  The Bazel label of the target that owns the module. This is used to produce actionable diagnostics for Swift layering violations. May be `None` for modules that are not owned by a Bazel target.   |  `None` |
 | <a id="create_swift_module_context-swift"></a>swift |  A value returned by `create_swift_module_inputs` that contains artifacts related to Swift modules, such as the `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted by the compiler. This may be `None` if the module is a pure C/Objective-C module.   |  `None` |
 
 **RETURNS**
