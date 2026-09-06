@@ -25,6 +25,14 @@ default_no_split_emit_swiftsourceinfo_provider_test = make_provider_test_rule(
     },
 )
 
+default_no_split_emit_swiftsourceinfo_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.emit_swiftsourceinfo",
+        ],
+    },
+)
+
 split_swiftmodule_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -53,6 +61,15 @@ split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule
 )
 
 split_emit_swiftsourceinfo_provider_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.emit_swiftsourceinfo",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
+
+split_emit_swiftsourceinfo_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "swift.emit_swiftsourceinfo",
@@ -135,6 +152,7 @@ def split_derived_files_test_suite(name, tags = []):
     default_no_split_test(
         name = "{}_default_no_split_args".format(name),
         expected_argv = [
+            "-avoid-emit-module-source-info",
             "-emit-module-path",
             "-emit-object",
             "-enable-batch-mode",
@@ -144,6 +162,16 @@ def split_derived_files_test_suite(name, tags = []):
             "simple.derived_output_file_map.json",
         ],
         mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    default_no_split_emit_swiftsourceinfo_test(
+        name = "{}_default_no_split_emit_swiftsourceinfo_args".format(name),
+        mnemonic = "SwiftCompile",
+        not_expected_argv = [
+            "-avoid-emit-module-source-info",
+        ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -274,6 +302,7 @@ def split_derived_files_test_suite(name, tags = []):
     split_swiftmodule_test(
         name = "{}_object_only".format(name),
         expected_argv = [
+            "-avoid-emit-module-source-info",
             "-emit-object",
             "-enable-batch-mode",
             "simple.output_file_map.json",
@@ -290,6 +319,7 @@ def split_derived_files_test_suite(name, tags = []):
     split_swiftmodule_test(
         name = "{}_swiftmodule_only".format(name),
         expected_argv = [
+            "-avoid-emit-module-source-info",
             "-emit-module-path",
             "-enable-batch-mode",
             "simple.derived_output_file_map.json",
@@ -298,6 +328,26 @@ def split_derived_files_test_suite(name, tags = []):
         not_expected_argv = [
             "-emit-object",
             "simple.output_file_map.json",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    split_emit_swiftsourceinfo_test(
+        name = "{}_object_only_emit_swiftsourceinfo".format(name),
+        mnemonic = "SwiftCompile",
+        not_expected_argv = [
+            "-avoid-emit-module-source-info",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    split_emit_swiftsourceinfo_test(
+        name = "{}_swiftmodule_only_emit_swiftsourceinfo".format(name),
+        mnemonic = "SwiftDeriveFiles",
+        not_expected_argv = [
+            "-avoid-emit-module-source-info",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",

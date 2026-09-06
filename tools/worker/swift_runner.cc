@@ -472,17 +472,6 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
 }
 
 int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
-  // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally written
-  // to the module path. In rules_swift >= 3.x these same files are no longer
-  // tracked by Bazel unless explicitly requested. When using non-sandboxed
-  // mode, previous builds will contain these files and cause build failures
-  // when Swift tries to use them, in order to work around this compatibility
-  // issue, we check the module path for the presence of .swiftsourceinfo files
-  // and if they are present but not requested, we remove them.
-  if (swift_source_info_path_ != "" && !emit_swift_source_info_) {
-    std::filesystem::remove(swift_source_info_path_);
-  }
-
   int exit_code = 0;
 
   // Do the layering check before compilation. This gives a better error
@@ -759,8 +748,6 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         target_label_ = std::string(value);
       } else if (absl::ConsumePrefix(&value, "-layering-check-deps-modules=")) {
         deps_modules_path_ = std::string(value);
-      } else if (value == "-emit-swiftsourceinfo") {
-        emit_swift_source_info_ = true;
       } else if (value == "-hermetic-pcm") {
         hermetic_pcm_ = true;
       } else if (absl::ConsumePrefix(
@@ -779,9 +766,6 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
     } else if (arg == "-emit-module-path") {
       ++it;
       emit_module_path_ = *it;
-      std::filesystem::path module_path(*it);
-      swift_source_info_path_ =
-          module_path.replace_extension(".swiftsourceinfo").string();
       out_args.push_back(*it);
     } else if (arg == "-module-name") {
       ++it;
