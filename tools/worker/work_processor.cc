@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 
+#include "absl/strings/match.h"
 #include "tools/common/file_system.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
@@ -125,7 +126,9 @@ void WorkProcessor::ProcessWorkRequest(
     prev_arg = original_arg;
   }
 
-  bool is_incremental = !is_wmo && !is_dump_ast;
+  bool is_derived_file_generation =
+      absl::EndsWith(output_file_map_path, ".derived_output_file_map.json");
+  bool is_incremental = !is_wmo && !is_dump_ast && !is_derived_file_generation;
 
   if (!output_file_map_path.empty()) {
     if (is_incremental) {
