@@ -14,6 +14,13 @@ load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 # buildifier: disable=bzl-visibility
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal/extensions:swift_sdks.bzl",
+    "linker_options_to_clang_args",
+    "merged_toolset_options",
+)
+
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
 
@@ -193,6 +200,90 @@ def _swift_sdk_download_url_test(ctx):
 
 swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 
+def _merged_toolset_options_test(ctx):
+    env = unittest.begin(ctx)
+
+    # The swift.org wasm32-unknown-wasip1 bundle: a single toolset with only
+    # Swift compiler options.
+    merged = merged_toolset_options(
+        [
+            {
+                "rootPath": "swift.xctoolchain/usr/bin",
+                "schemaVersion": "1.0",
+                "swiftCompiler": {
+                    "extraCLIOptions": ["-static-stdlib"],
+                },
+            },
+        ],
+        "test",
+    )
+    asserts.equals(env, [], merged.c_compiler)
+    asserts.equals(env, [], merged.cxx_compiler)
+    asserts.equals(env, [], merged.linker)
+    asserts.equals(env, ["-static-stdlib"], merged.swift_compiler)
+
+    # The wasm32-unknown-wasip1-threads bundle shape, split across two
+    # toolsets to check that `extraCLIOptions` accumulate in order.
+    merged = merged_toolset_options(
+        [
+            {
+                "cCompiler": {
+                    "extraCLIOptions": ["-matomics", "-mbulk-memory"],
+                },
+                "cxxCompiler": {
+                    "extraCLIOptions": ["-matomics", "-mbulk-memory"],
+                },
+                "linker": {
+                    "extraCLIOptions": ["--import-memory"],
+                },
+            },
+            {
+                "cCompiler": {
+                    "extraCLIOptions": ["-pthread"],
+                },
+                "linker": {
+                    "extraCLIOptions": ["--shared-memory"],
+                },
+                "swiftCompiler": {
+                    "extraCLIOptions": ["-static-stdlib"],
+                },
+            },
+        ],
+        "test",
+    )
+    asserts.equals(
+        env,
+        ["-matomics", "-mbulk-memory", "-pthread"],
+        merged.c_compiler,
+    )
+    asserts.equals(env, ["-matomics", "-mbulk-memory"], merged.cxx_compiler)
+    asserts.equals(env, ["--import-memory", "--shared-memory"], merged.linker)
+    asserts.equals(env, ["-static-stdlib"], merged.swift_compiler)
+
+    return unittest.end(env)
+
+merged_toolset_options_test = unittest.make(_merged_toolset_options_test)
+
+def _linker_options_to_clang_args_test(ctx):
+    env = unittest.begin(ctx)
+
+    asserts.equals(
+        env,
+        [
+            "-Wl,--import-memory",
+            "-Wl,--shared-memory",
+            "-Wl,--max-memory=1073741824",
+        ],
+        linker_options_to_clang_args(
+            ["--import-memory", "--shared-memory", "--max-memory=1073741824"],
+            "test",
+        ),
+    )
+
+    return unittest.end(env)
+
+linker_options_to_clang_args_test = unittest.make(_linker_options_to_clang_args_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
@@ -200,4 +291,6 @@ def utils_test_suite(name):
         include_developer_search_paths_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
+        merged_toolset_options_test,
+        linker_options_to_clang_args_test,
     )
