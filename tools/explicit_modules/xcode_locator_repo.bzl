@@ -23,6 +23,9 @@ def _xcode_locator_repo_impl(rctx):
     if err:
         fail("xcode-locator compilation failed: " + err)
     rctx.file("BUILD.bazel", 'exports_files(["xcode-locator-bin"])\n')
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = False)
+    return None
 
 xcode_locator_repo = repository_rule(
     implementation = _xcode_locator_repo_impl,

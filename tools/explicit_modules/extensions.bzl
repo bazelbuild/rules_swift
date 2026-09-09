@@ -199,6 +199,9 @@ system_module_group(
 
 def _system_sdk_stub_repo_impl(rctx):
     rctx.file("BUILD.bazel", _STUB_BUILD_FILE)
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = True)
+    return None
 
 _system_sdk_stub_repo = repository_rule(
     implementation = _system_sdk_stub_repo_impl,
