@@ -163,14 +163,6 @@ void OutputFileMap::UpdateForIncremental(
     auto copied_swiftdoc_path =
         MakeIncrementalOutputPath(swiftdoc_path, derived);
     incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
-
-    std::string swiftsourceinfo_path =
-        std::filesystem::path(swiftmodule_path)
-            .replace_extension(".swiftsourceinfo")
-            .string();
-    auto copied_swiftsourceinfo_path =
-        MakeIncrementalOutputPath(swiftsourceinfo_path, derived);
-    incremental_inputs[swiftsourceinfo_path] = copied_swiftsourceinfo_path;
   }
 
   if (!emit_objc_header_path.empty()) {

@@ -580,22 +580,10 @@ def compile_action_configs(
             ],
             not_features = [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
-
-        # Ensure that .swiftsourceinfo files are tracked and not deleted by the worker
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
-            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
-            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
-            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
-        ),
-        ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_DERIVE_FILES,
-            ],
-            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
-            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-avoid-emit-module-source-info")],
+            not_features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
         ),
     ]
 

@@ -223,12 +223,6 @@ class SwiftRunner {
   // index outputs into the `index_store_path` to integrate outputs with Bazel.
   std::string global_index_store_import_path_;
 
-  // The path where the module files will be written
-  std::string swift_source_info_path_;
-
-  // Whether `.swiftsourceinfo` files are being generated.
-  bool emit_swift_source_info_;
-
   // Whether `-Xwrapped-swift=-hermetic-pcm` was passed
   bool hermetic_pcm_;
 

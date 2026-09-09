@@ -89,7 +89,6 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
-  bool emit_swift_source_info = false;
 
   std::string prev_arg;
   for (std::string arg : request.arguments) {
@@ -114,8 +113,6 @@ void WorkProcessor::ProcessWorkRequest(
       emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
-    } else if (prev_arg == "-Xwrapped-swift=-emit-swiftsourceinfo") {
-      emit_swift_source_info = true;
     }
 
     if (!arg.empty()) {
@@ -166,18 +163,6 @@ void WorkProcessor::ProcessWorkRequest(
          output_file_map.incremental_inputs()) {
       const auto expected_object_path =
           std::filesystem::path(expected_object_pair.second);
-
-      // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally
-      // written to the module path. In rules_swift >= 3.x these same files are
-      // no longer tracked by Bazel unless explicitly requested. When using
-      // non-sandboxed mode, previous builds will contain these files and cause
-      // build failures when Swift tries to use them, in order to work around
-      // this compatibility issue, we remove them if they are present but not
-      // requested.
-      if (!emit_swift_source_info &&
-          expected_object_path.extension() == ".swiftsourceinfo") {
-        std::filesystem::remove(LongPath(expected_object_path));
-      }
 
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but not any any deeper directories, like one can have
