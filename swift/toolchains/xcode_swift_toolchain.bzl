@@ -1165,6 +1165,12 @@ for incremental compilation using a persistent mode.
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
+    # This toolchain requires Xcode and can only run on macOS. Without an
+    # explicit constraint, a build that lists non-mac execution platforms
+    # first (e.g. Linux remote executors for cross-compilation) resolves this
+    # rule to a non-mac execution platform, and `use_cc_toolchain()` then
+    # pairs the Xcode Swift toolchain with that platform's C++ toolchain.
+    exec_compatible_with = ["@platforms//os:macos"],
     toolchains = use_cc_toolchain(),
     fragments = [
         "cpp",
