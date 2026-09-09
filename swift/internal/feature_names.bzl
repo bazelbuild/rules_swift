@@ -449,3 +449,18 @@ SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
 # Before swift 6.3 using macros lead to absolute paths in swiftmodule files
 # even with -prefix-serialized-debugging-options
 SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"
+
+# If enabled, the action cache key for Swift compilation will be based on
+# `.swiftinterface` files instead of `.swiftmodule` files. This allows upstream
+# libraries to make internal changes without triggering recompilation of
+# downstream dependencies, as long as their public interface remains stable.
+#
+# This feature requires all dependencies to be built with `library_evolution`
+# enabled (so that `.swiftinterface` files are generated). If a dependency does
+# not have a `.swiftinterface` file, the build will fall back to using its
+# `.swiftmodule` file for that specific dependency.
+#
+# NOTE: This feature uses Bazel's `unused_inputs_list` mechanism to exclude
+# `.swiftmodule` files from the action cache key while still providing them as
+# inputs to the Swift compiler.
+SWIFT_FEATURE_USE_SWIFTINTERFACE_FOR_CACHING = "swift.use_swiftinterface_for_caching"

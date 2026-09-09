@@ -122,7 +122,8 @@ def _config_result_init(
         *,
         additional_tools = [],
         inputs = [],
-        transitive_inputs = []):
+        transitive_inputs = [],
+        unused_inputs = []):
     """Validates and initializes an action configurator result.
 
     Args:
@@ -132,6 +133,12 @@ def _config_result_init(
             being configured.
         transitive_inputs: A list of `depset`s of `File`s that should be passed
             as inputs to the action being configured.
+        unused_inputs: A list of `File`s that should be passed as inputs to the
+            action but should NOT affect the action cache key. These files are
+            written to an `unused_inputs_list` file that is passed to the action.
+            This is useful for files that are needed by the compiler but whose
+            content changes should not trigger recompilation (e.g., swiftmodule
+            files when using swiftinterface for caching).
 
     Returns:
         A new config result that can be returned from a configurator.
@@ -140,6 +147,7 @@ def _config_result_init(
         "additional_tools": additional_tools,
         "inputs": inputs,
         "transitive_inputs": transitive_inputs,
+        "unused_inputs": unused_inputs,
     }
 
 def add_arg(arg_name_or_value, value = None, format = None):
@@ -194,6 +202,7 @@ ConfigResultInfo, _config_result_init_unchecked = provider(
         "additional_tools",  # List[depset[File]]
         "inputs",  # list[File]
         "transitive_inputs",  # List[depset[File]]
+        "unused_inputs",  # list[File] - inputs that don't affect cache key
     ],
     init = _config_result_init,
 )

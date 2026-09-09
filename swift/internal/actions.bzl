@@ -43,6 +43,7 @@ def _apply_action_configs(
     additional_tools = []
     inputs = []
     transitive_inputs = []
+    unused_inputs = []
 
     for action_config in swift_toolchain.action_configs:
         # Skip the action config if it does not apply to the requested action.
@@ -101,12 +102,14 @@ def _apply_action_configs(
             additional_tools.extend(action_inputs.additional_tools)
             inputs.extend(action_inputs.inputs)
             transitive_inputs.extend(action_inputs.transitive_inputs)
+            unused_inputs.extend(action_inputs.unused_inputs)
 
     # Merge the action results into a single result that we return.
     return ConfigResultInfo(
         additional_tools = additional_tools,
         inputs = inputs,
         transitive_inputs = transitive_inputs,
+        unused_inputs = unused_inputs,
     )
 
 def is_action_enabled(action_name, swift_toolchain = None, toolchains = None):
@@ -227,23 +230,90 @@ def run_toolchain_action(
         swift_toolchain = swift_toolchain,
     )
 
-    actions.run(
-        arguments = [tool_executable_args, args],
-        env = tool_config.env,
-        exec_group = exec_group,
-        executable = executable,
-        toolchain = toolchain_type,
-        execution_requirements = execution_requirements,
-        inputs = depset(
-            action_inputs.inputs,
+    # Handle unused inputs for cache optimization. When unused_inputs is provided,
+    # we use Bazel's unused_inputs_list mechanism to exclude certain inputs from
+    # the action cache key calculation.
+    #
+    # According to Bazel docs, if unused_inputs_list file is in inputs, the inputs
+    # are trimmed BEFORE the action executes (not part of cache key).
+    # If it's in outputs, inputs are trimmed AFTER the action executes.
+    #
+    # We need the file to exist before the action runs, so we use actions.write()
+    # to create it first, then include it in the action's inputs.
+    unused_inputs = action_inputs.unused_inputs
+    if unused_inputs:
+        # Create a file listing all unused inputs (one path per line)
+        # Use module_name from prerequisites to ensure uniqueness across targets
+        module_name = getattr(prerequisites, "module_name", None)
+        if module_name:
+            unused_inputs_filename = "{}_{}_unused_inputs.txt".format(
+                module_name,
+                action_name,
+            )
+        else:
+            # Fallback: use output file path if available, otherwise action name
+            outputs = kwargs.get("outputs", [])
+            if outputs:
+                # Use the full path relative to output to ensure uniqueness
+                unused_inputs_filename = "{}_unused_inputs.txt".format(
+                    outputs[0].short_path.replace("/", "_"),
+                )
+            else:
+                unused_inputs_filename = "{}_unused_inputs.txt".format(action_name)
+
+        unused_inputs_list_file = actions.declare_file(unused_inputs_filename)
+
+        # Write the unused inputs list file. This creates a separate FileWrite
+        # action that must complete before the compile action can run.
+        actions.write(
+            output = unused_inputs_list_file,
+            content = "\n".join([f.path for f in unused_inputs]),
+        )
+
+        # Include unused inputs in the inputs depset, but pass the list file
+        # to actions.run so Bazel knows not to use them for caching.
+        # The unused_inputs_list_file must be in inputs for pre-execution trimming.
+        all_inputs = depset(
+            action_inputs.inputs + unused_inputs + [unused_inputs_list_file],
             transitive = action_inputs.transitive_inputs,
-        ),
-        mnemonic = mnemonic if mnemonic else action_name,
-        resource_set = tool_config.resource_set,
-        tools = depset(
-            tools,
-            transitive = action_inputs.additional_tools,
-        ),
-        use_default_shell_env = True,
-        **kwargs
-    )
+        )
+
+        actions.run(
+            arguments = [tool_executable_args, args],
+            env = tool_config.env,
+            exec_group = exec_group,
+            executable = executable,
+            toolchain = toolchain_type,
+            execution_requirements = execution_requirements,
+            inputs = all_inputs,
+            mnemonic = mnemonic if mnemonic else action_name,
+            resource_set = tool_config.resource_set,
+            tools = depset(
+                tools,
+                transitive = action_inputs.additional_tools,
+            ),
+            unused_inputs_list = unused_inputs_list_file,
+            use_default_shell_env = True,
+            **kwargs
+        )
+    else:
+        actions.run(
+            arguments = [tool_executable_args, args],
+            env = tool_config.env,
+            exec_group = exec_group,
+            executable = executable,
+            toolchain = toolchain_type,
+            execution_requirements = execution_requirements,
+            inputs = depset(
+                action_inputs.inputs,
+                transitive = action_inputs.transitive_inputs,
+            ),
+            mnemonic = mnemonic if mnemonic else action_name,
+            resource_set = tool_config.resource_set,
+            tools = depset(
+                tools,
+                transitive = action_inputs.additional_tools,
+            ),
+            use_default_shell_env = True,
+            **kwargs
+        )

@@ -2141,6 +2141,19 @@ def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    # When `swift.use_swiftinterface_for_caching` is enabled and there is at
+    # least one dep with a swiftinterface, route swiftinterfaces into
+    # cache-key `inputs` and swiftmodules into `unused_inputs` (still
+    # sandboxed for the compiler, but excluded from the action cache key).
+    # This lets an internal-only change in an upstream module leave
+    # downstream compile actions cache-eligible.
+    use_caching = getattr(prerequisites, "use_swiftinterface_for_caching", False)
+    interfaces = getattr(prerequisites, "transitive_swiftinterfaces", [])
+    if use_caching and interfaces:
+        return ConfigResultInfo(
+            inputs = interfaces + prerequisites.direct_swiftdocs,
+            unused_inputs = getattr(prerequisites, "transitive_swiftmodules_only", []),
+        )
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swift_dependency_inputs +
                  prerequisites.direct_swiftdocs,
@@ -2155,6 +2168,14 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
         uniquify = True,
     )
 
+    # See _dependencies_swiftmodules_and_swiftdocs_configurator for context.
+    use_caching = getattr(prerequisites, "use_swiftinterface_for_caching", False)
+    interfaces = getattr(prerequisites, "transitive_swiftinterfaces", [])
+    if use_caching and interfaces:
+        return ConfigResultInfo(
+            inputs = interfaces,
+            unused_inputs = getattr(prerequisites, "transitive_swiftmodules_only", []),
+        )
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swift_dependency_inputs,
     )
@@ -2271,6 +2292,15 @@ def _explicit_swift_module_map_configurator(
     return ConfigResultInfo(
         inputs = inputs,
         transitive_inputs = transitive_inputs,
+        # When `swift.use_swiftinterface_for_caching` is enabled,
+        # `_explicit_swift_module_map_info` already partitions the dep
+        # swiftmodules out of `inputs` into `unused_inputs`; propagate that
+        # partition verbatim here.
+        unused_inputs = getattr(
+            prerequisites,
+            "explicit_swift_module_map_unused_inputs",
+            [],
+        ),
     )
 
 def _module_name_configurator(prerequisites, args):
