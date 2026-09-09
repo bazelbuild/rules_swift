@@ -14,6 +14,7 @@
 
 """Tests for `swift_library.generated_header`."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -105,6 +106,15 @@ def generated_header_test_suite(name, tags = []):
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/generated_header:auto_header",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
+        name = "{}_objc_consumer_finds_generated_header_imports".format(name),
+        targets = [
+            "//test/fixtures/generated_header:objc_consumer_of_generated_header",
+        ],
+        tags = all_tags,
         target_compatible_with = ["@platforms//os:macos"],
     )
 
