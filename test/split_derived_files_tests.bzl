@@ -459,6 +459,7 @@ def split_derived_files_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         not_expected_argv = [
             "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
@@ -467,11 +468,12 @@ def split_derived_files_test_suite(name, tags = []):
     split_swiftmodule_skip_function_bodies_test(
         name = "{}_skip_function_bodies".format(name),
         expected_argv = [
-            "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
         ],
         mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
+            "-experimental-skip-non-inlinable-function-bodies",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
