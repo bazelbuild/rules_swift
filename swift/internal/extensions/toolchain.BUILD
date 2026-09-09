@@ -22,6 +22,7 @@ exports_files([
 exports_files([
     "usr/bin/clang",
     "usr/bin/llvm-ar",
+    "usr/bin/swift",
     "usr/bin/swiftc",
     "usr/bin/swift-autolink-extract",
     "usr/bin/swift-symbolgraph-extract",
