@@ -183,6 +183,10 @@ void WorkProcessor::ProcessWorkRequest(
       dir_paths.insert(dir_path);
     }
 
+    for (const auto& output : output_file_map.incremental_cleanup_outputs()) {
+      dir_paths.insert(std::filesystem::path(output).parent_path().string());
+    }
+
     for (const auto& dir_path : dir_paths) {
       std::error_code ec;
       std::filesystem::create_directories(LongPath(dir_path), ec);
