@@ -1739,6 +1739,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     # The output map data, which is keyed by source path and will be written to
     # `output_map_file`.
     output_map = {}
+    derived_files_output_map = {}
     whole_module_map = {}
 
     # Output files that will be emitted by the compiler.
@@ -1801,6 +1802,11 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         output_map[src.path] = file_outputs
 
+        if split_derived_file_generation and not is_wmo:
+            derived_files_output_map[src.path] = {
+                "swift-dependencies": paths.replace_extension(obj.path, ".swiftdeps"),
+            }
+
     if whole_module_map:
         output_map[""] = whole_module_map
 
@@ -1811,7 +1817,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     if split_derived_file_generation:
         actions.write(
-            content = "{}",
+            content = json.encode(derived_files_output_map),
             output = derived_files_output_map_file,
         )
 
