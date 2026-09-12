@@ -25,8 +25,11 @@ load(
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_DEBUG_MODULE_PATH",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
+    "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
 )
 load(":features.bzl", "is_feature_enabled")
 
@@ -123,8 +126,74 @@ def should_embed_swiftmodule_for_debugging(
         not is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
-        )
+        ) and
+        not uses_precise_debug_module_tracking(feature_configuration)
     )
+
+def uses_precise_debug_module_tracking(feature_configuration):
+    """Returns whether precise module tracking is enabled for this build.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        True for dbg or fastbuild builds with all required module features enabled.
+    """
+
+    return _is_debugging(feature_configuration) and all([
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = feature_name,
+        )
+        for feature_name in [
+            SWIFT_FEATURE_DEBUG_MODULE_PATH,
+            SWIFT_FEATURE_USE_C_MODULES,
+            SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        ]
+    ])
+
+def collect_debug_module_files(module_contexts):
+    """Collects Swift and Clang module files for debugging.
+
+    Args:
+        module_contexts: Module contexts whose artifacts and debug dependencies
+            should be collected.
+
+    Returns:
+        A depset of Swift and Clang module files needed by the debugger,
+        including private and implicit dependencies.
+    """
+    files = []
+    transitive = []
+    for module in module_contexts:
+        if module.swift and type(module.swift.swiftmodule) == "File":
+            files.append(module.swift.swiftmodule)
+        if module.clang and module.clang.precompiled_module:
+            files.append(module.clang.precompiled_module)
+        if module.compilation_context:
+            transitive.append(module.compilation_context.debug_modules)
+    return depset(files, transitive = transitive)
+
+def debug_module_outputs(feature_configuration, module_contexts, swift_infos):
+    """Returns module files needed to debug a binary using precise module tracking.
+
+    Args:
+        feature_configuration: The binary's Swift feature configuration.
+        module_contexts: Modules compiled by the binary, including test runners.
+        swift_infos: Swift providers from dependencies, also used when the
+            binary has no sources of its own.
+
+    Returns:
+        A depset of Swift and Clang module files needed by the debugger,
+        including transitive dependencies.
+    """
+    if not uses_precise_debug_module_tracking(feature_configuration):
+        return depset()
+    modules = depset(
+        module_contexts,
+        transitive = [info.transitive_modules for info in swift_infos],
+    )
+    return collect_debug_module_files(modules.to_list())
 
 def _is_debugging(feature_configuration):
     """Returns `True` if the current compilation mode produces debug info.

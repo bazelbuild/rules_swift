@@ -40,6 +40,43 @@ would still be embedded in the swiftmodule files. This means debugging
 in `lldb` with explicit modules would not work with cached swiftmodules
 and is therefore disabled.
 
+### Module tracking in debug info
+
+With Xcode 27 and newer, `swift.debug_module_path` is enabled by default.
+It requires Swift 6.4 or newer compiler and debugger support, and takes
+effect in `dbg` and `fastbuild` compilation modes when both
+`swift.use_c_modules` and `swift.use_explicit_swift_module_map` are enabled.
+Enable explicit modules as described in [Usage](#usage), including
+`swift.emit_c_module`.
+
+The compiler writes the `.swiftmodule` path into each object file's
+debug information using `-debug-module-path`. Each explicit module also
+records its dependencies. LLDB uses these paths to find the module files
+it needs for expression evaluation, replacing the previous `-add_ast_path`
+or module-wrapping mechanism. See
+[Module Tracking in Swift Debug Info](https://www.swift.org/blog/module-tracking-in-debug-info/)
+for more details.
+
+To disable this behavior and retain the previous debug module handling,
+add this to your `.bazelrc`:
+
+```
+build --features=-swift.debug_module_path --host_features=-swift.debug_module_path
+```
+
+The previous behavior is also retained when either of the explicit
+module features required above is disabled. In `opt` mode, this feature
+does not add debug module paths, linker inputs, or default outputs, even
+if debug info is enabled manually with `-g`.
+
+Expression evaluation still requires the `.swiftmodule` and `.pcm`
+files at their original or remapped locations. `swift_binary` and
+`swift_test` include these files in their default outputs, including
+private and implicit dependencies, so they are downloaded with
+`--remote_download_outputs=toplevel`. If you link through other binary
+rules, your build or debugger integration must make these files
+available locally.
+
 ## Using explicit dependencies
 
 By default we implicitly add all possible precompiled modules to the

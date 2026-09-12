@@ -224,6 +224,15 @@ SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES = "swift.add_default_precompiled_m
 # using a JSON file instead of `-I` search paths.
 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
 
+# If enabled together with `swift.use_c_modules` and
+# `swift.use_explicit_swift_module_map` in dbg or fastbuild mode, object
+# compilations record their own `.swiftmodule` path in debug info instead of
+# embedding modules at link time.
+# https://www.swift.org/blog/module-tracking-in-debug-info/
+# Requires Swift 6.4 or newer for the compiler and debugger support.
+# Enabled by default for Xcode 27 and newer.
+SWIFT_FEATURE_DEBUG_MODULE_PATH = "swift.debug_module_path"
+
 # If enabled, Swift compilation actions will use the same global Clang module
 # cache used by Objective-C compilation actions. This can be disabled because
 # under some circumstances Clang module cache corruption can cause the Swift
