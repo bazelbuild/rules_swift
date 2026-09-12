@@ -24,6 +24,7 @@ load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
+    "uses_precise_debug_module_tracking",
 )
 load(":developer_dirs.bzl", "developer_dirs_linkopts")
 load(
@@ -136,7 +137,7 @@ def _create_autolink_linking_context(
 
     return None
 
-def _create_embedded_debugging_linking_context(
+def _create_debugging_linking_context(
         *,
         actions,
         feature_configuration,
@@ -144,7 +145,7 @@ def _create_embedded_debugging_linking_context(
         module_context,
         toolchains,
         toolchain_type):
-    """Creates a linking context that embeds a .swiftmodule for debugging.
+    """Creates a linking context that makes a .swiftmodule available for debugging.
 
     Args:
         actions: The context's `actions` object.
@@ -154,8 +155,6 @@ def _create_embedded_debugging_linking_context(
             of the linker inputs created for post-compile actions (if any).
         module_context: The module context returned by `compile`
             containing information about the Swift module that was compiled.
-            Typically, this is the first tuple element in the value returned by
-            `compile`.
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the `swift_toolchain` which is
@@ -165,29 +164,32 @@ def _create_embedded_debugging_linking_context(
     Returns:
         A valid `CcLinkingContext`, or `None` if no linking context was created.
     """
-    if (
-        module_context and
-        module_context.swift and
-        should_embed_swiftmodule_for_debugging(
-            feature_configuration = feature_configuration,
-            module_context = module_context,
-        )
-    ):
-        post_compile_linker_inputs = [
-            ensure_swiftmodule_is_embedded(
-                actions = actions,
-                feature_configuration = feature_configuration,
-                label = label,
-                swiftmodule = module_context.swift.swiftmodule,
-                toolchains = toolchains,
-                toolchain_type = toolchain_type,
-            ),
-        ]
-        return cc_common.create_linking_context(
-            linker_inputs = depset(post_compile_linker_inputs),
-        )
+    if not (module_context and module_context.swift and module_context.swift.swiftmodule):
+        return None
 
-    return None
+    if uses_precise_debug_module_tracking(feature_configuration):
+        linker_input = cc_common.create_linker_input(
+            owner = label,
+            additional_inputs = depset([module_context.swift.swiftmodule]),
+        )
+    elif should_embed_swiftmodule_for_debugging(
+        feature_configuration = feature_configuration,
+        module_context = module_context,
+    ):
+        linker_input = ensure_swiftmodule_is_embedded(
+            actions = actions,
+            feature_configuration = feature_configuration,
+            label = label,
+            swiftmodule = module_context.swift.swiftmodule,
+            toolchains = toolchains,
+            toolchain_type = toolchain_type,
+        )
+    else:
+        return None
+
+    return cc_common.create_linking_context(
+        linker_inputs = depset([linker_input]),
+    )
 
 def create_linking_context_from_compilation_outputs(
         *,
@@ -279,7 +281,7 @@ def create_linking_context_from_compilation_outputs(
         for cc_info in implicit_cc_infos
     ]
 
-    debugging_linking_context = _create_embedded_debugging_linking_context(
+    debugging_linking_context = _create_debugging_linking_context(
         actions = actions,
         feature_configuration = feature_configuration,
         label = label,
@@ -441,9 +443,9 @@ def register_link_binary_action(
         label: The label of the target being linked, whose name is used to
             derive the output artifact if the `name` argument is not provided.
         module_contexts: A list of module contexts resulting from the
-            compilation of the sources in the binary target, which are embedded
-            in the binary for debugging if this is a debug build. This list may
-            be empty if the target had no sources of its own.
+            compilation of the sources in the binary target, used to configure
+            module handling for debugging. This list may be empty if the target
+            had no sources of its own.
         name: If provided, the name of the output file to generate. If not
             provided, the name of `label` will be used.
         output_type: A string indicating the output type; "executable" or
@@ -478,7 +480,7 @@ def register_link_binary_action(
     ] + additional_linking_contexts
 
     for module_context in module_contexts:
-        debugging_linking_context = _create_embedded_debugging_linking_context(
+        debugging_linking_context = _create_debugging_linking_context(
             actions = actions,
             feature_configuration = feature_configuration,
             label = label,
