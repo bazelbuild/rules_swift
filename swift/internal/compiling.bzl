@@ -34,6 +34,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
 )
 load(":actions.bzl", "is_action_enabled", "run_toolchain_action")
+load(":debugging.bzl", "collect_debug_module_files")
 load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
@@ -171,8 +172,10 @@ def create_compilation_context(defines, srcs, transitive_modules):
             the target.
 
     Returns:
-        A `struct` containing four fields:
+        A `struct` containing the following fields:
 
+        *   `debug_modules`: A depset of module files needed to import this
+            target's dependencies in the debugger, including private deps.
         *   `defines`: A sequence of defines used when compiling the target.
             Includes the defines for the target and its transitive dependencies.
         *   `direct_sources`: A sequence of Swift source files used to compile
@@ -202,6 +205,7 @@ def create_compilation_context(defines, srcs, transitive_modules):
 
     # Tuples are used instead of lists since they need to be frozen
     return struct(
+        debug_modules = collect_debug_module_files(transitive_modules),
         defines = tuple(sets.to_list(defines_set)),
         direct_sources = tuple(srcs),
         module_maps = tuple(module_maps),
