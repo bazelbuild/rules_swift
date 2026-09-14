@@ -36,5 +36,6 @@ transition_binary(
     target = ":second",
     transitive_features = [
         "swift.use_explicit_swift_module_map",
+        "swift.emit_swiftsourceinfo",
     ],
 )

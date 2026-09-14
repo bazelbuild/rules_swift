@@ -155,9 +155,16 @@ def _explicit_swift_module_map_info(
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         module_contexts = module_contexts,
     )
+    inputs = transitive_swift_dependency_inputs(module_contexts)
+    for module in module_contexts:
+        if module.swift and module.swift.swiftmodule:
+            inputs.extend(compact([
+                module.swift.swiftdoc,
+                module.swift.swiftsourceinfo,
+            ]))
     return struct(
         file = explicit_swift_module_map_file,
-        inputs = transitive_swift_dependency_inputs(module_contexts),
+        inputs = inputs,
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):

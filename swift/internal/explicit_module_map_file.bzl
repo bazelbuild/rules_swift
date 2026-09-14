@@ -49,9 +49,15 @@ def write_explicit_swift_module_map_file(
                 swiftmodule_path = module_context.swift.swiftmodule.path
             else:
                 swiftmodule_path = module_context.swift.swiftmodule
-            module_descriptions["swift:{}".format(module_context.name)] = base_description | {
+            swift_description = base_description | {
                 "modulePath": swiftmodule_path,
             }
+
+            if module_context.swift.swiftdoc:
+                swift_description["docPath"] = module_context.swift.swiftdoc.path
+            if module_context.swift.swiftsourceinfo:
+                swift_description["sourceInfoPath"] = module_context.swift.swiftsourceinfo.path
+            module_descriptions["swift:{}".format(module_context.name)] = swift_description
 
         if module_context.clang:
             clang_description = {}
