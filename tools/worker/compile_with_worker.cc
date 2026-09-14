@@ -31,6 +31,15 @@
 // invocations of the compiler will use them to detect which source files
 // actually need to be recompiled if any of them change.
 //
+// With split derived-files generation, SwiftDeriveFiles uses its own output
+// file map containing per-source dependency paths. The worker also adds paths
+// for partial .swiftmodules: the driver requires those outputs to exist before
+// it can skip a source, and otherwise places them in a temporary directory.
+// These partial modules and dependencies stay in _swift_incremental_derived,
+// separate from SwiftCompile's state in _swift_incremental. They are not Bazel
+// outputs; only the final module and other requested derived files are exposed
+// to downstream actions.
+//
 // This compilation model doesn't interact well with Bazel, which expects builds
 // to be hermetic (not affected by each other). In other words, outputs of build
 // N are traditionally not available as inputs to build N+1; the action

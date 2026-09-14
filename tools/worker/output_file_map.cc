@@ -16,7 +16,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -130,12 +129,24 @@ void OutputFileMap::UpdateForIncremental(
 
         incremental_cleanup_outputs.push_back(swiftdeps_path);
       } else if (kind == "swift-dependencies") {
-        // If there was already a "swift-dependencies" entry present, ignore it.
-        // (This shouldn't happen because the build rules won't do this, but
-        // check just in case.)
-        std::cerr << "There was a 'swift-dependencies' entry for " << src
-                  << ", but the build rules should not have done this; "
-                  << "ignoring it.\n";
+        // Only derived-file maps need explicit per-source dependency paths.
+        // So we ignore other entries, including those added by a previous
+        // rewrite.
+        if (derived && !src.empty()) {
+          swiftdeps_path = MakeIncrementalOutputPath(path, derived);
+          incremental_cleanup_outputs.push_back(swiftdeps_path);
+
+          // Module-only compilations also produce per-source partial modules.
+          // The driver checks that all outputs exist before skipping a source;
+          // leaving these in its temporary directory forces every source to be
+          // recompiled even when its swiftdeps are available. We keep the
+          // partial modules beside the swiftdeps, without copying either back
+          // to Bazel. Some driver modes skip partial compilation jobs entirely,
+          // so these files are not required outputs of every invocation.
+          src_map["swiftmodule"] = std::filesystem::path(swiftdeps_path)
+                                       .replace_extension(".swiftmodule")
+                                       .string();
+        }
       } else {
         // Otherwise, just copy the mapping over verbatim.
         src_map[kind] = path;
