@@ -736,6 +736,38 @@ def _parse_modulemap_for_modules(modulemap_path: Path) -> set[str]:
     return modules
 
 
+def _resolve_sdk_path(*, developer_dir: Path, sdk: str) -> Path:
+    """Resolves the concrete SDK path for `sdk` within `developer_dir`.
+
+    Xcode's `SDKs` directory normally contains an unversioned `<SDK>.sdk`
+    symlink (for example `MacOSX.sdk`) that points at the versioned SDK, but that
+    symlink is not guaranteed to exist in every Xcode layout. Ask `xcrun` for the
+    resolved path instead.
+    """
+    env = dict(os.environ)
+    env["DEVELOPER_DIR"] = developer_dir.as_posix()
+    try:
+        output = subprocess.check_output(
+            ["xcrun", "--sdk", sdk.lower(), "--show-sdk-path"],
+            env=env,
+            text=True,
+            stderr=subprocess.PIPE,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError) as e:
+        stderr = getattr(e, "stderr", "") or ""
+        raise SystemExit(
+            f"error: could not resolve the {sdk} SDK path via xcrun "
+            f"(DEVELOPER_DIR={developer_dir}): {e}\n{stderr}"
+        )
+
+    if not output:
+        raise SystemExit(
+            f"error: `xcrun --sdk {sdk.lower()} --show-sdk-path` returned an "
+            f"empty path (DEVELOPER_DIR={developer_dir})"
+        )
+    return Path(output)
+
+
 def _discover_all_modules(
     developer_dir: Path,
     developer_dir_symlink_name: str,
@@ -743,7 +775,7 @@ def _discover_all_modules(
     excluded_modules: set[str],
 ) -> tuple[str, set[str]]:
     platform_developer_path = developer_dir / f"Platforms/{sdk}.platform/Developer"
-    sdk_path = platform_developer_path / f"SDKs/{sdk}.sdk"
+    sdk_path = _resolve_sdk_path(developer_dir=developer_dir, sdk=sdk)
     framework_search_paths = [
         platform_developer_path / "Library/Frameworks",
         sdk_path / "System/Library/Frameworks",
