@@ -27,6 +27,7 @@ load(
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DEBUG_MODULE_PATH",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
@@ -137,10 +138,14 @@ def uses_precise_debug_module_tracking(feature_configuration):
         feature_configuration: The Swift feature configuration.
 
     Returns:
-        True for dbg or fastbuild builds with all required module features enabled.
+        True for builds with debug info and all required module features enabled.
     """
 
-    return _is_debugging(feature_configuration) and all([
+    has_debug_info = _is_debugging(feature_configuration) or is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
+    )
+    return has_debug_info and all([
         is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = feature_name,

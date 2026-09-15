@@ -24,7 +24,6 @@ load(
     ":debugging.bzl",
     "ensure_swiftmodule_is_embedded",
     "should_embed_swiftmodule_for_debugging",
-    "uses_precise_debug_module_tracking",
 )
 load(":developer_dirs.bzl", "developer_dirs_linkopts")
 load(
@@ -145,7 +144,7 @@ def _create_debugging_linking_context(
         module_context,
         toolchains,
         toolchain_type):
-    """Creates a linking context that makes a .swiftmodule available for debugging.
+    """Creates a linking context that embeds a .swiftmodule for debugging.
 
     Args:
         actions: The context's `actions` object.
@@ -164,15 +163,10 @@ def _create_debugging_linking_context(
     Returns:
         A valid `CcLinkingContext`, or `None` if no linking context was created.
     """
-    if not (module_context and module_context.swift and module_context.swift.swiftmodule):
+    if not (module_context and module_context.swift):
         return None
 
-    if uses_precise_debug_module_tracking(feature_configuration):
-        linker_input = cc_common.create_linker_input(
-            owner = label,
-            additional_inputs = depset([module_context.swift.swiftmodule]),
-        )
-    elif should_embed_swiftmodule_for_debugging(
+    if should_embed_swiftmodule_for_debugging(
         feature_configuration = feature_configuration,
         module_context = module_context,
     ):

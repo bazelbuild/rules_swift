@@ -170,6 +170,12 @@ def _debug_module_linking_test_impl(ctx):
         asserts.equals(env, [], modulewrap_actions)
         asserts.false(env, ast_flag in link_flags)
         asserts.equals(env, ctx.attr.expect_module_input, swiftmodule in additional_inputs)
+        if not ctx.attr.expect_module_input:
+            asserts.equals(env, [], [
+                file.short_path
+                for file in additional_inputs
+                if file.extension in ["swiftmodule", "pcm"] or file.basename.endswith(".modulewrap.o")
+            ], "Debug modules must not be linker inputs")
 
     return analysistest.end(env)
 
@@ -360,6 +366,25 @@ debug_module_path_opt_linking_test = analysistest.make(
     config_settings = DEBUG_MODULE_PATH_OPT_CONFIG_SETTINGS,
 )
 
+DEBUG_MODULE_PATH_OPT_FULL_DI_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "opt",
+    "//command_line_option:features": _EXPLICIT_DEBUG_MODULE_PATH_FEATURES + ["swift.full_debug_info"],
+}
+
+debug_module_path_opt_full_di_test = make_action_command_line_test_rule(
+    config_settings = DEBUG_MODULE_PATH_OPT_FULL_DI_CONFIG_SETTINGS,
+)
+
+debug_module_path_opt_full_di_linking_test = analysistest.make(
+    _debug_module_linking_test_impl,
+    attrs = {
+        "expect_module_input": attr.bool(default = False),
+        "expect_embedding": attr.bool(default = True),
+        "is_binary": attr.bool(default = False),
+    },
+    config_settings = DEBUG_MODULE_PATH_OPT_FULL_DI_CONFIG_SETTINGS,
+)
+
 NO_EMBED_DEBUG_MODULE_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
     "//command_line_option:features": [
@@ -491,7 +516,7 @@ def debug_settings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:module_path_binary",
     )
 
-    # Record the module path and make the module available without embedding it.
+    # Record the module path without passing the module to the linker.
     debug_module_path_test(
         name = "{}_debug_module_path_explicit_modules".format(name),
         expected_argv = [
@@ -504,7 +529,7 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_linking_test(
         name = "{}_debug_module_path_explicit_modules_linking".format(name),
-        expect_module_input = True,
+        expect_module_input = False,
         expect_embedding = False,
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
@@ -520,7 +545,7 @@ def debug_settings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    # Optimized builds do not request debug module tracking or linker inputs.
+    # Optimized builds without debug info do not request module tracking.
     debug_module_path_opt_test(
         name = "{}_debug_module_path_opt".format(name),
         not_expected_argv = [
@@ -538,6 +563,27 @@ def debug_settings_test_suite(name, tags = []):
         is_binary = True,
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:binary",
+    )
+
+    # Explicit full debug info enables module tracking even in optimized builds.
+    debug_module_path_opt_full_di_test(
+        name = "{}_debug_module_path_opt_full_di".format(name),
+        expected_argv = [
+            "-g",
+            "-debug-module-path $(BIN_DIR)/test/fixtures/debug_settings/test_fixtures_debug_settings_simple.swiftmodule",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    debug_module_path_opt_full_di_linking_test(
+        name = "{}_debug_module_path_opt_full_di_binary_linking".format(name),
+        expect_module_input = False,
+        expect_embedding = False,
+        is_binary = True,
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
     )
 
     # Disabling the feature or either explicit-module requirement retains
@@ -635,7 +681,7 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_split_linking_test(
         name = "{}_debug_module_path_dependency_linking".format(name),
-        expect_module_input = True,
+        expect_module_input = False,
         expect_embedding = False,
         is_binary = True,
         tags = all_tags,
