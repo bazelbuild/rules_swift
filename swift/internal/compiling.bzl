@@ -89,15 +89,19 @@ load(
 )
 load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 
-def transitive_swift_dependency_inputs(transitive_modules):
+def transitive_swift_dependency_inputs(
+        transitive_modules,
+        include_module_metadata = False):
     """Returns Swift dependency artifacts that must be present in the sandbox.
 
     Args:
         transitive_modules: A list of transitive Swift module contexts.
+        include_module_metadata: Whether to include available `.swiftdoc` and
+            `.swiftsourceinfo` files for dependencies with a Swift module.
 
     Returns:
         A list of `.swiftmodule` files and the preferred textual interface file
-        for each Swift dependency.
+        for each Swift dependency, plus module metadata files if requested.
     """
     inputs = []
 
@@ -108,6 +112,12 @@ def transitive_swift_dependency_inputs(transitive_modules):
 
         if type(swift_module.swiftmodule) == "File":
             inputs.append(swift_module.swiftmodule)
+
+        if include_module_metadata and swift_module.swiftmodule:
+            inputs.extend(compact([
+                swift_module.swiftdoc,
+                swift_module.swiftsourceinfo,
+            ]))
 
         interface_file = (
             swift_module.private_swiftinterface or
@@ -155,16 +165,12 @@ def _explicit_swift_module_map_info(
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         module_contexts = module_contexts,
     )
-    inputs = transitive_swift_dependency_inputs(module_contexts)
-    for module in module_contexts:
-        if module.swift and module.swift.swiftmodule:
-            inputs.extend(compact([
-                module.swift.swiftdoc,
-                module.swift.swiftsourceinfo,
-            ]))
     return struct(
         file = explicit_swift_module_map_file,
-        inputs = inputs,
+        inputs = transitive_swift_dependency_inputs(
+            module_contexts,
+            include_module_metadata = True,
+        ),
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):
