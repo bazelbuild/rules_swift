@@ -9,6 +9,10 @@ load(
     "//test/rules:action_inputs_test.bzl",
     "make_action_inputs_test_rule",
 )
+load(
+    "//test/rules:explicit_swift_module_map_test.bzl",
+    "make_explicit_swift_module_map_test_rule",
+)
 
 default_test = make_action_command_line_test_rule()
 
@@ -91,6 +95,71 @@ explicit_swift_module_map_inputs_test = make_action_inputs_test_rule(
             "swift.use_explicit_swift_module_map",
         ],
     },
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "swift.emit_swiftdoc",
+        "swift.emit_swiftsourceinfo",
+        "swift.split_derived_files_generation",
+    ],
+}
+
+explicit_swift_module_map_metadata_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_metadata_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "-swift.emit_swiftdoc",
+        "-swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_no_metadata_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_no_metadata_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "swift.emit_swiftdoc",
+        "-swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_doc_only_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_doc_only_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "-swift.emit_swiftdoc",
+        "swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_source_info_only_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_source_info_only_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS,
 )
 
 # Test with enabled `swift.add_target_name_to_output` feature
@@ -281,6 +350,121 @@ def features_test_suite(name, tags = []):
             "second.swift-explicit-module-map.json",
         ],
         mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_metadata_test(
+        name = "{}_explicit_swift_module_map_metadata_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+            "docPath": "test/fixtures/basic/first.swiftdoc",
+            "sourceInfoPath": "test/fixtures/basic/first.swiftsourceinfo",
+        },
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_metadata_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+            "first.swiftsourceinfo",
+        ],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_metadata_derive_files_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftDeriveFiles",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+            "first.swiftsourceinfo",
+        ],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_no_metadata_test(
+        name = "{}_explicit_swift_module_map_no_metadata_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+        },
+        not_expected_keys = ["docPath", "sourceInfoPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_no_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_no_metadata_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+        ],
+        not_expected_inputs = ["first.swiftdoc", "first.swiftsourceinfo"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_doc_only_test(
+        name = "{}_explicit_swift_module_map_doc_only_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+            "docPath": "test/fixtures/basic/first.swiftdoc",
+        },
+        not_expected_keys = ["sourceInfoPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_doc_only_inputs_test(
+        name = "{}_explicit_swift_module_map_doc_only_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+        ],
+        not_expected_inputs = ["first.swiftsourceinfo"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_source_info_only_test(
+        name = "{}_explicit_swift_module_map_source_info_only_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+            "sourceInfoPath": "test/fixtures/basic/first.swiftsourceinfo",
+        },
+        not_expected_keys = ["docPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_source_info_only_inputs_test(
+        name = "{}_explicit_swift_module_map_source_info_only_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftsourceinfo",
+        ],
+        not_expected_inputs = ["first.swiftdoc"],
         target_under_test = "//test/fixtures/basic:second",
     )
 
