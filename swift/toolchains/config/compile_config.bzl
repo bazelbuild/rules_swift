@@ -278,13 +278,16 @@ def compile_action_configs(
         # Record this object's own module path in debugging configurations.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
-            configurators = [_debug_module_path_configurator],
+            configurators = [lambda prerequisites, args: args.add(
+                "-debug-module-path",
+                prerequisites.swiftmodule_file,
+            )],
             features = [[
                 SWIFT_FEATURE_DEBUG_MODULE_PATH,
                 SWIFT_FEATURE_USE_C_MODULES,
                 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
                 compilation_mode,
-            ] for compilation_mode in [SWIFT_FEATURE_DBG, SWIFT_FEATURE_FASTBUILD]],
+            ] for compilation_mode in [SWIFT_FEATURE_DBG, SWIFT_FEATURE_FASTBUILD, SWIFT_FEATURE_FULL_DEBUG_INFO]],
         ),
 
         # Link Time Optimization (LTO).
@@ -1609,11 +1612,6 @@ def _output_pcm_file_configurator(prerequisites, args):
 def _emit_module_path_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
     args.add("-emit-module-path", prerequisites.swiftmodule_file)
-
-def _debug_module_path_configurator(prerequisites, args):
-    """Adds the current target's `.swiftmodule` path to debug info."""
-
-    args.add("-debug-module-path", prerequisites.swiftmodule_file)
 
 def _emit_module_interface_path_configurator(prerequisites, args):
     """Adds the `.swiftinterface` output path to the command line."""

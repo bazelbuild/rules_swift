@@ -224,8 +224,7 @@ SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES = "swift.add_default_precompiled_m
 # using a JSON file instead of `-I` search paths.
 SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
 
-# If enabled together with `swift.use_c_modules` and
-# `swift.use_explicit_swift_module_map` in dbg or fastbuild mode, object
+# If enabled together with explicit modules and debug info, object
 # compilations record their own `.swiftmodule` path in debug info instead of
 # embedding modules at link time.
 # https://www.swift.org/blog/module-tracking-in-debug-info/
