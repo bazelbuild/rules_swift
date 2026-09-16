@@ -64,6 +64,8 @@ swift_tools(
             "-lBlocksRuntime",
             "-Wl,-export-dynamic",
             "-Wl,--exclude-libs,ALL",
+            "-Wl,--pack-dyn-relocs=android+relr",
+            "-Wl,--use-android-relr-tags",
             # TODO: Remove once https://github.com/bazelbuild/rules_android_ndk/commit/efc0c191796477c540e87e0f6bb5d88d6a58cc1f is in a release
             "-Wl,-z,max-page-size=16384",
         ],

@@ -48,6 +48,8 @@ def android_test_suite(name):
             "-llog",  # This is a dependency of the Swift SDK
             "-Wl,-z,max-page-size=16384",  # Comes from rules_android_ndk
             "-Wl,--gc-sections",  # Comes from rules_android_ndk
+            "-Wl,--pack-dyn-relocs=android+relr",
+            "-Wl,--use-android-relr-tags",
         ],
         mnemonic = "CppLink",
         tags = all_tags,

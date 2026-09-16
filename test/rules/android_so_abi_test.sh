@@ -37,6 +37,17 @@ case "$dynsyms" in
 esac
 
 dynamic="$("$readelf" -d "$so")"
+# API 28 and 29 recognize Android's private RELR tags, not the standardized
+# ELF tags. Check the artifact as well as the linker command line.
+case "$dynamic" in
+  *"(ANDROID_RELR)"*) ;;
+  *) echo "error: $so does not use Android-compatible RELR relocations" >&2; exit 1 ;;
+esac
+case "$dynamic" in
+  *"(RELR)"*) echo "error: $so requires the standard RELR tags introduced in API 30" >&2; exit 1 ;;
+  *) ;;
+esac
+
 while IFS= read -r library; do
   [[ -n "$library" ]] || continue
   case "$dynamic" in
