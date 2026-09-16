@@ -83,6 +83,6 @@ genrule(
         "web_app/index.html",
         "web_app/Reactor.wasm",
     ],
-    cmd = "cp $(location web/index.html) $(RULEDIR)/web_app/index.html && " +
-          "cp $(location :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
+    cmd = "cp $(execpath web/index.html) $(RULEDIR)/web_app/index.html && " +
+          "cp $(execpath :Reactor.wasm) $(RULEDIR)/web_app/Reactor.wasm",
 )

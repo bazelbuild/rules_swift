@@ -8,7 +8,7 @@ exports_files(["scan.py"])
 sh_binary(
     name = "scan",
     srcs = ["scan_wrapper.sh"],
-    args = ["$(location :scan.py)"],
+    args = ["$(rootpath :scan.py)"],
     data = ["scan.py"],
 )
 
