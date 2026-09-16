@@ -125,6 +125,16 @@ set -eu
 
 swift_module_mapping_test = rule(
     attrs = {
+        "deps": attr.label_list(
+            allow_empty = False,
+            aspects = [_swift_module_mapping_test_module_collector],
+            doc = """\
+A list of Swift targets whose transitive closure will be validated against the
+`swift_module_mapping` target specified by `mapping`.
+""",
+            mandatory = True,
+            providers = [[SwiftInfo]],
+        ),
         "exclude": attr.string_list(
             default = [],
             doc = """\
@@ -140,16 +150,6 @@ closure of `deps` will be validated.
 """,
             mandatory = True,
             providers = [[SwiftModuleAliasesInfo]],
-        ),
-        "deps": attr.label_list(
-            allow_empty = False,
-            aspects = [_swift_module_mapping_test_module_collector],
-            doc = """\
-A list of Swift targets whose transitive closure will be validated against the
-`swift_module_mapping` target specified by `mapping`.
-""",
-            mandatory = True,
-            providers = [[SwiftInfo]],
         ),
     },
     doc = """\

@@ -1020,6 +1020,21 @@ implicit dependencies.
 """,
                 providers = [[SwiftInfo]],
             ),
+            "const_protocols_to_gather": attr.label(
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
+            ),
             "cross_import_overlays": attr.label_list(
                 allow_empty = True,
                 doc = """\
@@ -1084,34 +1099,6 @@ implicit dependencies of any Swift compilation or linking target.
                     [SwiftInfo],
                 ],
             ),
-            "package_configurations": attr.label_list(
-                doc = """\
-A list of `swift_package_configuration` targets that specify additional compiler
-configuration options that are applied to targets on a per-package basis.
-""",
-                providers = [[SwiftPackageConfigurationInfo]],
-            ),
-            "const_protocols_to_gather": attr.label(
-                default = Label(
-                    "//swift/toolchains/config:const_protocols_to_gather.json",
-                ),
-                allow_single_file = True,
-                doc = """\
-The label of the file specifying a list of protocols for extraction of conformances'
-const values.
-""",
-            ),
-            "copts": attr.string_list(
-                doc = """\
-A list of additional Swift compiler flags that should be passed to Swift compile actions.
-""",
-            ),
-            "objc_copts": attr.string_list(
-                doc = """\
-A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
-to Swift compile actions *and* Swift explicit module precompile actions.
-""",
-            ),
             "implicit_system_modules": attr.label(
                 doc = """\
 The target of the system modules that every Swift compilation implicitly
@@ -1119,6 +1106,19 @@ requires.
 """,
                 mandatory = False,
                 providers = [[CcInfo, SwiftInfo]],
+            ),
+            "objc_copts": attr.string_list(
+                doc = """\
+A list of additional Objective-C compiler flags that should be passed (preceded by `-Xcc`)
+to Swift compile actions *and* Swift explicit module precompile actions.
+""",
+            ),
+            "package_configurations": attr.label_list(
+                doc = """\
+A list of `swift_package_configuration` targets that specify additional compiler
+configuration options that are applied to targets on a per-package basis.
+""",
+                providers = [[SwiftPackageConfigurationInfo]],
             ),
             "system_modules": attr.label(
                 doc = """\

@@ -99,8 +99,8 @@ def output_file_map_test_suite(name, tags = []):
     output_file_map_test(
         name = "{}_default".format(name),
         expected_mapping = {
-            "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
             "const-values": "test/fixtures/debug_settings/simple_objs/Empty.swift.swiftconstvalues",
+            "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
         output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",

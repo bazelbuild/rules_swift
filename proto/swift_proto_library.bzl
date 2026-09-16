@@ -109,21 +109,6 @@ swift_proto_library = rule(
             requires_srcs = False,
         ),
         {
-            "protos": attr.label_list(
-                doc = """\
-A list of `proto_library` targets (or targets producing `ProtoInfo`),
-from which the Swift source files should be generated.
-""",
-                providers = [ProtoInfo],
-            ),
-            "compilers": attr.label_list(
-                default = ["//proto/compilers:swift_proto"],
-                doc = """\
-One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
-from which the Swift protos will be generated.
-""",
-                providers = [SwiftProtoCompilerInfo],
-            ),
             "additional_compiler_deps": swift_deps_attr(
                 aspects = [
                     swift_clang_module_aspect,
@@ -141,6 +126,21 @@ Dictionary of additional information passed to the compiler targets.
 See the documentation of the respective compiler rules for more information
 on which fields are accepted and how they are used.
 """,
+            ),
+            "compilers": attr.label_list(
+                default = ["//proto/compilers:swift_proto"],
+                doc = """\
+One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
+from which the Swift protos will be generated.
+""",
+                providers = [SwiftProtoCompilerInfo],
+            ),
+            "protos": attr.label_list(
+                doc = """\
+A list of `proto_library` targets (or targets producing `ProtoInfo`),
+from which the Swift source files should be generated.
+""",
+                providers = [ProtoInfo],
             ),
         },
     ),

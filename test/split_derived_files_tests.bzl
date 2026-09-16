@@ -101,11 +101,11 @@ split_swiftmodule_copts_test = make_action_command_line_test_rule(
         str(Label("//swift:copt")): [
             "-DHELLO",
         ],
-        "//command_line_option:objccopt": [
-            "-DWORLD=1",
-        ],
         "//command_line_option:features": [
             "swift.split_derived_files_generation",
+        ],
+        "//command_line_option:objccopt": [
+            "-DWORLD=1",
         ],
     },
 )

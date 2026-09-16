@@ -114,15 +114,15 @@ def _swift_android_sdk_impl(repository_ctx):
 
 swift_android_sdk_repository = repository_rule(
     attrs = _common_attrs() | {
-        "_build_template": attr.label(
-            default = "//swift/internal/extensions:androidsdk.BUILD",
-        ),
         "paired_swiftc": attr.label(
             doc = """\
 The `swiftc` of the standalone toolchain this SDK is paired with, used to locate
 the clang builtin headers that match the clang embedded in the Swift compiler.
 """,
             mandatory = True,
+        ),
+        "_build_template": attr.label(
+            default = "//swift/internal/extensions:androidsdk.BUILD",
         ),
     },
     doc = """\

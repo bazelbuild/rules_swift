@@ -359,8 +359,8 @@ def features_test_suite(name, tags = []):
         module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
         module_name = "first",
         expected_mapping = {
-            "modulePath": "test/fixtures/basic/first.swiftmodule",
             "docPath": "test/fixtures/basic/first.swiftdoc",
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
             "sourceInfoPath": "test/fixtures/basic/first.swiftsourceinfo",
         },
         target_under_test = "//test/fixtures/basic:second",
@@ -422,8 +422,8 @@ def features_test_suite(name, tags = []):
         module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
         module_name = "first",
         expected_mapping = {
-            "modulePath": "test/fixtures/basic/first.swiftmodule",
             "docPath": "test/fixtures/basic/first.swiftdoc",
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
         },
         not_expected_keys = ["sourceInfoPath"],
         target_under_test = "//test/fixtures/basic:second",

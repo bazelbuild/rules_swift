@@ -23,9 +23,9 @@ load(
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
 _WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
     "-force-single-frontend-invocation": True,
+    "-whole-module-optimization": True,
+    "-wmo": True,
 }
 
 def features_from_swiftcopts(swiftcopts):

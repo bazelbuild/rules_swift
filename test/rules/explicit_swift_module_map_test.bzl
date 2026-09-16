@@ -100,6 +100,9 @@ def make_explicit_swift_module_map_test_rule(config_settings = {}):
     return analysistest.make(
         _explicit_swift_module_map_test_impl,
         attrs = {
+            "expected_mapping": attr.string_dict(
+                doc = "Expected path fields and their suffixes, excluding configuration-specific prefixes.",
+            ),
             "module_map": attr.string(
                 mandatory = True,
                 doc = "The short path of the generated explicit module map.",
@@ -107,9 +110,6 @@ def make_explicit_swift_module_map_test_rule(config_settings = {}):
             "module_name": attr.string(
                 mandatory = True,
                 doc = "The Swift module whose entry should be inspected.",
-            ),
-            "expected_mapping": attr.string_dict(
-                doc = "Expected path fields and their suffixes, excluding configuration-specific prefixes.",
             ),
             "not_expected_keys": attr.string_list(
                 doc = "Fields that must be absent from the module entry.",

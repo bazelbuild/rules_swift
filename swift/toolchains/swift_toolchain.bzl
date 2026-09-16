@@ -892,6 +892,21 @@ architecture-specific content, such as "x86_64" in "lib/swift/linux/x86_64".
 """,
                 mandatory = True,
             ),
+            "const_protocols_to_gather": attr.label(
+                default = Label(
+                    "//swift/toolchains/config:const_protocols_to_gather.json",
+                ),
+                allow_single_file = True,
+                doc = """\
+The label of the file specifying a list of protocols for extraction of conformances'
+const values.
+""",
+            ),
+            "copts": attr.string_list(
+                doc = """\
+A list of additional Swift compiler flags that should be passed to Swift compile actions.
+""",
+            ),
             "cross_import_overlays": attr.label_list(
                 allow_empty = True,
                 doc = """\
@@ -906,12 +921,46 @@ declared as dependencies.
                     [SwiftCrossImportOverlaysInfo],
                 ],
             ),
+            "dynamic_runtime": attr.label_list(
+                doc = """\
+Shared Swift runtime libraries that are added to the dynamic runtime linking
+context.
+""",
+                allow_files = True,
+            ),
+            "env": attr.string_dict(
+                doc = """\
+The preserved environment variables required for the toolchain to operate
+normally.
+""",
+                mandatory = False,
+            ),
             "feature_allowlists": attr.label_list(
                 doc = """\
 A list of `swift_feature_allowlist` targets that allow or prohibit packages from
 requesting or disabling features.
 """,
                 providers = [[SwiftFeatureAllowlistInfo]],
+            ),
+            "linker_inputs": attr.label_list(
+                allow_files = True,
+                doc = """\
+Files that must be available to link actions when `linkopts` is set, such as
+the Swift runtime libraries of a Swift SDK.
+""",
+            ),
+            "linkopts": attr.string_list(
+                doc = """\
+The *complete* set of linker flags for the Swift runtime when that runtime is
+provided by a Swift SDK (for example WebAssembly or Android) rather than by the
+host toolchain — typically search paths for, and inputs from, `linker_inputs`,
+plus the SDK's runtime objects.
+
+This is not additive: when set, it *replaces* the runtime link flags the
+toolchain would otherwise compute, because those are specific to a Linux host
+toolchain and do not apply to a cross-compiled SDK target. Leave it unset for an
+ordinary host toolchain, which computes its own flags.
+""",
             ),
             "os": attr.string(
                 doc = """\
@@ -929,13 +978,15 @@ configuration options that are applied to targets on a per-package basis.
 """,
                 providers = [[SwiftPackageConfigurationInfo]],
             ),
+            "parsed_version": attr.string(
+                mandatory = True,
+            ),
             "root": attr.string(),
-            "dynamic_runtime": attr.label_list(
+            "sdkroot": attr.string(
                 doc = """\
-Shared Swift runtime libraries that are added to the dynamic runtime linking
-context.
+The root of a SDK to be used for building the target.
 """,
-                allow_files = True,
+                mandatory = False,
             ),
             "static_runtime": attr.label_list(
                 doc = """\
@@ -944,17 +995,22 @@ static runtime link actions.
 """,
                 allow_files = True,
             ),
-            "parsed_version": attr.string(
-                mandatory = True,
+            "tool_executable_suffix": attr.string(
+                doc = """\
+The suffix to apply to the tools when invoking them.  This is a platform
+dependent value (e.g. `.exe` on Window).
+""",
+                mandatory = False,
             ),
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,
             ),
-            "copts": attr.string_list(
+            "xctest_version": attr.string(
                 doc = """\
-A list of additional Swift compiler flags that should be passed to Swift compile actions.
+The version of XCTest that the toolchain packages.
 """,
+                mandatory = False,
             ),
             "_copts": attr.label(
                 default = Label("//swift:copt"),
@@ -983,62 +1039,6 @@ An executable that wraps Swift compiler invocations and also provides support
 for incremental compilation using a persistent mode.
 """,
                 executable = True,
-            ),
-            "const_protocols_to_gather": attr.label(
-                default = Label(
-                    "//swift/toolchains/config:const_protocols_to_gather.json",
-                ),
-                allow_single_file = True,
-                doc = """\
-The label of the file specifying a list of protocols for extraction of conformances'
-const values.
-""",
-            ),
-            "env": attr.string_dict(
-                doc = """\
-The preserved environment variables required for the toolchain to operate
-normally.
-""",
-                mandatory = False,
-            ),
-            "linker_inputs": attr.label_list(
-                allow_files = True,
-                doc = """\
-Files that must be available to link actions when `linkopts` is set, such as
-the Swift runtime libraries of a Swift SDK.
-""",
-            ),
-            "linkopts": attr.string_list(
-                doc = """\
-The *complete* set of linker flags for the Swift runtime when that runtime is
-provided by a Swift SDK (for example WebAssembly or Android) rather than by the
-host toolchain — typically search paths for, and inputs from, `linker_inputs`,
-plus the SDK's runtime objects.
-
-This is not additive: when set, it *replaces* the runtime link flags the
-toolchain would otherwise compute, because those are specific to a Linux host
-toolchain and do not apply to a cross-compiled SDK target. Leave it unset for an
-ordinary host toolchain, which computes its own flags.
-""",
-            ),
-            "sdkroot": attr.string(
-                doc = """\
-The root of a SDK to be used for building the target.
-""",
-                mandatory = False,
-            ),
-            "tool_executable_suffix": attr.string(
-                doc = """\
-The suffix to apply to the tools when invoking them.  This is a platform
-dependent value (e.g. `.exe` on Window).
-""",
-                mandatory = False,
-            ),
-            "xctest_version": attr.string(
-                doc = """\
-The version of XCTest that the toolchain packages.
-""",
-                mandatory = False,
             ),
         },
     ),
