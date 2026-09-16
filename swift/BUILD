@@ -156,6 +156,7 @@ bzl_library(
     name = "swift_interop_hint",
     srcs = ["swift_interop_hint.bzl"],
     deps = [
+        ":module_name",
         ":swift_interop_info",
     ],
 )
