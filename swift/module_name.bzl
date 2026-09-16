@@ -18,9 +18,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 
 visibility("public")
 
-def derive_swift_module_name(
-        *args,
-        feature_configuration = None):
+def derive_swift_module_name(*args):
     """Returns a derived module name from the given build label.
 
     For targets whose module name is not explicitly specified, the module name
@@ -42,15 +40,10 @@ def derive_swift_module_name(
         *args: Either a single argument of type `Label`, or two arguments of
             type `str` where the first argument is the package name and the
             second argument is the target name.
-        feature_configuration: The Swift feature configuration being used when
-            compiling the target. This currently does nothing; it will be used
-            by upcoming changes to manage the migration of module names to raw
-            identifiers that use the Bazel target label.
 
     Returns:
         The module name derived from the label.
     """
-    _ = feature_configuration
     if (len(args) == 1 and
         hasattr(args[0], "package") and
         hasattr(args[0], "name")):

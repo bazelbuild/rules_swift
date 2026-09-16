@@ -74,10 +74,7 @@ def _swift_compiler_plugin_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(
-            ctx.label,
-            feature_configuration = feature_configuration,
-        )
+        module_name = derive_swift_module_name(ctx.label)
     entry_point_name = entry_point_function_name(module_name)
 
     compile_result = compile(
