@@ -22,7 +22,6 @@ load(
     "make_action_command_line_test_rule",
 )
 load("//test/rules:action_inputs_test.bzl", "make_action_inputs_test_rule")
-load("//test/rules:provider_test.bzl", "make_provider_test_rule")
 
 DBG_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
@@ -169,13 +168,12 @@ def _debug_module_linking_test_impl(ctx):
     else:
         asserts.equals(env, [], modulewrap_actions)
         asserts.false(env, ast_flag in link_flags)
-        asserts.equals(env, ctx.attr.expect_module_input, swiftmodule in additional_inputs)
-        if not ctx.attr.expect_module_input:
-            asserts.equals(env, [], [
-                file.short_path
-                for file in additional_inputs
-                if file.extension in ["swiftmodule", "pcm"] or file.basename.endswith(".modulewrap.o")
-            ], "Debug modules must not be linker inputs")
+        asserts.false(env, swiftmodule in additional_inputs)
+        asserts.equals(env, [], [
+            file.short_path
+            for file in additional_inputs
+            if file.extension in ["swiftmodule", "pcm"] or file.basename.endswith(".modulewrap.o")
+        ], "Debug modules must not be linker inputs")
 
     return analysistest.end(env)
 
@@ -186,41 +184,6 @@ _EXPLICIT_DEBUG_MODULE_PATH_FEATURES = [
     "swift.use_explicit_swift_module_map",
     "-swift.no_embed_debug_module",
 ]
-
-debug_module_outputs_test = make_provider_test_rule(
-    config_settings = {
-        "//command_line_option:compilation_mode": "dbg",
-        "//command_line_option:features": _EXPLICIT_DEBUG_MODULE_PATH_FEATURES + [
-            "swift.split_derived_files_generation",
-        ],
-    },
-)
-
-legacy_debug_module_outputs_test = make_provider_test_rule(
-    config_settings = {
-        "//command_line_option:compilation_mode": "dbg",
-        "//command_line_option:features": [
-            "-swift.debug_module_path",
-            "swift.emit_c_module",
-            "swift.use_c_modules",
-            "swift.use_explicit_swift_module_map",
-        ],
-    },
-)
-
-opt_debug_module_outputs_test = make_provider_test_rule(
-    config_settings = {
-        "//command_line_option:compilation_mode": "opt",
-        "//command_line_option:features": _EXPLICIT_DEBUG_MODULE_PATH_FEATURES,
-    },
-)
-
-fastbuild_debug_module_outputs_test = make_provider_test_rule(
-    config_settings = {
-        "//command_line_option:compilation_mode": "fastbuild",
-        "//command_line_option:features": _EXPLICIT_DEBUG_MODULE_PATH_FEATURES,
-    },
-)
 
 DEBUG_MODULE_PATH_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "dbg",
@@ -234,7 +197,6 @@ debug_module_path_test = make_action_command_line_test_rule(
 debug_module_path_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -259,7 +221,6 @@ debug_module_path_disabled_test = make_action_command_line_test_rule(
 debug_module_path_disabled_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -283,7 +244,6 @@ debug_module_path_swift_map_only_test = make_action_command_line_test_rule(
 debug_module_path_swift_map_only_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -308,7 +268,6 @@ debug_module_path_c_modules_only_test = make_action_command_line_test_rule(
 debug_module_path_c_modules_only_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -331,7 +290,6 @@ debug_module_path_split_inputs_test = make_action_inputs_test_rule(
 debug_module_path_split_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -359,7 +317,6 @@ debug_module_path_opt_test = make_action_command_line_test_rule(
 debug_module_path_opt_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -378,7 +335,6 @@ debug_module_path_opt_full_di_test = make_action_command_line_test_rule(
 debug_module_path_opt_full_di_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -398,7 +354,6 @@ NO_EMBED_DEBUG_MODULE_CONFIG_SETTINGS = {
 no_embed_debug_module_linking_test = analysistest.make(
     _debug_module_linking_test_impl,
     attrs = {
-        "expect_module_input": attr.bool(default = False),
         "expect_embedding": attr.bool(default = True),
         "is_binary": attr.bool(default = False),
     },
@@ -414,108 +369,6 @@ def debug_settings_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
-    # Verify that default outputs include the modules needed for debugging.
-    debug_module_outputs_test(
-        name = "{}_debug_module_outputs_dependency_dbg".format(name),
-        expected_files = [
-            "test_fixtures_debug_settings_module_path_binary.swiftmodule",
-            "test_fixtures_debug_settings_simple.swiftmodule",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
-    )
-
-    fastbuild_debug_module_outputs_test(
-        name = "{}_debug_module_outputs_dependency_fastbuild".format(name),
-        expected_files = [
-            "test_fixtures_debug_settings_module_path_binary.swiftmodule",
-            "test_fixtures_debug_settings_simple.swiftmodule",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
-    )
-
-    debug_module_outputs_test(
-        name = "{}_debug_module_outputs_private_dependencies_dbg".format(name),
-        expected_files = [
-            "test_fixtures_private_deps_client_swift_deps.swiftmodule",
-            "test_fixtures_private_deps_private_swift.swiftmodule",
-            "test_fixtures_private_deps_public_swift.swiftmodule",
-            "private_cc.swift.pcm",
-            "public_cc.swift.pcm",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/debug_settings:private_deps_binary",
-    )
-
-    opt_debug_module_outputs_test(
-        name = "{}_debug_module_outputs_private_dependencies_opt".format(name),
-        expected_files = [
-            "-test_fixtures_private_deps_client_swift_deps.swiftmodule",
-            "-test_fixtures_private_deps_private_swift.swiftmodule",
-            "-test_fixtures_private_deps_public_swift.swiftmodule",
-            "-private_cc.swift.pcm",
-            "-public_cc.swift.pcm",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/debug_settings:private_deps_binary",
-    )
-
-    debug_module_outputs_test(
-        name = "{}_debug_module_outputs_swift_test_dbg".format(name),
-        expected_files = [
-            "test_fixtures_precompiled_modules_simple_xctest.swiftmodule",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/precompiled_modules:simple_xctest",
-    )
-
-    opt_debug_module_outputs_test(
-        name = "{}_debug_module_outputs_swift_test_opt".format(name),
-        expected_files = [
-            "-test_fixtures_precompiled_modules_simple_xctest.swiftmodule",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_compatible_with = ["@platforms//os:macos"],
-        target_under_test = "//test/fixtures/precompiled_modules:simple_xctest",
-    )
-
-    legacy_debug_module_outputs_test(
-        name = "{}_legacy_debug_module_outputs".format(name),
-        expected_files = [
-            "-test_fixtures_debug_settings_module_path_binary.swiftmodule",
-            "-test_fixtures_debug_settings_simple.swiftmodule",
-            "*",
-        ],
-        field = "files",
-        provider = "DefaultInfo",
-        tags = all_tags,
-        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
-    )
-
     # Record the module path without passing the module to the linker.
     debug_module_path_test(
         name = "{}_debug_module_path_explicit_modules".format(name),
@@ -529,7 +382,6 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_linking_test(
         name = "{}_debug_module_path_explicit_modules_linking".format(name),
-        expect_module_input = False,
         expect_embedding = False,
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
@@ -558,7 +410,6 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_opt_linking_test(
         name = "{}_debug_module_path_opt_binary_linking".format(name),
-        expect_module_input = False,
         expect_embedding = False,
         is_binary = True,
         tags = all_tags,
@@ -579,7 +430,6 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_opt_full_di_linking_test(
         name = "{}_debug_module_path_opt_full_di_binary_linking".format(name),
-        expect_module_input = False,
         expect_embedding = False,
         is_binary = True,
         tags = all_tags,
@@ -641,7 +491,6 @@ def debug_settings_test_suite(name, tags = []):
 
     no_embed_debug_module_linking_test(
         name = "{}_no_embed_debug_module_linking".format(name),
-        expect_module_input = False,
         expect_embedding = False,
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
@@ -681,7 +530,6 @@ def debug_settings_test_suite(name, tags = []):
 
     debug_module_path_split_linking_test(
         name = "{}_debug_module_path_dependency_linking".format(name),
-        expect_module_input = False,
         expect_embedding = False,
         is_binary = True,
         tags = all_tags,

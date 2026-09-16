@@ -157,49 +157,6 @@ def uses_precise_debug_module_tracking(feature_configuration):
         ]
     ])
 
-def collect_debug_module_files(module_contexts):
-    """Collects Swift and Clang module files for debugging.
-
-    Args:
-        module_contexts: Module contexts whose artifacts and debug dependencies
-            should be collected.
-
-    Returns:
-        A depset of Swift and Clang module files needed by the debugger,
-        including private and implicit dependencies.
-    """
-    files = []
-    transitive = []
-    for module in module_contexts:
-        if module.swift and type(module.swift.swiftmodule) == "File":
-            files.append(module.swift.swiftmodule)
-        if module.clang and module.clang.precompiled_module:
-            files.append(module.clang.precompiled_module)
-        if module.compilation_context:
-            transitive.append(module.compilation_context.debug_modules)
-    return depset(files, transitive = transitive)
-
-def debug_module_outputs(feature_configuration, module_contexts, swift_infos):
-    """Returns module files needed to debug a binary using precise module tracking.
-
-    Args:
-        feature_configuration: The binary's Swift feature configuration.
-        module_contexts: Modules compiled by the binary, including test runners.
-        swift_infos: Swift providers from dependencies, also used when the
-            binary has no sources of its own.
-
-    Returns:
-        A depset of Swift and Clang module files needed by the debugger,
-        including transitive dependencies.
-    """
-    if not uses_precise_debug_module_tracking(feature_configuration):
-        return depset()
-    modules = depset(
-        module_contexts,
-        transitive = [info.transitive_modules for info in swift_infos],
-    )
-    return collect_debug_module_files(modules.to_list())
-
 def _is_debugging(feature_configuration):
     """Returns `True` if the current compilation mode produces debug info.
 
