@@ -100,13 +100,13 @@ def make_action_inputs_test_rule(config_settings = {}):
     return analysistest.make(
         _action_inputs_test_impl,
         attrs = {
-            "mnemonic": attr.string(
-                mandatory = True,
-                doc = "The mnemonic of the action to test.",
-            ),
             "expected_inputs": attr.string_list(
                 default = [],
                 doc = "List of filenames or short_paths that should be present in action inputs.",
+            ),
+            "mnemonic": attr.string(
+                mandatory = True,
+                doc = "The mnemonic of the action to test.",
             ),
             "not_expected_inputs": attr.string_list(
                 default = [],

@@ -41,14 +41,14 @@ def _precomputed_xcode_explicit_module_repo_impl(rctx):
 precomputed_xcode_explicit_module_repo = repository_rule(
     implementation = _precomputed_xcode_explicit_module_repo_impl,
     attrs = {
-        "xcode_version": attr.string(
-            mandatory = True,
-            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
-        ),
         "build_file": attr.label(
             mandatory = True,
             allow_single_file = True,
             doc = "Explicit module BUILD for the given Xcode.",
+        ),
+        "xcode_version": attr.string(
+            mandatory = True,
+            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
         ),
     },
     doc = "Per-Xcode explicit module config with a user-passed BUILD file.",

@@ -117,10 +117,7 @@ def _swift_binary_impl(ctx):
     if srcs:
         module_name = ctx.attr.module_name
         if not module_name:
-            module_name = derive_swift_module_name(
-                ctx.label,
-                feature_configuration = feature_configuration,
-            )
+            module_name = derive_swift_module_name(ctx.label)
 
         if skip_entry_point:
             entry_point_name = None

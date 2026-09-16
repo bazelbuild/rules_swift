@@ -207,14 +207,14 @@ _system_sdk_stub_repo = repository_rule(
 
 _configure_xcode_tag = tag_class(
     attrs = {
-        "version": attr.string(
-            mandatory = True,
-            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
-        ),
         "build_file": attr.label(
             mandatory = True,
             allow_single_file = True,
             doc = "Explicit module BUILD for the given Xcode.",
+        ),
+        "version": attr.string(
+            mandatory = True,
+            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
         ),
     },
     doc = "Manually pass the explicit module BUILD file for a specific Xcode version",
@@ -226,13 +226,13 @@ _configure_sdks_tag = tag_class(
             default = {},
             doc = "Dictionary of SDK names to module names that should be excluded from scanning.",
         ),
-        "names": attr.string_list(
-            default = [],
-            doc = "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS')",
-        ),
         "include_all": attr.bool(
             default = False,
             doc = "Whether to include all SDKs instead of just the ones specified in 'names'.",
+        ),
+        "names": attr.string_list(
+            default = [],
+            doc = "SDK names to scan (e.g. 'MacOSX', 'iPhoneOS')",
         ),
     },
     doc = "Limit dynamic scanning to a specific subset of Apple SDKs.",
@@ -241,8 +241,8 @@ _configure_sdks_tag = tag_class(
 system_sdk = module_extension(
     implementation = _sdk_extension_impl,
     tag_classes = {
-        "configure_xcode": _configure_xcode_tag,
         "configure_sdks": _configure_sdks_tag,
+        "configure_xcode": _configure_xcode_tag,
     },
     doc = "Generate BUILD files for explicit modules.",
     environ = [

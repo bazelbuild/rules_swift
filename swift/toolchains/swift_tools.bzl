@@ -46,9 +46,9 @@ Example:
 """,
     implementation = _swift_tools_impl,
     attrs = {
-        "swift_driver": attr.label(
-            allow_single_file = True,
-            doc = "Label of the Swift driver executable.",
+        "additional_inputs": attr.label_list(
+            allow_files = True,
+            doc = "List of labels to include in the input-tree when invoking these tools.",
             mandatory = True,
         ),
         "swift_autolink_extract": attr.label(
@@ -56,14 +56,14 @@ Example:
             doc = "Label of the swift-autolink-extract executable.",
             mandatory = True,
         ),
+        "swift_driver": attr.label(
+            allow_single_file = True,
+            doc = "Label of the Swift driver executable.",
+            mandatory = True,
+        ),
         "swift_symbolgraph_extract": attr.label(
             allow_single_file = True,
             doc = "Label of the swift-symbolgraph-extract executable.",
-            mandatory = True,
-        ),
-        "additional_inputs": attr.label_list(
-            allow_files = True,
-            doc = "List of labels to include in the input-tree when invoking these tools.",
             mandatory = True,
         ),
     },

@@ -32,7 +32,7 @@ cc_library(
         "-DFIXTURE_FROM_COPTS=1",
         "-DFIXTURE_FROM_COPTS_WITH_SPACES=rules\\ swift\\ fixture",
         "-DFIXTURE_FROM_QUOTED_COPTS='quoted rules swift fixture'",
-        "-include$(location :Defines.h)",
+        "-include$(execpath :Defines.h)",
     ],
     local_defines = ["FIXTURE_FROM_LOCAL_DEFINES=1"],
     tags = FIXTURE_TAGS,

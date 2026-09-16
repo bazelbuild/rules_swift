@@ -113,19 +113,19 @@ command line, after concatenating all command line arguments into a single
 space-delimited string.
 """,
             ),
+            "mnemonic": attr.string(
+                mandatory = True,
+                doc = """\
+The mnemonic of the action to be inspected on the target under test. It is
+expected that there will be exactly one of these.
+""",
+            ),
             "not_expected_argv": attr.string_list(
                 mandatory = False,
                 doc = """\
 A list of strings representing substrings expected not to appear in the action
 command line, after concatenating all command line arguments into a single
 space-delimited string.
-""",
-            ),
-            "mnemonic": attr.string(
-                mandatory = True,
-                doc = """\
-The mnemonic of the action to be inspected on the target under test. It is
-expected that there will be exactly one of these.
 """,
             ),
         },

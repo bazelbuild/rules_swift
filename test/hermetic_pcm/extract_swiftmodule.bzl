@@ -36,14 +36,14 @@ def _extract_swiftmodule_impl(ctx):
 extract_swiftmodule = rule(
     implementation = _extract_swiftmodule_impl,
     attrs = {
+        "extra_features": attr.string_list(
+            doc = "Additional features to apply when extracting the `.swiftmodule`.",
+        ),
         "target": attr.label(
             mandatory = True,
             cfg = _features_transition,
             doc = "A Swift target carrying SwiftInfo whose `.swiftmodule` should be extracted.",
             providers = [[SwiftInfo]],
-        ),
-        "extra_features": attr.string_list(
-            doc = "Additional features to apply when extracting the `.swiftmodule`.",
         ),
     },
     doc = "Re-exposes the `.swiftmodule` from a target's `SwiftInfo` as `DefaultInfo.files`.",

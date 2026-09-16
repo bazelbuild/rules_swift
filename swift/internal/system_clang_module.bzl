@@ -98,6 +98,15 @@ def _system_clang_module_impl(ctx):
 system_clang_module = rule(
     cfg = sdk_min_os_transition,
     attrs = sdk_min_os_transition_attrs() | {
+        "module_name": attr.string(
+            doc = """\
+The name of the top-level module in the module map that this target represents.
+
+A single `module.modulemap` file can contain multiple top-level modules, this
+attribute is used to specify which one this target corresponds to.
+""",
+            mandatory = True,
+        ),
         "modules": attr.label_list(
             allow_empty = True,
             doc = """\
@@ -108,15 +117,6 @@ the SDK module graph from consumers.
 """,
             mandatory = False,
             providers = [[CcInfo]],
-        ),
-        "module_name": attr.string(
-            doc = """\
-The name of the top-level module in the module map that this target represents.
-
-A single `module.modulemap` file can contain multiple top-level modules, this
-attribute is used to specify which one this target corresponds to.
-""",
-            mandatory = True,
         ),
         "system_module_map": attr.string(
             doc = """\

@@ -69,14 +69,14 @@ xcode_explicit_module_repo = repository_rule(
         "sdks": attr.string_list(
             doc = "Optional list of SDK names (e.g. 'MacOSX', 'iPhoneSimulator') to scan. If empty, all SDKs are scanned.",
         ),
-        "xcode_version": attr.string(
-            mandatory = True,
-            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
-        ),
         "xcode_locator": attr.label(
             mandatory = True,
             allow_single_file = True,
             doc = "Label of the compiled xcode-locator binary.",
+        ),
+        "xcode_version": attr.string(
+            mandatory = True,
+            doc = "Canonical Xcode version string (e.g. 26.4.0.17E192).",
         ),
         "_script": attr.label(
             default = Label("//tools/explicit_modules:scan.py"),

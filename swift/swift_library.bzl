@@ -159,10 +159,7 @@ def _swift_library_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(
-            ctx.label,
-            feature_configuration = feature_configuration,
-        )
+        module_name = derive_swift_module_name(ctx.label)
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)

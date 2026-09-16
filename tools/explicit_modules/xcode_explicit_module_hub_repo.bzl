@@ -79,14 +79,14 @@ def _xcode_explicit_module_hub_repo_impl(rctx):
 xcode_explicit_module_hub_repo = repository_rule(
     implementation = _xcode_explicit_module_hub_repo_impl,
     attrs = {
-        "xcode_versions": attr.string_list(
-            mandatory = True,
-            doc = "All canonical Xcode versions (default included).",
-        ),
         "default_manifest": attr.label(
             mandatory = True,
             allow_single_file = True,
             doc = "Label of the default repo's module_names.json.",
+        ),
+        "xcode_versions": attr.string_list(
+            mandatory = True,
+            doc = "All canonical Xcode versions (default included).",
         ),
     },
     doc = "Export explicit module definitions referencing Xcode version specific repos.",

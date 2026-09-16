@@ -196,17 +196,17 @@ system_sdk.configure_sdks(
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
         ],
-        "iPhoneSimulator": [
-            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
-            "CoreAudio_Private",
+        "MacOSX": [
             "MobileGestaltPrivate",
         ],
-        "iPhoneOS": [
-            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
+        "WatchOS": [
+            "BrowserEngineKit",
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
         ],
-        "MacOSX": [
+        "WatchSimulator": [
+            "BrowserEngineKit",
+            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
         ],
         "XROS": [
@@ -219,14 +219,14 @@ system_sdk.configure_sdks(
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
         ],
-        "WatchOS": [
-            "BrowserEngineKit",
+        "iPhoneOS": [
+            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
         ],
-        "WatchSimulator": [
-            "BrowserEngineKit",
-            "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
+        "iPhoneSimulator": [
+            "AssetsLibrary",  #  TODO: Remove once CI >= Xcode 26.4
+            "CoreAudio_Private",
             "MobileGestaltPrivate",
         ],
     },

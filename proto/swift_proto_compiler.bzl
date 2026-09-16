@@ -220,9 +220,9 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         template = swift_proto_compiler_info.internal.copy_swift_sources_template,
         output = copy_swift_sources_file,
         substitutions = {
-            "{temporary_output_directory_path}": temporary_output_directory.path,
             "{permanent_output_directory_path}": permanent_output_directory_path,
             "{swift_source_file_paths}": " ".join([src.path for src in swift_srcs]),
+            "{temporary_output_directory_path}": temporary_output_directory.path,
         },
         is_executable = True,
     )
@@ -302,12 +302,6 @@ Typically, these are Well Known Types and proto runtime libraries.
 """,
             providers = [SwiftInfo],
         ),
-        "protoc": attr.label(
-            allow_single_file = True,
-            cfg = "exec",
-            executable = True,
-            mandatory = False,
-        ),
         "plugin": attr.label(
             doc = """\
 A proto compiler plugin executable binary.
@@ -376,6 +370,12 @@ protoc \
 ```
 """,
             mandatory = True,
+        ),
+        "protoc": attr.label(
+            allow_single_file = True,
+            cfg = "exec",
+            executable = True,
+            mandatory = False,
         ),
         "suffixes": attr.string_list(
             doc = """\

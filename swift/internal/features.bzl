@@ -453,8 +453,8 @@ def _compute_features(
         # Starlark doesn't support re-binding variables captured from an enclosing lexical scope
         # so we resort to mutation to achieve the same result.
         state = {
-            "requested_features": sets.make([]),
             "disabled_features": sets.make([]),
+            "requested_features": sets.make([]),
         }
 
         def _update_features(newly_requested_features, newly_disabled_features):

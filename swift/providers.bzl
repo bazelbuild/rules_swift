@@ -236,8 +236,9 @@ Opaque struct passing information from the compiler target to the compile functi
 SwiftProtoInfo = provider(
     doc = "Propagates Swift-specific information about a `proto_library`.",
     fields = {
-        "module_name": """\
-The name of the Swift module compiled from the `swift_proto_library` which produced this provider.
+        "direct_pbswift_files": """\
+`list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the
+`ProtoInfo` providers of the direct proto dependencies of the `swift_proto_library` target.
 """,
         "module_mappings": """\
 `list` of `struct`s. Each struct contains `module_name` and
@@ -245,9 +246,8 @@ The name of the Swift module compiled from the `swift_proto_library` which produ
 files to Swift modules. This allows messages that reference messages in other
 libraries to import those modules in generated code.
 """,
-        "direct_pbswift_files": """\
-`list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the
-`ProtoInfo` providers of the direct proto dependencies of the `swift_proto_library` target.
+        "module_name": """\
+The name of the Swift module compiled from the `swift_proto_library` which produced this provider.
 """,
         "pbswift_files": """\
 `depset` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the
@@ -369,6 +369,12 @@ A list of `structs` containing the following fields:
 
 *   `path`: A `string` representing the path to the developer framework.
 """,
+        "dynamic_runtime_cc_info": """\
+The `CcInfo` that selects the toolchain's ordinary dynamic Swift runtime, or
+`None` if the toolchain supplies its runtime through implicit dependencies.
+Final links select this provider unless `swift.static_stdlib` is enabled; it is
+not propagated by libraries.
+""",
         "entry_point_linkopts_provider": """\
 A function that returns flags that should be passed to the linker to control the
 name of the entry point of a linked binary for rules that customize their entry
@@ -419,6 +425,10 @@ linking target (but not to precompiled explicit C/Objective-C modules):
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
 """,
+        "implicit_system_modules": """\
+A `struct` with in the same shape as `system_modules` for the system modules
+that every Swift compilation implicitly requires.
+""",
         "module_aliases": """\
 A `SwiftModuleAliasesInfo` provider that defines the module aliases to use
 during compilation.
@@ -437,12 +447,6 @@ their negation in the `features` attribute of a target/package or in the
 These features determine various compilation and debugging behaviors of the
 Swift build rules, and they are also passed to the C++ APIs used when linking
 (so features defined in CROSSTOOL may be used here).
-""",
-        "dynamic_runtime_cc_info": """\
-The `CcInfo` that selects the toolchain's ordinary dynamic Swift runtime, or
-`None` if the toolchain supplies its runtime through implicit dependencies.
-Final links select this provider unless `swift.static_stdlib` is enabled; it is
-not propagated by libraries.
 """,
         "root_dir": """\
 `String`. The workspace-relative root directory of the toolchain.
@@ -470,10 +474,6 @@ linking target:
 
 For ease of use, this field is never `None`; it will always be a valid `struct`
 containing the fields described above, even if those lists are empty.
-""",
-        "implicit_system_modules": """\
-A `struct` with in the same shape as `system_modules` for the system modules
-that every Swift compilation implicitly requires.
 """,
         "test_configuration": """\
 `Struct` containing the following fields:
@@ -523,23 +523,23 @@ This provider allows users to specify Swift toolchain executables as explicit
 dependencies, ensuring they are available in the execution environment.
 """,
     fields = {
-        "swift_driver": """\
-`File`. The Swift driver executable that orchestrates compilation and linking
-operations. This is the main entry point for invoking the Swift compiler
-toolchain.
+        "additional_inputs": """\
+`List` of `File`s. Additional files to add to the action input root when calling these tools.
 """,
         "swift_autolink_extract": """\
 `File`. The executable that extracts autolink information from object files.
 This tool is used to determine which libraries need to be linked based on
 import statements in Swift code.
 """,
+        "swift_driver": """\
+`File`. The Swift driver executable that orchestrates compilation and linking
+operations. This is the main entry point for invoking the Swift compiler
+toolchain.
+""",
         "swift_symbolgraph_extract": """\
 `File`. The executable that extracts symbol graph information from Swift
 modules. This tool generates structured data about APIs, which can be used
 for documentation generation and other tooling purposes.
-""",
-        "additional_inputs": """\
-`List` of `File`s. Additional files to add to the action input root when calling these tools.
 """,
     },
 )

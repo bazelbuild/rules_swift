@@ -42,8 +42,8 @@ def _swift_shell_test_impl(ctx):
         output = output_script,
         substitutions = {
             "%executable%": ctx.workspace_name + "/" + test_executable.short_path,
-            "%expected_return_code%": str(ctx.attr.expected_return_code),
             "%expected_logs%": shell.array_literal(ctx.attr.expected_logs),
+            "%expected_return_code%": str(ctx.attr.expected_return_code),
             "%not_expected_logs%": shell.array_literal(ctx.attr.not_expected_logs),
         },
         is_executable = True,
@@ -63,12 +63,12 @@ def _swift_shell_test_impl(ctx):
 
 swift_shell_test = rule(
     attrs = {
-        "expected_return_code": attr.int(
-            doc = "The expected return code from the target under test",
-        ),
         "expected_logs": attr.string_list(
             mandatory = False,
             doc = "Logs that are expected to be emitted",
+        ),
+        "expected_return_code": attr.int(
+            doc = "The expected return code from the target under test",
         ),
         "not_expected_logs": attr.string_list(
             mandatory = False,
@@ -79,12 +79,12 @@ swift_shell_test = rule(
             doc = "The Swift binary whose outputs to test.",
             providers = [DefaultInfo],
         ),
-        "_tool": attr.label(
-            default = Label("@bazel_tools//tools/bash/runfiles"),
-        ),
         "_runner_template": attr.label(
             allow_single_file = True,
             default = Label("//test/rules:swift_shell_runner.sh.template"),
+        ),
+        "_tool": attr.label(
+            default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
     },
     implementation = _swift_shell_test_impl,

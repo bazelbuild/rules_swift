@@ -107,9 +107,6 @@ def _standalone_toolchain_impl(repository_ctx):
 standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
-        "_build_template": attr.label(
-            default = "//swift/internal/extensions:toolchain.BUILD",
-        ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",
             mandatory = True,
@@ -120,6 +117,9 @@ standalone_toolchain = repository_rule(
         "swift_version": attr.string(
             doc = "Version of the swift toolchain to be installed.",
             mandatory = True,
+        ),
+        "_build_template": attr.label(
+            default = "//swift/internal/extensions:toolchain.BUILD",
         ),
     },
 )

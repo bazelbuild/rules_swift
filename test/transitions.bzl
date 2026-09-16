@@ -54,23 +54,23 @@ _TRANSITION_ATTRS = {
     "extra_toolchains": attr.string_list(
         doc = "Toolchains appended to --extra_toolchains for the transitioned target.",
     ),
-    "minimum_os": attr.string(
-        doc = "Optional value to set `--macos_minimum_os` to.",
-    ),
     "ios_minimum_os": attr.string(
         doc = "Optional value to set `--ios_minimum_os` to.",
     ),
     "macos_minimum_os": attr.string(
         doc = "Optional value to set `--macos_minimum_os` to.",
     ),
-    "tvos_minimum_os": attr.string(
-        doc = "Optional value to set `--tvos_minimum_os` to.",
+    "minimum_os": attr.string(
+        doc = "Optional value to set `--macos_minimum_os` to.",
     ),
     "platform": attr.string(
         doc = "Optional target platform label (e.g. `@apple_support//platforms:macos_x86_64`).",
     ),
     "transitive_features": attr.string_list(
         doc = "Feature strings appended to `//command_line_option:features` and `//command_line_option:host_features`.",
+    ),
+    "tvos_minimum_os": attr.string(
+        doc = "Optional value to set `--tvos_minimum_os` to.",
     ),
 }
 
