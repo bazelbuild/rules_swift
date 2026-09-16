@@ -388,10 +388,8 @@ Cretes a compilation context for a Swift target.
 
 **RETURNS**
 
-A `struct` containing the following fields:
+A `struct` containing four fields:
 
-  *   `debug_modules`: A depset of module files needed to import this
-      target's dependencies in the debugger, including private deps.
   *   `defines`: A sequence of defines used when compiling the target.
       Includes the defines for the target and its transitive dependencies.
   *   `direct_sources`: A sequence of Swift source files used to compile

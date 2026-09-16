@@ -20,7 +20,6 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
-load("//swift/internal:debugging.bzl", "debug_module_outputs")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
@@ -252,11 +251,6 @@ def _swift_binary_impl(ctx):
             executable = output_file,
             files = depset(
                 [output_file] + additional_debug_outputs,
-                transitive = [debug_module_outputs(
-                    feature_configuration = feature_configuration,
-                    module_contexts = module_contexts,
-                    swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
-                )],
             ),
             runfiles = ctx.runfiles(
                 collect_data = True,

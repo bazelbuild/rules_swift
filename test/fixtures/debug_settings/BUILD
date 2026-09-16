@@ -32,13 +32,3 @@ swift_binary(
     tags = FIXTURE_TAGS,
     deps = [":simple"],
 )
-
-# No sources of its own: debug modules must be collected from dependencies.
-swift_binary(
-    name = "private_deps_binary",
-    tags = FIXTURE_TAGS,
-    deps = [
-        "//test/fixtures/private_deps:client_cc_deps",
-        "//test/fixtures/private_deps:client_swift_deps",
-    ],
-)

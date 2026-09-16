@@ -53,12 +53,8 @@ or module-wrapping mechanism. See
 for more details.
 
 Expression evaluation still requires the `.swiftmodule` and `.pcm`
-files at their original or remapped locations. `swift_binary` and
-`swift_test` include these files in their default outputs, including
-private and implicit dependencies, so they are downloaded with
-`--remote_download_outputs=toplevel`. If you link through other binary
-rules, your build or debugger integration must make these files
-available locally.
+files at their original or remapped locations. Your build or debugger
+integration must make these files available locally.
 
 ## Using explicit dependencies
 
