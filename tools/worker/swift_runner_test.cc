@@ -14,11 +14,16 @@
 
 #include "tools/worker/swift_runner.h"
 
+#include <fstream>
+#include <memory>
 #include <string>
 
 #include "testing/base/public/gmock.h"
 #include "testing/base/public/gunit.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "tools/common/file_system.h"
+#include "tools/common/temp_file.h"
 
 namespace bazel_rules_swift {
 namespace {
@@ -112,6 +117,59 @@ TEST(SwiftRunnerTest, ArgsProcessingMacroExpansionDir) {
       /*job_env=*/GetJobEnvForTest());
   EXPECT_THAT(runner.GetJobEnv(),
               Contains(Pair("TMPDIR", "/execroot/some/relative/path")));
+  EXPECT_THAT(runner.GetMacroExpansionDir(), Eq("some/relative/path"));
+}
+
+TEST(SwiftRunnerTest, RemapMacroExpansionPathsReplacesCwdWithDot) {
+  std::unique_ptr<TempDirectory> temp_dir =
+      TempDirectory::Create("macro_expansion_test.XXXXXX");
+  ASSERT_NE(temp_dir, nullptr);
+
+  std::string sub_dir = absl::StrCat(temp_dir->GetPath(), "/sub/dir");
+  ASSERT_TRUE(MakeDirs(sub_dir, S_IRWXU).ok());
+
+  std::string file1_path = absl::StrCat(temp_dir->GetPath(), "/file1.swift");
+  std::string file1_content =
+      "// original-source-range: /execroot/bazel-out/foo/bar.swift:1:2\n";
+  {
+    std::ofstream f(file1_path);
+    f << file1_content;
+  }
+
+  std::string file2_path = absl::StrCat(sub_dir, "/file2.swift");
+  std::string file2_content =
+      "// original-source-range: some/relative/path.swift:10:20\n";
+  {
+    std::ofstream f(file2_path);
+    f << file2_content;
+  }
+
+  std::string file3_path = absl::StrCat(sub_dir, "/file3.swift");
+  std::string file3_content = "prefix /execroot/a middle /execroot/b suffix\n";
+  {
+    std::ofstream f(file3_path);
+    f << file3_content;
+  }
+
+  SwiftRunner runner(
+      {"swiftc", absl::StrCat("-Xwrapped-swift=-macro-expansion-dir=",
+                              temp_dir->GetPath())},
+      /*force_response_file=*/false,
+      /*get_current_directory=*/GetCurrentDirectoryForTest,
+      /*job_env=*/GetJobEnvForTest());
+
+  runner.RemapMacroExpansionPaths();
+
+  auto ReadFile = [](const std::string& path) {
+    std::ifstream f(path);
+    return std::string((std::istreambuf_iterator<char>(f)),
+                       std::istreambuf_iterator<char>());
+  };
+
+  EXPECT_EQ(ReadFile(file1_path),
+            "// original-source-range: ./bazel-out/foo/bar.swift:1:2\n");
+  EXPECT_EQ(ReadFile(file2_path), file2_content);
+  EXPECT_EQ(ReadFile(file3_path), "prefix ./a middle ./b suffix\n");
 }
 
 TEST(CompilationPlanTest, ModuleJobs) {

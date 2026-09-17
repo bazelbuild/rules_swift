@@ -33,7 +33,10 @@ cc_test(
     srcs = ["swift_runner_test.cc"],
     deps = [
         ":swift_runner",
+        "//tools/common:file_system",
+        "//tools/common:temp_file",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
     ],
 )
 

@@ -17,6 +17,7 @@
 #include <fcntl.h>
 
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -36,6 +37,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
@@ -685,6 +687,10 @@ int SwiftRunner::Run(std::ostream& stdout_stream, std::ostream& stderr_stream) {
     PerformJsonAstDump(emit_json_ast_.value(), stdout_stream, stderr_stream);
   }
 
+  if (!macro_expansion_dir_.empty()) {
+    RemapMacroExpansionPaths();
+  }
+
   return exit_code;
 }
 
@@ -788,9 +794,11 @@ bool SwiftRunner::ProcessArgument(
       std::string temp_dir = std::string(trimmed_arg);
 
       // We don't have a clean way to report an error out of this function. If
-      // If creating the directory fails, then the compiler will fail later
+      // creating the directory fails, then the compiler will fail later
       // anyway.
       MakeDirs(temp_dir, S_IRWXU).IgnoreError();
+
+      macro_expansion_dir_ = temp_dir;
 
       // By default, the compiler creates a directory under the system temp
       // directory to hold macro expansions. The underlying LLVM API lets us
@@ -1173,6 +1181,53 @@ void SwiftRunner::ProcessDiagnostics(absl::string_view stderr_output,
       stderr_stream << *modified_line << std::endl;
     } else {
       stderr_stream << line << std::endl;
+    }
+  }
+}
+
+void SwiftRunner::RemapMacroExpansionPaths() {
+  if (macro_expansion_dir_.empty()) {
+    return;
+  }
+  std::string cwd = get_current_directory_();
+  if (cwd.empty() || cwd == "/") {
+    return;
+  }
+
+  std::error_code ec;
+  if (!std::filesystem::exists(macro_expansion_dir_, ec) || ec) {
+    return;
+  }
+
+  for (std::filesystem::recursive_directory_iterator
+           it(macro_expansion_dir_, ec),
+       end;
+       it != end && !ec; it.increment(ec)) {
+    if (ec) {
+      break;
+    }
+    if (!it->is_regular_file(ec) || ec) {
+      continue;
+    }
+
+    std::string file_path = it->path().string();
+    std::ifstream input_file(file_path, std::ios::binary);
+    if (!input_file) {
+      continue;
+    }
+    std::string content((std::istreambuf_iterator<char>(input_file)),
+                        std::istreambuf_iterator<char>());
+    input_file.close();
+
+    if (content.find(cwd) == std::string::npos) {
+      continue;
+    }
+
+    std::string updated_content = absl::StrReplaceAll(content, {{cwd, "."}});
+
+    std::ofstream output_file(file_path, std::ios::binary | std::ios::trunc);
+    if (output_file) {
+      output_file.write(updated_content.data(), updated_content.size());
     }
   }
 }

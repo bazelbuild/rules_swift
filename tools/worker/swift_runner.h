@@ -295,6 +295,9 @@ class SwiftRunner {
   // Whether the worker should emit a JSON AST dump of the compilation.
   std::optional<JsonAstOptions> emit_json_ast_;
 
+  // The directory where macro expansions are redirected, if specified.
+  std::string macro_expansion_dir_;
+
   // The inverse mapping of module aliases passed to the compiler. The
   // `-module-alias` flag takes its argument of the form `source=alias`. For
   // layering checks, we need to reverse this because `-emit-imported-modules`
@@ -327,6 +330,14 @@ class SwiftRunner {
       const {
     return alias_to_source_mapping_;
   }
+  const std::string& GetMacroExpansionDir() const {
+    return macro_expansion_dir_;
+  }
+  // Recursively scans the macro expansion directory (if one was specified) and
+  // normalizes absolute working directory paths in `// original-source-range:`
+  // comments to `.` so macro expansion archives are deterministic across remote
+  // workers.
+  void RemapMacroExpansionPaths();
 
  private:
   std::function<std::string()> get_current_directory_;

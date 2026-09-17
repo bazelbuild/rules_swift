@@ -15,12 +15,12 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_TEMP_FILE_H
 
-#include <fts.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <cerrno>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -99,29 +99,8 @@ class TempDirectory {
   TempDirectory &operator=(TempDirectory &&) = default;
 
   ~TempDirectory() {
-    char *files[] = {(char *)path_.c_str(), nullptr};
-    // Don't have the walk change directories, don't traverse symlinks, and
-    // don't cross devices.
-    auto fts_handle =
-        fts_open(files, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, nullptr);
-    if (!fts_handle) {
-      return;
-    }
-
-    FTSENT *entry;
-    while ((entry = fts_read(fts_handle))) {
-      switch (entry->fts_info) {
-        case FTS_F:        // regular file
-        case FTS_SL:       // symlink
-        case FTS_SLNONE:   // symlink without target
-        case FTS_DP:       // directory, post-order (after traversing children)
-        case FTS_DEFAULT:  // other non-error conditions
-          remove(entry->fts_accpath);
-          break;
-      }
-    }
-
-    fts_close(fts_handle);
+    std::error_code ec;
+    std::filesystem::remove_all(path_, ec);
   }
 
   // Gets the path to the temporary directory.
