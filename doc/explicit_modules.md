@@ -159,6 +159,17 @@ use_repo(system_sdk, "system_sdk")
 This is useful if you trigger remote macOS builds from Linux hosts. It
 is up to you to generate the file with whatever SDKs you need.
 
+If you want to have a vendored BUILD file, but still allow discovering
+other Xcode versions on macOS (which is potentially useful for beta
+Xcode version support), set
+`RULES_SWIFT_SYSTEM_SDK_INCLUDE_LOCAL_XCODES=1` in the environment or add
+`common --repo_env=RULES_SWIFT_SYSTEM_SDK_INCLUDE_LOCAL_XCODES=1` to your
+`.bazelrc.
+
+The vendored file is always used for the configured version. Other
+installed Xcode versions are generated using the SDK selection from
+`configure_sdks`.
+
 This file can be generated with this helper:
 
 ```sh
