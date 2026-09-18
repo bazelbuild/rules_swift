@@ -20,14 +20,14 @@ bzl_library(
         ":xcode_explicit_module_hub_repo",
         ":xcode_explicit_module_repo",
         ":xcode_locator_repo",
-        "@bazel_tools//tools/osx:xcode_configure.bzl",
+        "@apple_support//xcode:xcode_configure",
     ],
 )
 
 bzl_library(
     name = "xcode_locator_repo",
     srcs = ["xcode_locator_repo.bzl"],
-    deps = ["@bazel_tools//tools/osx:xcode_configure.bzl"],
+    deps = ["@apple_support//xcode:xcode_configure"],
 )
 
 bzl_library(

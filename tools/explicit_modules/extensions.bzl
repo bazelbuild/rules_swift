@@ -14,7 +14,7 @@
 
 """Configure explicit module repos for all Xcode verisons."""
 
-load("@bazel_tools//tools/osx:xcode_configure.bzl", "run_xcode_locator")
+load("@apple_support//xcode:xcode_configure.bzl", "run_xcode_locator")
 load(
     ":precomputed_xcode_explicit_module_repo.bzl",
     "precomputed_xcode_explicit_module_repo",
