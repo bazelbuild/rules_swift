@@ -317,7 +317,7 @@ bool CreateVerifyOutputs(const std::string& output_file_map_path,
                          std::ostream* stderr_stream) {
   if (!output_file_map_path.empty()) {
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path, "", "");
+    output_file_map.ReadFromPath(output_file_map_path);
     for (const auto& expected_output_pair :
          output_file_map.incremental_outputs()) {
       if (!TouchFile(expected_output_pair.first, stderr_stream)) {
@@ -525,7 +525,7 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     }
 
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_, "", "");
+    output_file_map.ReadFromPath(output_file_map_path_);
 
     auto outputs = output_file_map.incremental_outputs();
     std::map<std::string, std::string>::iterator it;
