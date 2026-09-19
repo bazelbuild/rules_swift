@@ -6,9 +6,11 @@ load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
-_RESOURCE_DIR = "{sdk_dir}/swift.xctoolchain/usr/lib/swift_static"
+# The static resource directory and sysroot, as declared by the SDK's
+# `swift-sdk.json` (`swiftStaticResourcesPath` and `sdkRootPath`).
+_RESOURCE_DIR = "{resource_dir}"
 
-_WASI_SDK = "{sdk_dir}/WASI.sdk"
+_WASI_SDK = "{sdkroot}"
 
 filegroup(
     name = "sdk_files",
@@ -31,7 +33,7 @@ swift_toolchain(
     arch = "wasm32",
     copts = [
         "-resource-dir",
-        _RESOURCE_DIR,
+        _RESOURCE_DIR,{swift_toolset_copts}
     ],
     features = [
         "swift.module_map_no_private_headers",
@@ -61,7 +63,7 @@ swift_toolchain(
         # (`-O`) generic-metadata instantiation reads out of bounds at runtime
         # (`-Onone` happens to tolerate the default).
         "-Wl,--global-base=4096",
-        "-Wl,--table-base=4096",
+        "-Wl,--table-base=4096",{swift_toolset_linkopts}
     ],
     os = "wasi",
     parsed_version = "{swift_version}",
@@ -105,8 +107,8 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
     args = [
-        "--target=wasm32-unknown-wasip1",
-        "--sysroot=" + _WASI_SDK,
+        "--target={target_triple}",
+        "--sysroot=" + _WASI_SDK,{cc_toolset_compile_args}
     ],
 )
 
@@ -120,13 +122,13 @@ cc_args(
     # directory does not include.
     args = [
         "-resource-dir",
-        _RESOURCE_DIR + "/clang",
+        _RESOURCE_DIR + "/clang",{cc_toolset_link_args}
     ],
 )
 
 cc_make_variable(
     name = "cc_target_triple_wasm32",
-    value = "wasm32-unknown-wasip1",
+    value = "{target_triple}",
     variable_name = "CC_TARGET_TRIPLE",
 )
 
