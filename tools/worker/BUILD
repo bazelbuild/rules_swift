@@ -139,8 +139,23 @@ cc_library(
 
 cc_library(
     name = "worker_protocol",
-    srcs = ["worker_protocol.cc"],
-    hdrs = ["worker_protocol.h"],
+    # worker_protocol.pb.{h,cc} are checked-in generated code so that
+    # building the worker does not require a protoc toolchain. To
+    # regenerate (required when the `protobuf` dep in MODULE.bazel moves to
+    # an incompatible version):
+    #   protoc --cpp_out=tools/worker --proto_path=tools/worker \
+    #       tools/worker/worker_protocol.proto
+    # using a protoc release that matches the MODULE.bazel protobuf version.
+    # worker_protocol.proto is a verbatim copy of Bazel's
+    # src/main/protobuf/worker_protocol.proto.
+    srcs = [
+        "worker_protocol.cc",
+        "worker_protocol.pb.cc",
+    ],
+    hdrs = [
+        "worker_protocol.h",
+        "worker_protocol.pb.h",
+    ],
     copts = select({
         "//tools:clang-cl": [
             "-Xclang=-fno-split-cold-code",
@@ -155,6 +170,7 @@ cc_library(
     }),
     deps = [
         "@nlohmann_json//:json",
+        "@protobuf//:protobuf",
     ],
 )
 
