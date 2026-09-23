@@ -77,6 +77,7 @@ load(
     "get_cc_feature_configuration",
     "is_feature_enabled",
     "upcoming_and_experimental_features",
+    "warnings_as_errors_from_features",
 )
 load(":module_maps.bzl", "write_module_map")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
@@ -847,6 +848,10 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         feature_configuration = feature_configuration,
     )
 
+    werror_warning_groups = warnings_as_errors_from_features(
+        feature_configuration = feature_configuration,
+    )
+
     # Compile the original C headers before Swift. The Swift compilation imports
     # this incomplete module; only the complete module, including the generated
     # header, is propagated to dependents.
@@ -920,6 +925,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,
+        werror_warning_groups = werror_warning_groups,
         workspace_name = workspace_name,
         # Merge the compile outputs into the prerequisites.
         **struct_fields(compile_outputs)

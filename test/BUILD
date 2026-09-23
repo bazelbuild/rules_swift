@@ -40,6 +40,7 @@ load(":swift_toolchain_tests.bzl", "swift_toolchain_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
 load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
 load(":utils_tests.bzl", "utils_test_suite")
+load(":warnings_as_errors_tests.bzl", "warnings_as_errors_test_suite")
 load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
 
 licenses(["notice"])
@@ -147,6 +148,8 @@ utils_test_suite(name = "utils")
 xctest_runner_test_suite(name = "xctest_runner")
 
 runtime_deps_test_suite(name = "runtime_deps")
+
+warnings_as_errors_test_suite(name = "warnings_as_errors")
 
 test_suite(
     name = "all_tests",

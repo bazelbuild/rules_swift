@@ -1365,6 +1365,7 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [
                 _upcoming_and_experimental_features_configurator,
+                _warnings_as_errors_configurator,
             ],
         ),
         ActionConfigInfo(
@@ -2615,6 +2616,13 @@ def _upcoming_and_experimental_features_configurator(prerequisites, args):
     args.add_all(
         prerequisites.experimental_features,
         before_each = "-enable-experimental-feature",
+    )
+
+def _warnings_as_errors_configurator(prerequisites, args):
+    """Adds warning groups to the command line."""
+    args.add_all(
+        getattr(prerequisites, "werror_warning_groups", []),
+        before_each = "-Werror",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

@@ -359,6 +359,28 @@ def upcoming_and_experimental_features(feature_configuration):
 
     return (upcoming, experimental)
 
+def warnings_as_errors_from_features(feature_configuration):
+    """Extracts the compiler warning groups to treat as errors.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        The `list` of warning groups to pass to the compiler via `-Werror`.
+        Empty names and lowercase legacy diagnostic IDs are ignored; legacy
+        diagnostic post-processing is not supported by the worker.
+    """
+    prefix = "swift.werror."
+    werror_warning_groups = []
+
+    for feature in feature_configuration._enabled_features:
+        if feature.startswith(prefix):
+            name = feature[len(prefix):]
+            if name and name[0].isupper():
+                werror_warning_groups.append(name)
+
+    return werror_warning_groups
+
 def _check_allowlists(
         *,
         allowlists,
