@@ -33,6 +33,13 @@ mac_action_command_line_test = make_action_command_line_test_rule(
     },
 )
 
+mac_implicit_modules_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["-swift.use_c_modules"],
+        "//command_line_option:platforms": "//buildenv/platforms/apple:darwin_arm64",
+    },
+)
+
 mac_provider_test = make_provider_test_rule(
     config_settings = {
         "//command_line_option:platforms": "//buildenv/platforms/apple:darwin_arm64",
@@ -160,7 +167,35 @@ def local_defines_test_suite(name, tags = []):
     # Mixed language tests - These are all forced to macOS because of the ObjcCompile step.
     mac_action_command_line_test(
         name = "{}_mixed_target_has_defines_swift".format(name),
-        expected_argv = ["-DLOCAL_FOO", "-DPROPAGATED_BAR"],
+        expected_argv = [
+            "-DLOCAL_FOO",
+            "-DPROPAGATED_BAR",
+            "-import-underlying-module",
+        ],
+        expected_inputs = [
+            "mixed_lib_with_local_defines.swift.modulemap",
+            "mixed_lib_with_local_defines.swift.pcm",
+            "-mixed_lib.h",
+            "*",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_lib_with_local_defines",
+    )
+
+    mac_implicit_modules_action_command_line_test(
+        name = "{}_mixed_target_implicit_modules_swift".format(name),
+        expected_argv = [
+            "-DLOCAL_FOO",
+            "-DPROPAGATED_BAR",
+            "-import-underlying-module",
+        ],
+        expected_inputs = [
+            "mixed_lib_with_local_defines.swift.modulemap",
+            "-mixed_lib_with_local_defines.swift.pcm",
+            "mixed_lib.h",
+            "*",
+        ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_lib_with_local_defines",

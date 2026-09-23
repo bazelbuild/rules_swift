@@ -1332,10 +1332,23 @@ def _collect_clang_module_inputs(
     if mixed_module_clang_inputs:
         if mixed_module_clang_inputs.module_map_file:
             direct_inputs.append(mixed_module_clang_inputs.module_map_file)
-        if mixed_module_clang_inputs.precompiled_module:
-            direct_inputs.append(mixed_module_clang_inputs.precompiled_module)
         if mixed_module_clang_inputs.vfs_overlay_file:
             direct_inputs.append(mixed_module_clang_inputs.vfs_overlay_file)
+
+        precompiled_module = mixed_module_clang_inputs.precompiled_module
+        use_precompiled_module = (
+            prefer_precompiled_modules and precompiled_module
+        )
+        if use_precompiled_module:
+            direct_inputs.append(precompiled_module)
+        if (
+            not use_precompiled_module or always_include_headers
+        ) and mixed_module_clang_inputs.compilation_context:
+            compilation_context = mixed_module_clang_inputs.compilation_context
+            transitive_inputs.append(compilation_context.headers)
+            transitive_inputs.append(
+                depset(compilation_context.direct_textual_headers),
+            )
 
     return ConfigResultInfo(
         inputs = direct_inputs,
@@ -1398,6 +1411,37 @@ def _clang_module_dependency_args(module):
         # non-system modules.
         return _clang_modulemap_dependency_args(module)
 
+def _configure_mixed_module_clang_inputs(
+        mixed_inputs,
+        args,
+        prefer_precompiled_modules):
+    """Configures flags for the C/Objective-C half of a mixed C/Swift module."""
+    if mixed_inputs and mixed_inputs.module_name:
+        args.add("-import-underlying-module")
+        if mixed_inputs.vfs_overlay_file:
+            # Note that `-ivfsoverlay` and the path must be separate
+            # arguments. The frontend does not give the joined form the
+            # special treatment that we need to avoid serializing the flag.
+            args.add_all(
+                ["-ivfsoverlay", mixed_inputs.vfs_overlay_file],
+                before_each = "-Xcc",
+            )
+        args.add_all(
+            [mixed_inputs.virtual_module_map_path or
+             mixed_inputs.module_map_file],
+            format_each = "-fmodule-map-file=%s",
+            before_each = "-Xcc",
+        )
+        if prefer_precompiled_modules and mixed_inputs.precompiled_module:
+            args.add_all(
+                [mixed_inputs.virtual_precompiled_module_path or
+                 mixed_inputs.precompiled_module],
+                format_each = "-fmodule-file={}=%s".format(
+                    mixed_inputs.module_name,
+                ),
+                before_each = "-Xcc",
+            )
+
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
     modules = [
@@ -1418,6 +1462,11 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
 
     if prerequisites.is_swift:
         mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
+        _configure_mixed_module_clang_inputs(
+            mixed_inputs = mixed_inputs,
+            args = args,
+            prefer_precompiled_modules = False,
+        )
         compilation_context = None
     else:
         mixed_inputs = None
@@ -1461,32 +1510,11 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
         # have already precompiled the C half of the module. Add the flags to
         # import it.
         mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
-        if mixed_inputs and mixed_inputs.module_name:
-            args.add("-import-underlying-module")
-            if mixed_inputs.vfs_overlay_file:
-                # Note that `-ivfsoverlay` and the path must be separate
-                # arguments. The frontend does not give the joined form the
-                # special treatment that we need to avoid serializing the flag.
-                args.add_all(
-                    ["-ivfsoverlay", mixed_inputs.vfs_overlay_file],
-                    before_each = "-Xcc",
-                )
-            args.add_all(
-                [mixed_inputs.virtual_module_map_path or
-                 mixed_inputs.module_map_file],
-                format_each = "-fmodule-map-file=%s",
-                before_each = "-Xcc",
-            )
-            if mixed_inputs.precompiled_module:
-                args.add_all(
-                    [mixed_inputs.virtual_precompiled_module_path or
-                     mixed_inputs.precompiled_module],
-                    format_each = "-fmodule-file={}=%s".format(
-                        mixed_inputs.module_name,
-                    ),
-                    before_each = "-Xcc",
-                )
-
+        _configure_mixed_module_clang_inputs(
+            mixed_inputs = mixed_inputs,
+            args = args,
+            prefer_precompiled_modules = True,
+        )
         compilation_context = None
     else:
         mixed_inputs = None

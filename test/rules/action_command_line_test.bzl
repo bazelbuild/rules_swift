@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
+load(":expected_files.bzl", "compare_expected_files")
 
 visibility([
     "@build_bazel_rules_swift//test/...",
@@ -90,6 +91,17 @@ def _action_command_line_test_impl(ctx):
                 ),
             )
 
+    if ctx.attr.expected_inputs:
+        compare_expected_files(
+            env,
+            "inputs of {} action for target '{}'".format(
+                mnemonic,
+                str(target_under_test.label),
+            ),
+            ctx.attr.expected_inputs,
+            action.inputs,
+        )
+
     return analysistest.end(env)
 
 def make_action_command_line_test_rule(config_settings = {}):
@@ -112,6 +124,13 @@ def make_action_command_line_test_rule(config_settings = {}):
 A list of strings representing substrings expected to appear in the action
 command line, after concatenating all command line arguments into a single
 space-delimited string.
+""",
+            ),
+            "expected_inputs": attr.string_list(
+                mandatory = False,
+                doc = """\
+A list of file path suffixes (or `-`-prefixed exclusions, plus `*` for subset
+matching) expected to appear in the action's `inputs`.
 """,
             ),
             "not_expected_argv": attr.string_list(

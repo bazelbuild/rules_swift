@@ -1136,6 +1136,9 @@ def _compile_clang_module_for_swift_module(
     Returns:
         A `struct` (never `None`) containing the following fields:
 
+        *   `compilation_context`: The `CcCompilationContext` containing the
+            headers and compilation requirements for the Clang module. This may
+            be `None` if no headers were provided.
         *   `module_name`: The name of the Clang module. This may be `None` if
             no generated header was requested.
         *   `module_map_file`: The module map file that defines the Clang module
@@ -1160,6 +1163,7 @@ def _compile_clang_module_for_swift_module(
         not compilation_context.direct_private_headers
     ):
         return struct(
+            compilation_context = None,
             module_name = None,
             module_map_file = None,
             precompiled_module = None,
@@ -1287,6 +1291,7 @@ def _compile_clang_module_for_swift_module(
         )
 
     return struct(
+        compilation_context = compilation_context,
         module_name = module_name,
         module_map_file = generated_module_map,
         precompiled_module = precompiled_module,
