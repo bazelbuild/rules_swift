@@ -1862,9 +1862,13 @@ def _upcoming_and_experimental_features_configurator(prerequisites, args):
     )
 
 def _warnings_as_errors_configurator(prerequisites, args):
-    """Adds upcoming and experimental features to the command line."""
+    """Adds warning groups and legacy diagnostic IDs to the command line."""
     args.add_all(
-        prerequisites.warnings_as_errors,
+        getattr(prerequisites, "werror_warning_groups", []),
+        before_each = "-Werror",
+    )
+    args.add_all(
+        getattr(prerequisites, "warnings_as_errors", []),
         format_each = "-Xwrapped-swift=-warning-as-error=%s",
     )
 

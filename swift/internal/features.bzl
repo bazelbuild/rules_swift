@@ -309,22 +309,33 @@ def upcoming_and_experimental_features(feature_configuration):
     return (upcoming, experimental)
 
 def warnings_as_errors_from_features(feature_configuration):
-    """Extracts the diagnostic IDs to treat as errors in post-processing.
+    """Extracts the legacy diagnostic IDs and warning groups to treat as errors.
 
     Args:
         feature_configuration: The Swift feature configuration.
 
     Returns:
-        The `list` of diagnostic IDs to treat as errors.
+        A tuple containing the following elements:
+
+        1.  The `list` of legacy diagnostic IDs to treat as errors in
+            post-processing.
+        2.  The `list` of warning groups to pass to the compiler via `-Werror`.
     """
     prefix = "swift.werror."
-    warnings_as_errors = []
+    legacy_warnings_as_errors = []
+    werror_warning_groups = []
 
     for feature in feature_configuration._enabled_features:
         if feature.startswith(prefix):
-            warnings_as_errors.append(feature[len(prefix):])
+            name = feature[len(prefix):]
+            if not name:
+                continue
+            if name[0].isupper():
+                werror_warning_groups.append(name)
+            else:
+                legacy_warnings_as_errors.append(name)
 
-    return warnings_as_errors
+    return (legacy_warnings_as_errors, werror_warning_groups)
 
 def _check_allowlists(
         *,

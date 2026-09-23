@@ -541,7 +541,7 @@ def compile(
     upcoming_features, experimental_features = upcoming_and_experimental_features(
         feature_configuration = feature_configuration,
     )
-    warnings_as_errors = warnings_as_errors_from_features(
+    warnings_as_errors, werror_warning_groups = warnings_as_errors_from_features(
         feature_configuration = feature_configuration,
     )
 
@@ -634,6 +634,7 @@ def compile(
         "upcoming_features": upcoming_features,
         "user_compile_flags": copts,
         "warnings_as_errors": warnings_as_errors,
+        "werror_warning_groups": werror_warning_groups,
     } | struct_fields(compile_outputs)
 
     # Step 2
