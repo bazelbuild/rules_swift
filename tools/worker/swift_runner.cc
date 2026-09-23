@@ -626,6 +626,17 @@ SwiftRunner::SwiftRunner(
       last_flag_was_module_alias_(false),
       get_current_directory_(std::move(get_current_directory)) {
   ProcessArguments(args);
+
+  // Ensure that `TMPDIR` is always redirected to a deterministic path within
+  // the current working directory, so temporary files created by the compiler
+  // (such as macro expansion buffers emitted during IRGen debug info generation
+  // or indexing) are captured under the workspace root and remapped by
+  // `-file-prefix-map`. When `-macro-expansion-dir=` is omitted, default to
+  // `${CWD}/_tmp`.
+  if (macro_expansion_dir_.empty()) {
+    MakeDirs("_tmp", S_IRWXU).IgnoreError();
+    job_env_["TMPDIR"] = absl::StrCat(get_current_directory_(), "/_tmp");
+  }
 }
 
 int SwiftRunner::Run(std::ostream& stdout_stream, std::ostream& stderr_stream) {

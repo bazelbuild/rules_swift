@@ -120,6 +120,37 @@ TEST(SwiftRunnerTest, ArgsProcessingMacroExpansionDir) {
   EXPECT_THAT(runner.GetMacroExpansionDir(), Eq("some/relative/path"));
 }
 
+TEST(SwiftRunnerTest, JobEnvTmpdirWithMacroExpansionDir) {
+  SwiftRunner runner(
+      {"swiftc", "-Xwrapped-swift=-macro-expansion-dir=foo"},
+      /*force_response_file=*/false,
+      /*get_current_directory=*/GetCurrentDirectoryForTest,
+      /*job_env=*/GetJobEnvForTest());
+  EXPECT_THAT(runner.GetJobEnv(), Contains(Pair("TMPDIR", "/execroot/foo")));
+  EXPECT_THAT(runner.GetMacroExpansionDir(), Eq("foo"));
+}
+
+TEST(SwiftRunnerTest, JobEnvTmpdirWithoutMacroExpansionDir) {
+  SwiftRunner runner(
+      {"swiftc", "main.swift"},
+      /*force_response_file=*/false,
+      /*get_current_directory=*/GetCurrentDirectoryForTest,
+      /*job_env=*/GetJobEnvForTest());
+  EXPECT_THAT(runner.GetJobEnv(), Contains(Pair("TMPDIR", "/execroot/_tmp")));
+  EXPECT_THAT(runner.GetMacroExpansionDir(), Eq(""));
+}
+
+TEST(SwiftRunnerTest, JobEnvTmpdirOverridesHostTmpdirWhenMacroExpansionDirOmitted) {
+  absl::flat_hash_map<std::string, std::string> env = {
+      {"TMPDIR", "/var/folders/host_tmp"}};
+  SwiftRunner runner(
+      {"swiftc", "main.swift"},
+      /*force_response_file=*/false,
+      /*get_current_directory=*/GetCurrentDirectoryForTest,
+      /*job_env=*/env);
+  EXPECT_THAT(runner.GetJobEnv(), Contains(Pair("TMPDIR", "/execroot/_tmp")));
+}
+
 TEST(SwiftRunnerTest, RemapMacroExpansionPathsReplacesCwdWithDot) {
   std::unique_ptr<TempDirectory> temp_dir =
       TempDirectory::Create("macro_expansion_test.XXXXXX");
