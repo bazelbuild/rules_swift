@@ -11,6 +11,7 @@ _HOST_FEATURES = "//command_line_option:host_features"
 _IOS_MINIMUM_OS = "//command_line_option:ios_minimum_os"
 _MACOS_MINIMUM_OS = "//command_line_option:macos_minimum_os"
 _PLATFORMS = "//command_line_option:platforms"
+_SWIFTCOPTS = str(Label("//swift:copt"))
 _TVOS_MINIMUM_OS = "//command_line_option:tvos_minimum_os"
 
 _TRANSITION_OPTIONS = [
@@ -21,6 +22,7 @@ _TRANSITION_OPTIONS = [
     _IOS_MINIMUM_OS,
     _MACOS_MINIMUM_OS,
     _PLATFORMS,
+    _SWIFTCOPTS,
     _TVOS_MINIMUM_OS,
 ]
 
@@ -33,6 +35,7 @@ def _transition_impl(settings, attr):
         _IOS_MINIMUM_OS: attr.ios_minimum_os or settings[_IOS_MINIMUM_OS],
         _MACOS_MINIMUM_OS: attr.macos_minimum_os or attr.minimum_os or settings[_MACOS_MINIMUM_OS],
         _PLATFORMS: [attr.platform] if attr.platform else settings[_PLATFORMS],
+        _SWIFTCOPTS: settings[_SWIFTCOPTS] + attr.swiftcopts,
         _TVOS_MINIMUM_OS: attr.tvos_minimum_os or settings[_TVOS_MINIMUM_OS],
     }
 
@@ -65,6 +68,9 @@ _TRANSITION_ATTRS = {
     ),
     "platform": attr.string(
         doc = "Optional target platform label (e.g. `@apple_support//platforms:macos_x86_64`).",
+    ),
+    "swiftcopts": attr.string_list(
+        doc = "Swift compiler flags appended to `//swift:copt` for the transitioned target.",
     ),
     "transitive_features": attr.string_list(
         doc = "Feature strings appended to `//command_line_option:features` and `//command_line_option:host_features`.",
