@@ -50,12 +50,20 @@ namespace {
 using namespace bazel_rules_swift;
 
 // Creates a temporary file and writes the given arguments to it, one per line.
+// A leading -frontend is passed outside the response file by
+// ArgsWithResponseFile because some swift-driver versions select the invocation
+// mode before expanding response files.
 static std::unique_ptr<TempFile> WriteResponseFile(
     const std::vector<std::string>& args) {
   auto response_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream response_file_stream(response_file->GetPath());
 
-  for (const auto& arg : args) {
+  auto it = args.begin();
+  if (it != args.end() && *it == "-frontend") {
+    ++it;
+  }
+  for (; it != args.end(); ++it) {
+    const auto& arg = *it;
     // When Clang/Swift write out a response file to communicate from driver to
     // frontend, they just quote every argument to be safe; we duplicate that
     // instead of trying to be "smarter" and only quoting when necessary.
@@ -379,6 +387,17 @@ bool SupportsResponseFileInvocation(const std::vector<std::string>& args) {
   return args.empty() || args.front() != "-modulewrap";
 }
 
+std::vector<std::string> ArgsWithResponseFile(
+    const std::vector<std::string>& tool_args,
+    const std::vector<std::string>& args, const TempFile& response_file) {
+  std::vector<std::string> spawn_args(tool_args);
+  if (!args.empty() && args.front() == "-frontend") {
+    spawn_args.push_back(args.front());
+  }
+  spawn_args.push_back("@" + response_file.GetPath());
+  return spawn_args;
+}
+
 // Spawns an executable, constructing the command line by writing `args` to a
 // response file when the Swift invocation mode supports it and concatenating
 // that after `tool_args` (which are passed outside the response file).
@@ -389,20 +408,12 @@ int SpawnJob(const std::vector<std::string>& tool_args,
   std::vector<std::string> spawn_args(tool_args);
   if (SupportsResponseFileInvocation(args)) {
     auto response_file = WriteResponseFile(args);
-    spawn_args.push_back("@" + response_file->GetPath());
+    spawn_args = ArgsWithResponseFile(tool_args, args, *response_file);
     return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
   }
 
   spawn_args.insert(spawn_args.end(), args.begin(), args.end());
   return RunSubProcess(spawn_args, env, stderr_stream, stdout_to_stderr);
-}
-
-std::vector<std::string> ArgsWithResponseFile(
-    const std::vector<std::string>& tool_args,
-    const std::vector<std::string>& args, const TempFile& response_file) {
-  std::vector<std::string> spawn_args(tool_args);
-  spawn_args.push_back("@" + response_file.GetPath());
-  return spawn_args;
 }
 
 std::vector<std::string> FullArgsForDisplay(
