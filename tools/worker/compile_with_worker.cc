@@ -80,6 +80,12 @@
 // `bazel clean`, as the user would expect.) Then, after the compiler is done,
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
+//
+// We also redirect module-level outputs, such as the final .swiftmodule and
+// generated header, to this location. The compiler updates these files along
+// with its dependency records, so we need to keep them together even if a build
+// fails. Otherwise, the next invocation could treat an older module as up to
+// date and copy it into Bazel's output location without recompiling.
 
 int CompileWithWorker(const std::vector<std::string>& args,
                       std::string index_import_path) {
