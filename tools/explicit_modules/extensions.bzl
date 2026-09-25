@@ -27,9 +27,22 @@ _XCODE_LOCATOR_SRC = Label("@bazel_tools//tools/osx:xcode_locator.m")
 _SCANNER_SCRIPT = Label("//tools/explicit_modules:scan.py")
 _LOCATOR_REPO = "system_sdk_xcode_locator"
 _LOCATOR_LABEL = "@{}//:xcode-locator-bin".format(_LOCATOR_REPO)
+_INCLUDE_LOCAL_XCODES_ENV = "RULES_SWIFT_SYSTEM_SDK_INCLUDE_LOCAL_XCODES"
 
 def _sanitize(v):
     return v.replace(".", "_").replace("-", "_")
+
+def _vendored_xcode_tags_by_version(vendored_xcode_tags):
+    result = {}
+    for tag in vendored_xcode_tags:
+        if tag.version in result:
+            fail(
+                "Duplicate system_sdk.configure_xcode() for Xcode version '{}'.".format(
+                    tag.version,
+                ),
+            )
+        result[tag.version] = tag
+    return result
 
 def _default_xcode_path(module_ctx):
     result = module_ctx.execute(
@@ -48,24 +61,21 @@ def _default_xcode_path(module_ctx):
         return None
     return str(module_ctx.path(output).realpath)
 
-def _generate_pinned_repos(configs):
-    seen = {}
+def _generate_precomputed_repo(tag):
+    repo_name = "system_sdk_xcode_" + _sanitize(tag.version)
+    precomputed_xcode_explicit_module_repo(
+        name = repo_name,
+        xcode_version = tag.version,
+        build_file = tag.build_file,
+    )
+    return repo_name
+
+def _generate_pinned_repos(vendored_xcode_tags):
+    vendored_xcode_tags_by_version = _vendored_xcode_tags_by_version(vendored_xcode_tags)
     versions_ordered = []
     default_manifest = None
-    for tag in configs:
-        if tag.version in seen:
-            fail(
-                "Duplicate system_sdk.configure_xcode() for Xcode version '{}'.".format(
-                    tag.version,
-                ),
-            )
-        seen[tag.version] = True
-        repo_name = "system_sdk_xcode_" + _sanitize(tag.version)
-        precomputed_xcode_explicit_module_repo(
-            name = repo_name,
-            xcode_version = tag.version,
-            build_file = tag.build_file,
-        )
+    for tag in vendored_xcode_tags_by_version.values():
+        repo_name = _generate_precomputed_repo(tag)
         versions_ordered.append(tag.version)
         if default_manifest == None:
             default_manifest = "@{}//:module_names.json".format(repo_name)
@@ -76,7 +86,8 @@ def _generate_pinned_repos(configs):
         default_manifest = default_manifest,
     )
 
-def _generate_local_repos(module_ctx, sdks, exclude_modules):
+def _generate_local_repos(module_ctx, sdks, exclude_modules, vendored_xcode_tags = []):
+    vendored_xcode_tags_by_version = _vendored_xcode_tags_by_version(vendored_xcode_tags)
     toolchains, err = run_xcode_locator(module_ctx, _XCODE_LOCATOR_SRC)
     if err:
         fail("xcode-locator failed: " + err)
@@ -97,16 +108,22 @@ def _generate_local_repos(module_ctx, sdks, exclude_modules):
     default_manifest = None
     for tc in toolchains:
         repo_name = "system_sdk_xcode_" + _sanitize(tc.version)
-        xcode_explicit_module_repo(
-            name = repo_name,
-            exclude_modules = exclude_modules,
-            sdks = sdks,
-            xcode_version = tc.version,
-            xcode_locator = _LOCATOR_LABEL,
-        )
+        if tc.version not in vendored_xcode_tags_by_version:
+            xcode_explicit_module_repo(
+                name = repo_name,
+                exclude_modules = exclude_modules,
+                sdks = sdks,
+                xcode_version = tc.version,
+                xcode_locator = _LOCATOR_LABEL,
+            )
         versions_ordered.append(tc.version)
         if tc.developer_dir == default_path:
             default_manifest = "@{}//:module_names.json".format(repo_name)
+
+    for tag in vendored_xcode_tags:
+        _generate_precomputed_repo(tag)
+        if tag.version not in versions_ordered:
+            versions_ordered.append(tag.version)
 
     if default_manifest == None:
         fail("Selected Xcode '{}' was not found by xcode-locator. Found Xcodes:\n{}".format(
@@ -116,6 +133,12 @@ def _generate_local_repos(module_ctx, sdks, exclude_modules):
                 for tc in toolchains
             ]),
         ))
+
+    # Avoid fetching a generated repo just to populate the hub's module names.
+    if vendored_xcode_tags:
+        default_manifest = "@system_sdk_xcode_{}//:module_names.json".format(
+            _sanitize(vendored_xcode_tags[0].version),
+        )
 
     xcode_explicit_module_hub_repo(
         name = "system_sdk",
@@ -158,15 +181,22 @@ def _collect_sdk_config(module_ctx):
 def _sdk_extension_impl(module_ctx):
     module_ctx.watch(_SCANNER_SCRIPT)
 
-    configs = []
+    vendored_xcode_tags = []
     for mod in module_ctx.modules:
         if not mod.is_root:
             continue
         for tag in mod.tags.configure_xcode:
-            configs.append(tag)
+            vendored_xcode_tags.append(tag)
 
-    if configs:
-        _generate_pinned_repos(configs)
+    if vendored_xcode_tags:
+        if (
+            module_ctx.os.name == "mac os x" and
+            module_ctx.os.environ.get(_INCLUDE_LOCAL_XCODES_ENV) == "1"
+        ):
+            sdks, exclude_modules = _collect_sdk_config(module_ctx)
+            _generate_local_repos(module_ctx, sdks, exclude_modules, vendored_xcode_tags)
+        else:
+            _generate_pinned_repos(vendored_xcode_tags)
     elif module_ctx.os.name != "mac os x":
         _system_sdk_stub_repo(name = "system_sdk")
     else:
@@ -247,6 +277,7 @@ system_sdk = module_extension(
     doc = "Generate BUILD files for explicit modules.",
     environ = [
         "DEVELOPER_DIR",
+        _INCLUDE_LOCAL_XCODES_ENV,
         "XCODE_VERSION",
     ],
 )
