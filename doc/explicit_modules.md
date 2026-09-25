@@ -40,6 +40,22 @@ would still be embedded in the swiftmodule files. This means debugging
 in `lldb` with explicit modules would not work with cached swiftmodules
 and is therefore disabled.
 
+### Module tracking in debug info
+
+With Swift 6.4 / Xcode 27 and newer, `swift.debug_module_path` is enabled by default
+for Xcode toolchains.
+In this mode the compiler writes the `.swiftmodule` path into each object file's
+debug information using `-debug-module-path`. Each explicit module also
+records its dependencies. LLDB uses these paths to find the module files
+it needs for expression evaluation, replacing the previous `-add_ast_path`
+or module-wrapping mechanism. See
+[Module Tracking in Swift Debug Info](https://www.swift.org/blog/module-tracking-in-debug-info/)
+for more details.
+
+Expression evaluation still requires the `.swiftmodule` and `.pcm`
+files at their original or remapped locations. Your build or debugger
+integration must make these files available locally.
+
 ## Using explicit dependencies
 
 By default we implicitly add all possible precompiled modules to the

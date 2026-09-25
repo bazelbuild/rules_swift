@@ -109,6 +109,9 @@ encountered first on your `PATH`.
 To make cacheable builds work correctly with debugging see
 [this doc](doc/debuggable_remote_swift.md).
 
+For explicit module builds, see
+[debugging with explicit modules](doc/explicit_modules.md#debugging).
+
 ## Swift Package Manager Support
 
 To download, build, and reference external Swift packages as Bazel
