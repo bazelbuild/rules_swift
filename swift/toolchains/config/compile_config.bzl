@@ -311,14 +311,20 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
         ),
 
-        # Control serialization of debugging options into `.swiftmodules`.
+        # Control serialization of debugging options into `.swiftmodules`. Even
+        # in `opt` builds without `-g`, `swift-frontend` defaults to serializing
+        # debugging options for modules that are not externally consumed (such
+        # as executables, targets with bridging headers, and app extensions), so
+        # `-no-serialize-debugging-options` must be passed explicitly.
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [
                 add_arg("-Xfrontend", "-no-serialize-debugging-options"),
             ],
-            features = [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
-            not_features = [SWIFT_FEATURE_OPT],
+            features = [
+                [SWIFT_FEATURE_OPT],
+                [SWIFT_FEATURE_CACHEABLE_SWIFTMODULES],
+            ],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),

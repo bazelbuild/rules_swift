@@ -167,6 +167,7 @@ def debug_settings_test_suite(name, tags = []):
         name = "{}_opt_build".format(name),
         expected_argv = [
             "-DNDEBUG",
+            "-Xfrontend -no-serialize-debugging-options",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
         not_expected_argv = [
