@@ -514,7 +514,8 @@ def create_clang_module_inputs(
         compilation_context,
         module_map,
         precompiled_module = None,
-        strict_includes = None):
+        strict_includes = None,
+        unchecked_include_headers = None):
     """Creates a value representing a Clang module used as a Swift dependency.
 
     Args:
@@ -538,6 +539,17 @@ def create_clang_module_inputs(
             `None`. **This field only exists to support a specific legacy use
             case and should otherwise not be used, as it is fundamentally
             incompatible with Swift's import model.**
+        unchecked_include_headers: A `depset` of `File`s that must be present
+            when precompiling any explicit module that depends on this module's
+            precompiled module, because they can be reached by `#include`s that
+            Clang does not layering-check. For example, if this module's module
+            map declares excluded headers, any module that depends on it can
+            include them, and the includes in those headers are not checked, so
+            this should contain all of the transitive headers of this module.
+            If `None` (the default), the module map does not declare any such
+            headers (for example, it only declares modular headers and textual
+            headers that are also in
+            `compilation_context.direct_textual_headers`).
 
     Returns:
         A `struct` containing the values provided as arguments.
@@ -547,6 +559,9 @@ def create_clang_module_inputs(
         module_map = module_map,
         precompiled_module = precompiled_module,
         strict_includes = strict_includes,
+        unchecked_include_headers = (
+            unchecked_include_headers if unchecked_include_headers != None else depset()
+        ),
     )
 
 def create_swift_module_inputs(

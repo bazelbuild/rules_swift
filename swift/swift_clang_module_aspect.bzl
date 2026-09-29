@@ -434,6 +434,11 @@ def _handle_module(
     source_name = module_name
     physical_name = module_name
 
+    # A module map passed in by the client can declare anything (excluded
+    # headers, umbrella directories, and so forth), so we can't assume that
+    # Clang layering-checks the includes in its headers.
+    has_custom_module_map = bool(module_map_file)
+
     if not module_map_file:
         # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
         # provider), infer it and the module name based on properties of the
@@ -503,6 +508,36 @@ def _handle_module(
         )
     )
 
+    # When `swift.layering_check_for_c_deps` is enabled, the headers of
+    # dependencies that are embedded in their precompiled modules don't need
+    # to be staged when precompiling this module, except for the ones that
+    # Clang needs to find in order to map them to a module (see
+    # `precompile_clang_module`). However, Clang only layering-checks the
+    # includes in files that belong to the module being compiled, and there
+    # are files of other modules whose includes aren't checked:
+    #
+    # *   Excluded headers (and headers in umbrella directories) of a module
+    #     can be included by any module that depends on it.
+    # *   The public headers of a `cc_inc_library` are written to its module
+    #     map as textual headers, so modules that depend on it directly can
+    #     include them. (`precompile_clang_module` handles other textual
+    #     headers of direct dependencies on its own.)
+    #
+    # The includes in those headers can reach any of the owning module's
+    # transitive headers, so they must be staged when precompiling this module
+    # and any module that depends on it.
+    if compilation_context and (
+        exclude_headers or
+        has_custom_module_map or
+        aspect_ctx.rule.kind == "cc_inc_library"
+    ):
+        unchecked_include_headers = depset(
+            compilation_context.direct_textual_headers,
+            transitive = [compilation_context.headers],
+        )
+    else:
+        unchecked_include_headers = depset()
+
     output_groups = {}
 
     output_prefix = _target_output_prefix(aspect_ctx, target)
@@ -516,6 +551,7 @@ def _handle_module(
         toolchains = toolchains,
         target_name = output_prefix,
         toolchain_type = toolchain_type,
+        unchecked_include_headers = unchecked_include_headers,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
     pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
@@ -525,6 +561,7 @@ def _handle_module(
         module_map = module_map_file,
         precompiled_module = precompiled_module,
         strict_includes = strict_includes,
+        unchecked_include_headers = unchecked_include_headers,
     )
 
     # If we have a `swift_overlay` in the aspect hints of this target, compile

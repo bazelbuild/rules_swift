@@ -16,18 +16,44 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
+load(
+    "@build_bazel_rules_swift//swift:providers.bzl",
+    "SwiftClangModuleAspectInfo",
+)
 load(":expected_files.bzl", "compare_expected_files")
 
 visibility([
     "@build_bazel_rules_swift//test/...",
 ])
 
+_AspectActionInfo = provider(
+    doc = "Contains actions registered on a target including by aspects.",
+    fields = ["actions"],
+)
+
+def _aspect_action_retrieving_aspect_impl(target, _ctx):
+    return [
+        _AspectActionInfo(
+            actions = target.actions,
+        ),
+    ]
+
+_aspect_action_retrieving_aspect = aspect(
+    attr_aspects = [],
+    implementation = _aspect_action_retrieving_aspect_impl,
+    required_aspect_providers = [
+        [SwiftClangModuleAspectInfo],
+    ],
+)
+
 def _action_command_line_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)
 
     # Find the desired action and verify that there is exactly one.
-    actions = analysistest.target_actions(env)
+    actions = (
+        target_under_test[_AspectActionInfo].actions if _AspectActionInfo in target_under_test else analysistest.target_actions(env)
+    )
     mnemonic = ctx.attr.mnemonic
     matching_actions = [
         action
@@ -104,17 +130,26 @@ def _action_command_line_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_action_command_line_test_rule(config_settings = {}):
+def make_action_command_line_test_rule(
+        config_settings = {},
+        extra_target_under_test_aspects = []):
     """Returns a new `action_command_line_test`-like rule with custom configs.
 
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
+        extra_target_under_test_aspects: An optional list of aspects to apply to
+            the `target_under_test` in addition to those set up by default for
+            the test harness itself.
 
     Returns:
         A rule returned by `analysistest.make` that has the
         `action_command_line_test` interface and the given config settings.
     """
+    aspects = list(extra_target_under_test_aspects)
+    if aspects:
+        aspects.append(_aspect_action_retrieving_aspect)
+
     return analysistest.make(
         _action_command_line_test_impl,
         attrs = {
@@ -150,6 +185,7 @@ expected that there will be exactly one of these.
             ),
         },
         config_settings = config_settings,
+        extra_target_under_test_aspects = aspects,
     )
 
 # A default instantiation of the rule when no custom config settings are needed.
