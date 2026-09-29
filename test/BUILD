@@ -93,6 +93,7 @@ bzl_library(
     name = "starlark_tests_bzls",
     srcs = glob(["*.bzl"]),
     deps = [
+        "//swift:swift_clang_module_aspect",
         "//swift:swift_module_mapping_test",
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//rules:build_test",
