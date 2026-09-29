@@ -92,6 +92,7 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__PRELOAD_C_MODULE_MAPS",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -740,6 +741,23 @@ def compile_action_configs(
                 add_arg("-Xcc", "-fmodule-map-file-home-is-cwd"),
             ],
             features = [SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD],
+        ),
+
+        # Workaround https://github.com/llvm/llvm-project/pull/218011
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [_preload_clang_modulemaps_configurator],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+                SWIFT_FEATURE__PRELOAD_C_MODULE_MAPS,
+            ],
         ),
 
         # Configure how implicit modules are handled--either using the module
@@ -1938,6 +1956,28 @@ def _clang_module_dependency_args(module, ignore_system = True):
 
 def _clang_module_dependency_args_include_system(module):
     return _clang_module_dependency_args(module, ignore_system = False)
+
+def _preload_clang_modulemaps_configurator(prerequisites, args):
+    """Establishes directories for PCMs before Swift's explicit module loader."""
+    modules = [
+        module
+        for module in prerequisites.transitive_modules
+        if module.clang and module.clang.precompiled_module
+    ]
+    args.add_all(
+        modules,
+        before_each = "-Xcc",
+        map_each = _clang_modulemap_dependency_args_include_system,
+        uniquify = True,
+    )
+    return ConfigResultInfo(inputs = [
+        module.clang.module_map
+        for module in modules
+        if type(module.clang.module_map) == "File"
+    ])
+
+def _clang_modulemap_dependency_args_include_system(module):
+    return _clang_modulemap_dependency_args(module, ignore_system = False)
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
