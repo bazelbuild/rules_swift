@@ -28,11 +28,6 @@ namespace {
 
 constexpr const char* kDebugEnv = "RULES_SWIFT_HERMETIC_PCM_DEBUG";
 
-bool ShouldDropFlagAndValue(const std::string& arg) {
-  return arg == "-external-plugin-path" ||
-         arg == "-in-process-plugin-server-path" || arg == "-plugin-path";
-}
-
 std::string GetEnv(const char* name) {
   const char* value = std::getenv(name);
   return (value != nullptr && value[0] != '\0') ? std::string(value)
@@ -189,12 +184,7 @@ int RunHermeticPcm(const std::vector<std::string>& args,
 
   std::vector<std::string> rewritten;
   rewritten.reserve(frontend.size() + 2);
-  for (size_t i = 0; i < frontend.size(); ++i) {
-    const std::string& arg = frontend[i];
-    if (ShouldDropFlagAndValue(arg)) {
-      ++i;
-      continue;
-    }
+  for (const std::string& arg : frontend) {
     std::string rewritten_arg = arg;
     ReplaceAll(rewritten_arg, developer_dir, developer_dir_symlink_name);
     rewritten.push_back(std::move(rewritten_arg));
