@@ -34,6 +34,10 @@ cc_library(
         "umbrella/Value.h",
     ],
     aspect_hints = [":umbrella_hint"],
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 swift_binary(
