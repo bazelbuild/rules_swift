@@ -1,4 +1,5 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//test:transitions.bzl", "transition_binary")
@@ -191,5 +192,54 @@ transition_binary(
         "swift.emit_c_module",
         "swift.layering_check_for_c_deps",
         "-swift.add_default_precompiled_modules",
+    ],
+)
+
+# The custom map marks middle.h textual, although it is a public hdrs entry.
+# Consumers must retain its include closure through the mixed-language PCM.
+mixed_language_library(
+    name = "mixed",
+    hdrs = [
+        "empty.h",
+        "include/middle.h",
+    ],
+    clang_srcs = [],
+    # The generated Swift header has SDK includes without module-map use
+    # declarations. Only the downstream consumer needs layering checks here.
+    features = ["-swift.layering_check_for_c_deps"],
+    module_map = "mixed.modulemap",
+    module_name = "Mixed",
+    swift_srcs = ["Empty.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":leaf"],
+)
+
+cc_library(
+    name = "mixed_consumer",
+    hdrs = ["top.h"],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":mixed"],
+)
+
+pcm_files(
+    name = "mixed_pcm",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":mixed_consumer"],
+)
+
+transition_binary(
+    name = "mixed_pruned_pcm",
+    tags = FIXTURE_TAGS,
+    target = ":mixed_pcm",
+    target_compatible_with = ["@platforms//os:macos"],
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.layering_check_for_c_deps",
+        "swift.add_default_precompiled_modules",
     ],
 )

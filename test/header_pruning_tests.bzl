@@ -68,10 +68,26 @@ def header_pruning_test_suite(name, tags = []):
             tags = all_tags,
         )
 
+    _pruned_test(
+        name = name + "_mixed_consumer",
+        target_under_test = "//test/fixtures/header_pruning:mixed_consumer",
+        mnemonic = "SwiftPrecompileCModule",
+        expected_inputs = ["middle.h", "leaf.h", "mixed.swift.pcm"],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     build_test(
         name = name + "_build",
         targets = ["//test/fixtures/header_pruning:pruned_pcms"],
         tags = all_tags,
+    )
+
+    build_test(
+        name = name + "_mixed_build",
+        targets = ["//test/fixtures/header_pruning:mixed_pruned_pcm"],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
     )
 
     native.test_suite(name = name, tags = all_tags)

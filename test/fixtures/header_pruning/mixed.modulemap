@@ -1,0 +1,6 @@
+module Mixed {
+  header "empty.h"
+  textual header "include/middle.h"
+  use test_fixtures_header_pruning_leaf
+  export *
+}
