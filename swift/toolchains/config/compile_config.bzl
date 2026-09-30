@@ -88,7 +88,6 @@ def compile_action_configs(
         additional_objc_copts = [],
         additional_swiftc_copts = [],
         configure_precompile_c_module_clang_modules = None,
-        embed_system_module_files = True,
         generated_header_rewriter = None):
     """Returns the list of action configs needed to perform Swift compilation.
 
@@ -107,10 +106,6 @@ def compile_action_configs(
             configures clang module dependencies for precompiled c modules if
             present. Takes the configurator for clang module dependencies as an
             argument, and returns a list of action configs. Defaults to None.
-        embed_system_module_files: If True, `-fmodules-embed-all-files` is
-            passed when precompiling all Clang modules, including system
-            modules. If False, `-fmodules-embed-all-files` is omitted when
-            `swift.system_module` is enabled. Defaults to True.
         generated_header_rewriter: An executable that will be invoked after
             compilation to rewrite the generated header, or None if this is not
             desired.
@@ -150,23 +145,14 @@ def compile_action_configs(
         ),
 
         # Emit precompiled Clang modules, and embed all files that were read
-        # during compilation into the PCM (unless it is a system module and the
-        # toolchain does not embed system module files).
+        # during compilation into the PCM.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [
                 add_arg("-emit-pcm"),
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
-            configurators = [
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fmodules-embed-all-files"),
             ],
-            not_features = (
-                None if embed_system_module_files else [SWIFT_FEATURE_SYSTEM_MODULE]
-            ),
         ),
 
         # Add the output precompiled module file path to the command line.

@@ -529,7 +529,6 @@ def _all_action_configs(
     action_configs.extend(compile_action_configs(
         additional_objc_copts = additional_objc_copts,
         additional_swiftc_copts = additional_swiftc_copts,
-        embed_system_module_files = False,
         generated_header_rewriter = (
             generated_header_rewriter.executable if generated_header_rewriter else None
         ),
