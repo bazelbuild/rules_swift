@@ -18,7 +18,7 @@ cc_library(
 
 cc_library(
     name = "middle",
-    hdrs = ["middle.h"],
+    hdrs = ["include/middle.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":leaf"],
@@ -34,82 +34,64 @@ cc_library(
 
 cc_library(
     name = "system",
-    hdrs = ["system.h"],
+    hdrs = ["top.h"],
     aspect_hints = ["//swift:auto_module"],
     features = ["swift.system_module"],
     tags = FIXTURE_TAGS,
     deps = [":middle"],
 )
 
+# Reuse the middle header with alternative classifications in independent
+# dependency graphs, each with a consumer that includes it through top.h.
 cc_library(
     name = "textual",
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
-    textual_hdrs = ["textual.h"],
-    deps = [":middle"],
+    textual_hdrs = ["include/middle.h"],
+    deps = [":leaf"],
 )
 
 swift_interop_hint(
     name = "excluded_hint",
-    exclude_hdrs = ["excluded_extra.h"],
+    exclude_hdrs = ["include/middle.h"],
     tags = FIXTURE_TAGS,
 )
 
 cc_library(
     name = "excluded",
-    hdrs = [
-        "excluded.h",
-        "excluded_extra.h",
-    ],
+    hdrs = ["include/middle.h"],
     aspect_hints = [":excluded_hint"],
     tags = FIXTURE_TAGS,
-    deps = [":middle"],
+    deps = [":leaf"],
 )
 
+# An umbrella-directory map also covers the client-provided module-map case.
 swift_interop_hint(
     name = "custom_hint",
     module_map = "custom.modulemap",
-    module_name = "custom",
+    module_name = "Custom",
     tags = FIXTURE_TAGS,
 )
 
 cc_library(
     name = "custom",
-    hdrs = ["custom.h"],
+    hdrs = ["include/middle.h"],
     aspect_hints = [":custom_hint"],
     tags = FIXTURE_TAGS,
-    deps = [":middle"],
-)
-
-swift_interop_hint(
-    name = "umbrella_hint",
-    module_map = "umbrella.modulemap",
-    module_name = "Umbrella",
-    tags = FIXTURE_TAGS,
-)
-
-cc_library(
-    name = "umbrella",
-    hdrs = [
-        "umbrella.h",
-        "umbrella_headers/member.h",
-    ],
-    aspect_hints = [":umbrella_hint"],
-    tags = FIXTURE_TAGS,
-    deps = [":middle"],
+    deps = [":leaf"],
 )
 
 cc_inc_library(
     name = "inc",
-    hdrs = ["inc.h"],
+    hdrs = ["include/middle.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
-    deps = [":middle"],
+    deps = [":leaf"],
 )
 
 cc_library(
     name = "textual_consumer",
-    hdrs = ["textual_consumer.h"],
+    hdrs = ["top.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":textual"],
@@ -117,7 +99,7 @@ cc_library(
 
 cc_library(
     name = "excluded_consumer",
-    hdrs = ["excluded_consumer.h"],
+    hdrs = ["top.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":excluded"],
@@ -125,23 +107,15 @@ cc_library(
 
 cc_library(
     name = "custom_consumer",
-    hdrs = ["custom_consumer.h"],
+    hdrs = ["top.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":custom"],
 )
 
 cc_library(
-    name = "umbrella_consumer",
-    hdrs = ["umbrella_consumer.h"],
-    aspect_hints = ["//swift:auto_module"],
-    tags = FIXTURE_TAGS,
-    deps = [":umbrella"],
-)
-
-cc_library(
     name = "inc_consumer",
-    hdrs = ["inc_consumer.h"],
+    hdrs = ["top.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":inc"],
@@ -173,7 +147,7 @@ swift_library(
 
 cc_library(
     name = "through_pure",
-    hdrs = ["through_pure.h"],
+    hdrs = ["empty.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":pure"],
@@ -181,7 +155,7 @@ cc_library(
 
 legacy_precompile(
     name = "legacy",
-    hdrs = ["legacy.h"],
+    hdrs = ["top.h"],
     module_map = "legacy.modulemap",
     tags = FIXTURE_TAGS,
     deps = [":middle"],
@@ -189,7 +163,7 @@ legacy_precompile(
 
 cc_library(
     name = "legacy_consumer",
-    hdrs = ["legacy_consumer.h"],
+    hdrs = ["empty.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":legacy"],
@@ -205,7 +179,6 @@ pcm_files(
         ":legacy_consumer",
         ":textual_consumer",
         ":top",
-        ":umbrella_consumer",
     ],
 )
 
