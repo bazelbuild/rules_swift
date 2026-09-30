@@ -1,0 +1,1 @@
+module Legacy { header "legacy.h" use test_fixtures_header_pruning_middle export * }

@@ -13,6 +13,7 @@ load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
+load(":header_pruning_tests.bzl", "header_pruning_test_suite")
 load(":imported_framework_tests.bzl", "imported_framework_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":layering_check_tests.bzl", "layering_check_test_suite")
@@ -65,6 +66,8 @@ environment_test_suite(name = "environment")
 features_test_suite(name = "features")
 
 generated_header_test_suite(name = "generated_header")
+
+header_pruning_test_suite(name = "header_pruning")
 
 imported_framework_test_suite(name = "imported_framework")
 
