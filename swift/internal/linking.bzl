@@ -463,9 +463,14 @@ def register_link_binary_action(
             variables that should be set for the linking action.
 
     Returns:
-        A `CcLinkingOutputs` object that contains the `executable` or
-        `library_to_link` that was linked (depending on the value of the
-        `output_type` argument).
+        A `struct` with the following fields:
+
+        *   `executable`: The linked executable, if `output_type` is
+            "executable".
+        *   `library_to_link`: The `LibraryToLink` that was linked, if
+            `output_type` is "dynamic_library".
+        *   `runtime_dynamic_libraries`: A `depset` of the shared libraries
+            the output loads at run time, which belong in its runfiles.
     """
     linking_contexts = [
         dep[CcInfo].linking_context
@@ -545,7 +550,7 @@ def register_link_binary_action(
         for cc_info in implicit_cc_infos
     ])
 
-    return cc_common.link(
+    linking_outputs = cc_common.link(
         actions = actions,
         additional_inputs = additional_inputs,
         additional_outputs = additional_outputs,
@@ -562,3 +567,36 @@ def register_link_binary_action(
         stamp = stamp,
         variables_extension = variables_extension,
     )
+    return struct(
+        executable = linking_outputs.executable,
+        library_to_link = linking_outputs.library_to_link,
+        runtime_dynamic_libraries = _runtime_dynamic_libraries(linking_contexts),
+    )
+
+def _runtime_dynamic_libraries(linking_contexts):
+    """Returns the shared libraries that a linked output loads at run time.
+
+    Dependencies are linked statically, so these are the libraries that are
+    only available as shared libraries (on Linux, for example, the Swift
+    runtime and Foundation from the toolchain's `dynamic_runtime`). The linker
+    adds RUNPATH entries for their `_solib_*` symlinks relative to the output,
+    so, as with `cc_binary`, they must be in the output's runfiles. Otherwise
+    the output only runs from the output tree it was built in, and fails to
+    load them when its runfiles are used elsewhere (e.g. under remote
+    execution).
+
+    Args:
+        linking_contexts: The `CcLinkingContext`s passed to the link.
+
+    Returns:
+        A `depset` of the dynamic library `File`s.
+    """
+    files = []
+    for linking_context in linking_contexts:
+        for linker_input in linking_context.linker_inputs.to_list():
+            for library in linker_input.libraries:
+                if library.dynamic_library and not (
+                    library.static_library or library.pic_static_library
+                ):
+                    files.append(library.dynamic_library)
+    return depset(files)

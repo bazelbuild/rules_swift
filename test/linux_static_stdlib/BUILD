@@ -38,6 +38,22 @@ swift_binary(
     deps = [":foundation_library"],
 )
 
+# A dynamically linked binary's runfiles must carry the shared Swift runtime
+# libraries its RUNPATH points at, or it only runs from the output tree it was
+# built in (and fails to load them under remote execution, for example).
+provider_test(
+    name = "uses_dynamic_foundation_runfiles_test",
+    expected_files = [
+        "libFoundation.so",
+        "libswiftCore.so",
+        "*",
+    ],
+    field = "default_runfiles.files",
+    provider = "DefaultInfo",
+    target_compatible_with = ["@platforms//os:linux"],
+    target_under_test = ":uses_dynamic_foundation",
+)
+
 swift_binary(
     name = "uses_foundation_shared",
     srcs = ["FoundationLibrary.swift"],
@@ -50,6 +66,26 @@ swift_test(
     name = "foundation_library_test",
     srcs = ["FoundationLibraryTests.swift"],
     deps = [":foundation_library"],
+)
+
+swift_test(
+    name = "foundation_library_dynamic_test",
+    srcs = ["FoundationLibraryTests.swift"],
+    features = ["-swift.static_stdlib"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [":foundation_library"],
+)
+
+provider_test(
+    name = "foundation_library_dynamic_test_runfiles_test",
+    expected_files = [
+        "libswiftCore.so",
+        "*",
+    ],
+    field = "default_runfiles.files",
+    provider = "DefaultInfo",
+    target_compatible_with = ["@platforms//os:linux"],
+    target_under_test = ":foundation_library_dynamic_test",
 )
 
 sh_test(
