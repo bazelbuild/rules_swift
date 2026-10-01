@@ -115,7 +115,7 @@ cc_library(
     data = select({
         "@apple_support//configs:apple": [
             "@rules_swift_index_import_5_8//:index_import",
-            "@rules_swift_index_import_6_1//:index_import",
+            "@rules_swift_index_import_6_4//:index_import",
         ],
         "//conditions:default": [],
     }),

@@ -177,11 +177,11 @@ http_archive(
 )
 
 http_archive(
-    name = "rules_swift_index_import_6_1",
+    name = "rules_swift_index_import_6_4",
     build_file = "//third_party:rules_swift_index_import/BUILD.overlay",
-    canonical_id = "index-import-6.1",
-    sha256 = "9a54fc1674af6031125a9884480a1e31e1bcf48b8f558b3e8bcc6b6fcd6e8b61",
-    urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0.1/index-import.tar.gz"],
+    canonical_id = "index-import-6.4",
+    sha256 = "8d0ecfb7abd2c47a3b253f8f20ad76b4932f7f99c8f314951823d7b63a61d78d",
+    urls = ["https://github.com/MobileNativeFoundation/index-import/releases/download/6.4.0/index-import.tar.gz"],
 )
 
 system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
