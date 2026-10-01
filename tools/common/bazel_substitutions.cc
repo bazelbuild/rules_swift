@@ -48,12 +48,13 @@ static const char kBazelSwiftToolchainPath[] = "__BAZEL_SWIFT_TOOLCHAIN_PATH__";
 // Returns the value of the given environment variable, or the empty string if
 // it wasn't set.
 std::string GetAppleEnvironmentVariable(const char* name) {
+  // Leave the placeholder unreplaced rather than exiting: linux workers
+  // cross-compiling for Apple platforms supply these via the toolchain's tool
+  // configs, and actions of OTHER toolchains sharing this worker binary can
+  // reach here with nothing set.
   char* env_value = getenv(name);
   if (env_value == nullptr) {
-    std::cerr
-        << "error: required Apple environment variable '" << name
-        << "' was not set. Please file an issue on bazelbuild/rules_swift.\n";
-    exit(EXIT_FAILURE);
+    return "";
   }
   return env_value;
 }
