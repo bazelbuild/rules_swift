@@ -30,9 +30,6 @@ def swift_toolchain_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/basic:first",
     )
 
-    # rules_swift's hermetic Linux C toolchain reports no `sysroot`; its sysroot
-    # is a `--sysroot=` argument of its actions. Make sure swiftc is passed the
-    # same one, so the Clang importer doesn't read the host's /usr/include.
     action_command_line_test(
         name = "{}_linux_sdk_from_cc_sysroot".format(name),
         expected_argv = ["-sdk", "swift_ubuntu22.04_sysroot"],
