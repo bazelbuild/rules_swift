@@ -399,5 +399,11 @@ Each compiler target should configure this based on the suffix applied to the ge
     },
     fragments = ["proto"],
     implementation = _swift_proto_compiler_impl,
-    toolchains = [PROTOC_TOOLCHAIN],
+    # Resolve the same execution platform as swift_proto_library (which
+    # requires the Swift toolchain), so the exec-cfg protoc/plugin tools are
+    # built for the platform the SwiftProtocGen action actually runs on.
+    toolchains = [
+        PROTOC_TOOLCHAIN,
+        Label("//toolchains:toolchain_type"),
+    ],
 )

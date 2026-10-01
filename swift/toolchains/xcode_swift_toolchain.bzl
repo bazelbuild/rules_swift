@@ -1169,6 +1169,11 @@ for incremental compilation using a persistent mode.
         },
     ),
     doc = "Represents a Swift compiler toolchain provided by Xcode.",
+    # This toolchain only ever runs with Xcode, and letting its execution
+    # platform float lets a linux cross cc toolchain win under linux-first
+    # execution platform ordering (use_cc_toolchain() resolves the paired C++
+    # toolchain against this rule's execution platform).
+    exec_compatible_with = ["@platforms//os:macos"],
     toolchains = use_cc_toolchain(),
     fragments = [
         "cpp",
