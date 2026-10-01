@@ -27,6 +27,10 @@ load(
     "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "get_cc_feature_configuration",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
@@ -54,6 +58,10 @@ load(
     "get_providers",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load(
+    "@rules_cc//cc/common:cc_helper.bzl",
+    "cc_helper",
+)
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo", "SwiftOverlayInfo")
@@ -169,6 +177,17 @@ def _swift_binary_impl(ctx):
         variables_extension = variables_extension,
     )
 
+    cc_helper.create_strip_action(
+        ctx,
+        toolchains.cc,
+        ctx.fragments.cpp,
+        input = linking_outputs.executable,
+        output = ctx.outputs.stripped_binary,
+        feature_configuration = get_cc_feature_configuration(
+            feature_configuration,
+        ),
+    )
+
     providers = [
         DefaultInfo(
             executable = linking_outputs.executable,
@@ -271,5 +290,8 @@ please use one of the platform-specific application rules in
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+    outputs = {
+        "stripped_binary": "%{name}.stripped",
+    },
     toolchains = use_all_toolchains(),
 )
