@@ -662,11 +662,8 @@ def _resolve_sdkroot(ctx, cc_toolchain):
     if cc_toolchain.sysroot:
         return cc_toolchain.sysroot
 
-    # A rule-based cc toolchain (rules_cc's `cc_toolchain` with `cc_sysroot`
-    # args, like the hermetic Linux toolchains in this repository) reports no
-    # `sysroot`; the sysroot is only a `--sysroot=` argument of its actions.
-    # swiftc must compile against the same one, or the Clang importer falls
-    # back to the host's /usr/include.
+    # Rules based toolchains don't set the sysroot field so we have to find
+    # it in the arguments instead.
     sysroot_arg_prefix = "--sysroot="
     for arg in _c_compile_args(ctx, cc_toolchain):
         if arg.startswith(sysroot_arg_prefix):
