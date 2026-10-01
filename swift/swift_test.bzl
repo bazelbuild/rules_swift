@@ -517,6 +517,7 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
+                transitive_files = linking_outputs.runtime_dynamic_libraries,
             ),
         ),
         OutputGroupInfo(
