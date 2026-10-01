@@ -480,8 +480,23 @@ def _swift_unix_linkopts_cc_info(
         # --start-group: these archives reference each other (CoreFoundation's
         # regex support calls into _FoundationICU), and ld resolves static
         # archives left to right, so a flat list drops symbols that a later
-        # archive still needs.
+        # archive still needs. The stdlib overlays and Foundation are repeated
+        # here because the autolink entries list them before the Foundation
+        # archives whose members reference them (FoundationEssentials pulls in
+        # _StringProcessing and Glibc), and bfd ld does not rescan.
         "-Wl,--start-group",
+        "-lswiftCore",
+        "-lswiftSwiftOnoneSupport",
+        "-lswift_Concurrency",
+        "-lswift_StringProcessing",
+        "-lswift_RegexParser",
+        "-lswiftGlibc",
+        "-lswiftDispatch",
+        "-ldispatch",
+        "-lBlocksRuntime",
+        "-lFoundation",
+        "-lFoundationEssentials",
+        "-lFoundationInternationalization",
         "-lswiftSynchronization",
         "-l_FoundationICU",
         "-lCoreFoundation",
