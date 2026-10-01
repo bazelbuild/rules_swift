@@ -615,8 +615,8 @@ def _parse_target_system_name(*, arch, os, target_system_name):
     else:
         return "%s-unknown-%s" % (arch, os)
 
-def _android_target_system_name(ctx, cc_toolchain):
-    """Returns the Android target system name from the C compiler arguments."""
+def _c_compile_args(ctx, cc_toolchain):
+    """Returns the C compiler arguments the CC toolchain passes by default."""
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -627,13 +627,16 @@ def _android_target_system_name(ctx, cc_toolchain):
         cc_toolchain = cc_toolchain,
         feature_configuration = feature_configuration,
     )
-    compiler_args = cc_common.get_memory_inefficient_command_line(
+    return cc_common.get_memory_inefficient_command_line(
         action_name = C_COMPILE_ACTION_NAME,
         feature_configuration = feature_configuration,
         variables = compile_variables,
     )
+
+def _android_target_system_name(ctx, cc_toolchain):
+    """Returns the Android target system name from the C compiler arguments."""
     target_arg_prefix = "--target="
-    for arg in compiler_args:
+    for arg in _c_compile_args(ctx, cc_toolchain):
         if arg.startswith(target_arg_prefix):
             return arg[len(target_arg_prefix):]
 
@@ -646,6 +649,8 @@ def _resolve_sdkroot(ctx, cc_toolchain):
     resolved cc toolchain's sysroot -- but rules_android_ndk's `@androidndk`
     toolchain reports `sysroot` as the clang directory, not the NDK sysroot
     swiftc needs, so for Android we derive the sysroot from the toolchain files.
+    If the cc toolchain reports no sysroot, the `--sysroot=` argument it passes
+    to C compiles is used, if any.
     """
     if ctx.attr.sdkroot:
         return ctx.attr.sdkroot
@@ -654,7 +659,16 @@ def _resolve_sdkroot(ctx, cc_toolchain):
             idx = f.path.find("/sysroot/")
             if idx != -1:
                 return f.path[:idx] + "/sysroot"
-    return cc_toolchain.sysroot
+    if cc_toolchain.sysroot:
+        return cc_toolchain.sysroot
+
+    # Rules based toolchains don't set the sysroot field so we have to find
+    # it in the arguments instead.
+    sysroot_arg_prefix = "--sysroot="
+    for arg in _c_compile_args(ctx, cc_toolchain):
+        if arg.startswith(sysroot_arg_prefix):
+            return arg[len(sysroot_arg_prefix):]
+    return None
 
 def _swift_toolchain_impl(ctx):
     toolchain_root = ctx.attr.root

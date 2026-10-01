@@ -2,6 +2,7 @@
 
 load(
     "//test/rules:action_command_line_test.bzl",
+    "action_command_line_test",
     "make_action_command_line_test_rule",
 )
 
@@ -26,6 +27,18 @@ def swift_toolchain_test_suite(name, tags = []):
         expected_argv = ["-target", "-sdk", "testpath"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    action_command_line_test(
+        name = "{}_linux_sdk_from_cc_sysroot".format(name),
+        expected_argv = ["-sdk", "swift_ubuntu22.04_sysroot"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_compatible_with = [
+            "@platforms//cpu:x86_64",
+            "@platforms//os:linux",
+        ],
         target_under_test = "//test/fixtures/basic:first",
     )
 
