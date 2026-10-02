@@ -95,6 +95,11 @@ def _standalone_toolchain_impl(repository_ctx):
             strip_prefix = filename.removesuffix(".tar.gz"),
         )
 
+    # llvm-objcopy and llvm-strip are provided by the same multicall binary,
+    # but standalone Swift toolchains do not include the llvm-strip symlink.
+    if not repository_ctx.path("usr/bin/llvm-strip").exists:
+        repository_ctx.symlink("usr/bin/llvm-objcopy", "usr/bin/llvm-strip")
+
     repository_ctx.file(".swift-version", repository_ctx.attr.swift_version)
     repository_ctx.template(
         "BUILD.bazel",

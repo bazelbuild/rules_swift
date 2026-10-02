@@ -15,6 +15,7 @@ package(default_visibility = ["//visibility:public"])
 exports_files([
     "usr/bin/llvm-objcopy",
     "usr/bin/llvm-objdump",
+    "usr/bin/llvm-strip",
 ])
 
 ### Tools referenced by Swift SDK cross-compilation repositories. ###
@@ -105,6 +106,12 @@ cc_tool(
 )
 
 cc_tool(
+    name = "llvm_strip",
+    src = "usr/bin/llvm-strip",
+    tags = ["manual"],
+)
+
+cc_tool(
     name = "llvm_profdata",
     src = "usr/bin/llvm-profdata",
     tags = ["manual"],
@@ -122,7 +129,7 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:llvm_cov": ":llvm_cov",
         "@rules_cc//cc/toolchains/actions:llvm_profdata": ":llvm_profdata",
         "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm_objcopy",
-        "@rules_cc//cc/toolchains/actions:strip": ":llvm_objcopy",
+        "@rules_cc//cc/toolchains/actions:strip": ":llvm_strip",
     },
 )
 
