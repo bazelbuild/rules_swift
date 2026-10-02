@@ -59,6 +59,10 @@ SWIFT_FEATURE_COVERAGE = "swift.coverage"
 # using only this flag, or the same values for each flag, is recommended.
 SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
 
+# Apply file prefix mappings and zero modification timestamps in the source-file
+# list of emitted `.swiftsourceinfo` files.
+SWIFT_FEATURE_PREFIX_MAP_SOURCEINFO = "swift.prefix_map_sourceinfo"
+
 # If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
 # builds.
@@ -311,10 +315,10 @@ SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
 SWIFT_FEATURE_EMIT_PRIVATE_SWIFTINTERFACE = "swift.emit_private_swiftinterface"
 
 # If enabled, declare `.swiftsourceinfo` files as outputs that Bazel will track.
-# Note that at the time of this writing (Swift 5.10), `.swiftsourceinfo` files
-# are non-deterministic: they contain absolute paths that are not remapped by
-# any of the existing compiler flags. Only enable this feature if such
-# non-determinism does not negatively impact you.
+# These files contain absolute source paths and modification timestamps.
+# `swift.prefix_map_sourceinfo` remaps the source-file list and zeros its
+# timestamps on supporting compilers, but declaration filenames and
+# `#sourceLocation` filenames remain unmapped.
 #
 # If opted out of this feature, the compiler is instructed not to generate a
 # `.swiftsourceinfo` file.

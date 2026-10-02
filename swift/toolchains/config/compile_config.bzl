@@ -79,6 +79,7 @@ load(
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
+    "SWIFT_FEATURE_PREFIX_MAP_SOURCEINFO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
@@ -600,6 +601,14 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [add_arg("-avoid-emit-module-source-info")],
             not_features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-Xfrontend", "-prefix-map-sourceinfo")],
+            features = [
+                SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
+                SWIFT_FEATURE_PREFIX_MAP_SOURCEINFO,
+            ],
         ),
     ]
 
