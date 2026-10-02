@@ -129,10 +129,20 @@ simply identifiers that are either defined or undefined. So strings in this list
 should be simple identifiers, **not** `name=value` pairs.
 
 Each string is prepended with `-D` and added to the command line. Unlike
-`copts`, these flags are added for the target and every target that depends on
-it, so use this attribute with caution. It is preferred that you add defines
-directly to `copts`, only using this feature in the rare case that a library
-needs to propagate a symbol up to those that depend on it.
+`copts` and `local_defines`, these flags are added for the target and every
+target that depends on it, so use this attribute with caution. Prefer
+`local_defines` unless a library needs to propagate a symbol to its dependents.
+""",
+            ),
+            "local_defines": attr.string_list(
+                doc = """\
+A list of defines to add to this target's compilation command line only.
+
+Each string is prepended with `-D`. Unlike `defines`, these flags are not
+propagated to targets that depend on this target.
+
+Swift defines do not have values, so strings in this list should be simple
+identifiers, not `name=value` pairs.
 """,
             ),
             "module_name": attr.string(
@@ -368,6 +378,17 @@ symbols in the same module are not problematic, unlike forward declarations to
 symbols in other modules).
 """,
                 mandatory = False,
+            ),
+            "hdrs": attr.label_list(
+                allow_files = C_HEADER_EXTENSIONS,
+                doc = """\
+A list of C/Objective-C header files exported as public headers of the library.
+
+This attribute is for mixed-language targets that export Swift and C/Objective-C
+APIs from the same module. These headers cannot import the Swift generated
+header from the same module. Forward-declare any symbols defined in Swift that
+the headers need to reference. Private headers belong in `srcs`.
+""",
             ),
             "library_evolution": attr.bool(
                 default = False,

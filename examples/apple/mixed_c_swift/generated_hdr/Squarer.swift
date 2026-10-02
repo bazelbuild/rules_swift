@@ -1,4 +1,4 @@
-// Copyright 2026 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-public func squared(_ value: Int32) -> Int32 {
-  integer_squared(value)
+import Foundation
+
+// Avoid exporting the underlying protocol in the generated header: Swift would
+// emit a framework-style import of <Multiplier/Multiplier.h> for that case.
+@objc(Squarer) public class Squarer: NSObject {
+  @objc public func value(byMultiplying x: Int) -> Int {
+    return multiply_values(x, x)
+  }
 }

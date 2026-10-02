@@ -274,6 +274,7 @@ def _do_compile(
         ) + additional_copts,
         c_copts = c_copts,
         defines = ctx.attr.defines,
+        local_defines = ctx.attr.local_defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,

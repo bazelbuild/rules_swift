@@ -156,6 +156,7 @@ def _swift_binary_impl(ctx):
             ) + _maybe_parse_as_library_copts(srcs) + entry_point_copts,
             c_copts = c_copts,
             defines = ctx.attr.defines,
+            local_defines = ctx.attr.local_defines,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,

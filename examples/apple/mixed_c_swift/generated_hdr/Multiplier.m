@@ -1,4 +1,4 @@
-// Copyright 2026 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-public func squared(_ value: Int32) -> Int32 {
-  integer_squared(value)
+#import "Multiplier.h"
+#import "examples/apple/mixed_c_swift/generated_hdr/Multiplier-Swift.h"
+
+NSInteger multiply_values(NSInteger value, NSInteger factor) {
+  return value * factor;
 }
+
+@implementation Cuber {
+  Squarer *_squarer;
+}
+
+- (instancetype)init {
+  if (self = [super init]) {
+    _squarer = [[Squarer alloc] init];
+  }
+  return self;
+}
+
+- (NSInteger)valueByMultiplying:(NSInteger)value {
+  return [_squarer valueByMultiplying:value] * value;
+}
+
+@end

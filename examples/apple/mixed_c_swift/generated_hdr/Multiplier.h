@@ -12,12 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
+#import <Foundation/Foundation.h>
 
-@main
-enum Main {
-  static func main() {
-    let passed = integer_squared(10) == 100
-    exit(passed ? 0 : 1)
-  }
-}
+NS_HEADER_AUDIT_BEGIN(nullability, sendability)
+
+NSInteger multiply_values(NSInteger value, NSInteger factor);
+
+/// Types that perform some kind of multiplication should conform to this protocol.
+@protocol Multiplier <NSObject>
+- (NSInteger)valueByMultiplying:(NSInteger)value;
+@end
+
+// Imagine that `Squarer` also used to be here, but then a teammate who was
+// really eager to use Swift rewrote it there.
+
+/// A `Multiplier` that cubes values.
+@interface Cuber : NSObject <Multiplier>
+- (instancetype)init;
+@end
+
+NS_HEADER_AUDIT_END(nullability, sendability)

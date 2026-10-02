@@ -20,17 +20,19 @@ swift_test(
     ],
     c_copts = ["-DMIXED_LANGUAGE_FACTOR=1"],
     discover_tests = False,
+    visibility = ["//test:__pkg__"],
 )
 
 swift_library(
     name = "simple_library",
     srcs = [
         "Library.swift",
-        "Private.h",
         "Simple.c",
     ],
+    hdrs = ["Private.h"],
     c_copts = ["-DMIXED_LANGUAGE_FACTOR=1"],
     module_name = "MixedCSwiftLibrary",
+    visibility = ["//test:__pkg__"],
 )
 
 swift_test(

@@ -123,6 +123,7 @@ dependent for linking, but artifacts/flags required for compilation (such as
     attrs.pop("module_name")
     attrs.pop("generated_header_name")
     attrs.pop("generates_header")
+    attrs.pop("hdrs")
 
     # TODO: b/65410357 - More work is needed to support runfiles.
     attrs.pop("data")

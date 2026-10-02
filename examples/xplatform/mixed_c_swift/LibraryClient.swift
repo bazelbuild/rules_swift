@@ -18,6 +18,7 @@ import MixedCSwiftLibrary
 @main
 enum Main {
   static func main() {
-    exit(squared(10) == 100 ? 0 : 1)
+    // Both the Swift API and the public C header must be exported by the module.
+    exit(squared(10) == 100 && integer_squared(10) == 100 ? 0 : 1)
   }
 }

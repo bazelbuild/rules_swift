@@ -421,10 +421,12 @@ def compile(
         copts = [],
         c_copts = [],
         defines = [],
+        local_defines = [],
         exec_group = None,
         extra_swift_infos = [],
         feature_configuration,
         generated_header_name = None,
+        hdrs = [],
         is_test = None,
         include_dev_srch_paths = None,
         module_name,
@@ -459,6 +461,8 @@ def compile(
         c_copts: A list of compiler flags that apply to the C/Objective-C
             sources in the target being built.
         defines: Symbols that should be defined by passing `-D` to the compiler.
+        local_defines: Symbols defined for this target's Swift and C/Objective-C
+            compilations only, without propagation to dependents.
         exec_group: Runs the Swift compilation action under the given execution
             group's context. If `None`, the default execution group is used.
         extra_swift_infos: Extra `SwiftInfo` providers that aren't contained
@@ -474,6 +478,8 @@ def compile(
         generated_header_name: The name of the Objective-C generated header that
             should be generated for this module. If omitted, no header will be
             generated.
+        hdrs: Public C/Objective-C headers to export from a mixed-language
+            module. Private headers should be provided via `srcs`.
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
@@ -493,8 +499,8 @@ def compile(
             generated header.
         srcs: The source files to compile. Typically this contains only Swift
             sources, but a mixed language module may contain C/Objective-C
-            sources as well and those will be compiled by the underlying C
-            toolchain.
+            sources and private headers as well, and those will be compiled by
+            the underlying C toolchain.
         swift_infos: A list of `SwiftInfo` providers from non-private
             dependencies of the target being compiled. The modules defined by
             these providers are used as dependencies of both the Swift module
@@ -653,7 +659,6 @@ def compile(
         extract_const_values = bool(const_gather_protocols_file),
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
-        generated_module_deps_swift_infos = generated_module_deps_swift_infos,
         module_name = module_name,
         target_name = target_name,
         user_compile_flags = copts,
@@ -822,6 +827,48 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     upcoming_features, experimental_features = upcoming_and_experimental_features(
         feature_configuration = feature_configuration,
     )
+
+    # Compile the original C headers before Swift. The Swift compilation imports
+    # this incomplete module; only the complete module, including the generated
+    # header, is propagated to dependents.
+    incomplete_compilation_context, _ = _compile_c_inputs(
+        actions = actions,
+        additional_inputs = additional_inputs,
+        compilation_contexts = compilation_contexts,
+        copts = c_copts,
+        defines = defines,
+        local_defines = local_defines,
+        feature_configuration = feature_configuration,
+        includes = [],
+        private_hdrs = c_private_hdrs,
+        private_swift_infos = private_swift_infos,
+        public_hdrs = hdrs,
+        srcs = [],
+        swift_infos = swift_infos_to_propagate,
+        target_name = "{}.incomplete".format(target_name),
+        toolchains = toolchains,
+    )
+    incomplete_header_module = _compile_clang_module_for_swift_module(
+        actions = actions,
+        compilation_context = incomplete_compilation_context,
+        exec_group = exec_group,
+        feature_configuration = feature_configuration,
+        is_incomplete_header_module = bool(generated_header_name),
+        is_swift_generated_header = False,
+        module_name = module_name,
+        should_index = not generated_header_name,
+        swift_infos = swift_infos,
+        target_name = target_name,
+        toolchains = toolchains,
+        toolchain_type = toolchain_type,
+    )
+    merged_compilation_context = merge_compilation_contexts(
+        direct_compilation_contexts = [incomplete_compilation_context],
+        transitive_compilation_contexts = [
+            cc_info.compilation_context
+            for cc_info in private_cc_infos + implicit_cc_infos
+        ],
+    )
     prerequisites = struct(
         additional_inputs = additional_inputs + toolchains.cc.all_files.to_list(),
         always_include_headers = is_feature_enabled(
@@ -829,7 +876,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
         ),
         bin_dir = feature_configuration._bin_dir,
-        cc_compilation_context = merged_cc_info.compilation_context,
+        cc_compilation_context = merged_compilation_context,
         const_gather_protocols_file = const_gather_protocols_file,
         cc_linking_context = merged_cc_info.linking_context,
         cross_import_overlays = cross_imported_overlays,
@@ -842,6 +889,8 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
+        local_defines = local_defines,
+        mixed_module_clang_inputs = incomplete_header_module,
         module_name = module_name,
         original_module_name = original_module_name,
         package_name = package_name,
@@ -900,44 +949,6 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         toolchain_type = toolchain_type,
     )
 
-    # If a header and module map were generated for this Swift module, attempt
-    # to precompile the explicit module for that header as well.
-    if generated_header_name and not is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
-    ):
-        compilation_context_to_compile = (
-            compilation_context_for_explicit_module_compilation(
-                compilation_contexts = [
-                    cc_common.create_compilation_context(
-                        headers = depset([
-                            compile_outputs.generated_header_file,
-                        ]),
-                    ),
-                    merged_cc_info.compilation_context,
-                ],
-                swift_infos = swift_infos,
-            )
-        )
-
-        compile_result = _precompile_clang_module(
-            actions = actions,
-            cc_compilation_context = compilation_context_to_compile,
-            exec_group = exec_group,
-            feature_configuration = feature_configuration,
-            is_swift_generated_header = True,
-            module_map_file = compile_outputs.generated_module_map_file,
-            module_name = module_name,
-            swift_infos = generated_module_deps_swift_infos,
-            swift_toolchain = toolchains.swift,
-            target_name = target_name,
-            toolchain_type = toolchain_type,
-            user_compile_flags = [],
-        )
-        precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
-    else:
-        precompiled_module = None
-
     compilation_context = create_compilation_context(
         defines = defines,
         srcs = swift_srcs,
@@ -945,9 +956,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     )
 
     if compile_outputs.generated_header_file:
-        public_hdrs = [compile_outputs.generated_header_file]
+        public_hdrs = hdrs + [compile_outputs.generated_header_file]
     else:
-        public_hdrs = []
+        public_hdrs = hdrs
 
     if compile_outputs.generated_module_map_file and is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -964,10 +975,12 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         compilation_contexts = compilation_contexts,
         copts = c_copts,
         defines = defines,
+        local_defines = local_defines,
         feature_configuration = feature_configuration,
         has_generated_header = bool(compile_outputs.generated_header_file),
         includes = includes,
         private_hdrs = c_private_hdrs,
+        private_swift_infos = private_swift_infos,
         public_hdrs = public_hdrs,
         srcs = c_srcs,
         swift_infos = swift_infos_to_propagate,
@@ -975,12 +988,31 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         toolchains = toolchains,
     )
 
+    if generated_header_name:
+        generated_header_module = _compile_clang_module_for_swift_module(
+            actions = actions,
+            compilation_context = c_compilation_context,
+            exec_group = exec_group,
+            feature_configuration = feature_configuration,
+            is_incomplete_header_module = False,
+            is_swift_generated_header = True,
+            module_map_file = compile_outputs.generated_module_map_file,
+            module_name = module_name,
+            should_index = True,
+            swift_infos = generated_module_deps_swift_infos,
+            target_name = target_name,
+            toolchains = toolchains,
+            toolchain_type = toolchain_type,
+        )
+    else:
+        generated_header_module = incomplete_header_module
+
     module_context = create_swift_module_context(
         name = module_name,
         clang = create_clang_module_inputs(
             compilation_context = c_compilation_context,
-            module_map = compile_outputs.generated_module_map_file,
-            precompiled_module = precompiled_module,
+            module_map = generated_header_module.module_map_file,
+            precompiled_module = generated_header_module.precompiled_module,
         ),
         compilation_context = compilation_context,
         is_system = False,
@@ -1025,6 +1057,148 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             modules = [module_context],
             swift_infos = swift_infos_to_propagate,
         ),
+    )
+
+def _compile_clang_module_for_swift_module(
+        *,
+        actions,
+        compilation_context,
+        exec_group,
+        feature_configuration,
+        is_incomplete_header_module,
+        is_swift_generated_header,
+        module_map_file = None,
+        module_name,
+        should_index,
+        swift_infos,
+        target_name,
+        toolchains,
+        toolchain_type):
+    """Builds the initial or complete Clang half of a mixed Swift module.
+
+    The initial module excludes the generated header. A VFS overlay makes its
+    module map and PCM appear at the complete module's paths, so Swift doesn't
+    serialize two conflicting definitions for LLDB. The special overlay basename
+    matches the Swift frontend's handling of Xcode's unextended header module.
+
+    Returns a struct containing the compilation context, module name, module
+    map, optional PCM and VFS overlay, and optional virtual map/PCM paths.
+    """
+    has_headers = (
+        compilation_context.direct_public_headers or
+        compilation_context.direct_private_headers
+    )
+    if not has_headers or (is_swift_generated_header and is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
+    )):
+        return struct(
+            compilation_context = None,
+            module_name = None,
+            module_map_file = None,
+            precompiled_module = None,
+            vfs_overlay_file = None,
+            virtual_module_map_path = None,
+            virtual_precompiled_module_path = None,
+        )
+
+    dependent_module_names = sets.make()
+    for swift_info in swift_infos:
+        for module in swift_info.direct_modules:
+            if module.clang:
+                sets.insert(dependent_module_names, module.name)
+
+    if not module_map_file:
+        module_map_file = actions.declare_file(
+            "{}_modulemap/_/module{}.modulemap".format(
+                target_name,
+                ".incomplete" if is_incomplete_header_module else "",
+            ),
+        )
+    write_module_map(
+        actions = actions,
+        dependent_module_names = sorted(sets.to_list(dependent_module_names)),
+        module_map_file = module_map_file,
+        module_name = module_name,
+        private_headers = compilation_context.direct_private_headers,
+        public_headers = [
+            header
+            for header in compilation_context.direct_public_headers
+            if header != module_map_file
+        ],
+        workspace_relative = is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+        ),
+    )
+
+    compile_result = _precompile_clang_module(
+        actions = actions,
+        cc_compilation_context = compilation_context,
+        exec_group = exec_group,
+        feature_configuration = feature_configuration,
+        file_extension = "incomplete.pcm" if is_incomplete_header_module else "pcm",
+        is_swift_generated_header = is_swift_generated_header,
+        module_map_file = module_map_file,
+        module_name = module_name,
+        should_index = should_index,
+        swift_infos = swift_infos,
+        target_name = target_name,
+        toolchains = toolchains,
+        toolchain_type = toolchain_type,
+        user_compile_flags = [],
+    )
+    precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
+
+    vfs_overlay_file = None
+    virtual_module_map_path = None
+    virtual_precompiled_module_path = None
+    if is_incomplete_header_module:
+        virtual_module_map_path = paths.join(module_map_file.dirname, "module.modulemap")
+        roots = [{
+            "type": "directory",
+            "name": module_map_file.dirname,
+            "contents": [{
+                "type": "file",
+                "name": "module.modulemap",
+                "external-contents": module_map_file.path,
+            }],
+        }]
+        if precompiled_module:
+            virtual_pcm_basename = "{}.swift.pcm".format(target_name)
+            virtual_precompiled_module_path = paths.join(
+                precompiled_module.dirname,
+                virtual_pcm_basename,
+            )
+            roots.append({
+                "type": "directory",
+                "name": precompiled_module.dirname,
+                "contents": [{
+                    "type": "file",
+                    "name": virtual_pcm_basename,
+                    "external-contents": precompiled_module.path,
+                }],
+            })
+        vfs_overlay_file = actions.declare_file(
+            "{}_objs/unextended-module-overlay.yaml".format(target_name),
+        )
+        actions.write(
+            output = vfs_overlay_file,
+            content = json.encode({
+                "version": 0,
+                "case-sensitive": True,
+                "roots": roots,
+            }),
+        )
+
+    return struct(
+        compilation_context = compilation_context,
+        module_name = module_name,
+        module_map_file = module_map_file,
+        precompiled_module = precompiled_module,
+        vfs_overlay_file = vfs_overlay_file,
+        virtual_module_map_path = virtual_module_map_path,
+        virtual_precompiled_module_path = virtual_precompiled_module_path,
     )
 
 def precompile_clang_module(
@@ -1110,9 +1284,11 @@ def _precompile_clang_module(
         cc_compilation_context,
         exec_group = None,
         feature_configuration,
+        file_extension = "pcm",
         is_swift_generated_header,
         module_map_file,
         module_name,
+        should_index = True,
         swift_infos = [],
         swift_toolchain = None,
         target_name,
@@ -1136,12 +1312,15 @@ def _precompile_clang_module(
             group's context. If `None`, the default execution group is used.
         feature_configuration: A feature configuration obtained from
             `configure_features`.
+        file_extension: The extension of the precompiled module output, used to
+            distinguish incomplete mixed-language modules from complete ones.
         is_swift_generated_header: If True, the action is compiling the
             Objective-C header generated by the Swift compiler for a module.
         module_map_file: A textual module map file that defines the Clang module
             to be compiled.
         module_name: The name of the top-level module in the module map that
             will be compiled.
+        should_index: Whether to produce an indexstore when indexing is enabled.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
@@ -1188,7 +1367,7 @@ def _precompile_clang_module(
         return None
 
     precompiled_module = actions.declare_file(
-        "{}.swift.pcm".format(target_name),
+        "{}.swift.{}".format(target_name, file_extension),
     )
 
     additional_swift_infos = []
@@ -1221,7 +1400,7 @@ def _precompile_clang_module(
         transitive_modules = []
 
     outputs = [precompiled_module]
-    if are_all_features_enabled(
+    if should_index and are_all_features_enabled(
         feature_configuration = feature_configuration,
         feature_names = [
             SWIFT_FEATURE_INDEX_WHILE_BUILDING,
@@ -1289,10 +1468,12 @@ def _compile_c_inputs(
         compilation_contexts,
         copts,
         defines,
+        local_defines,
         feature_configuration,
         includes,
         has_generated_header = False,
         private_hdrs,
+        private_swift_infos = [],
         public_hdrs,
         srcs,
         swift_infos,
@@ -1315,6 +1496,8 @@ def _compile_c_inputs(
         copts: A list of flags that will be passed to the C/Objective-C
             compiler.
         defines: Symbols that should be defined by passing `-D` to the compiler.
+        local_defines: Symbols defined for this compilation only, without
+            propagation to dependents.
         feature_configuration: A feature configuration obtained from
             `configure_features`.
         includes: Include paths that should be propagated by the new compilation
@@ -1323,6 +1506,8 @@ def _compile_c_inputs(
             Objective-C header.
         private_hdrs: Private headers that should be used when compiling the
             C/Objective-C sources.
+        private_swift_infos: The `SwiftInfo` providers of private dependencies,
+            used only for strict include flags, not propagated module maps.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
         srcs: C/Objective-C source files that should be compiled, if this is a
@@ -1384,12 +1569,26 @@ def _compile_c_inputs(
         if language == "objc":
             variables_extension["objc_arc"] = ""
 
+        strict_includes = [
+            module.clang.strict_includes
+            for swift_info in swift_infos + private_swift_infos
+            for module in swift_info.direct_modules
+            if module.clang and module.clang.strict_includes
+        ]
+
+        # Keep strict include paths local to this compilation, not in CcInfo.
+        strict_include_flags = [
+            "-iquote{}".format(path)
+            for path in depset(transitive = strict_includes).to_list()
+        ]
+
         compilation_context, compilation_outputs = cc_common.compile(
             actions = actions,
             additional_inputs = additional_inputs,
             cc_toolchain = toolchains.cc,
             compilation_contexts = compilation_contexts,
             defines = defines,
+            local_defines = local_defines,
             feature_configuration = cc_feature_configuration,
             name = target_name,
             includes = includes,
@@ -1397,7 +1596,7 @@ def _compile_c_inputs(
             private_hdrs = private_hdrs,
             public_hdrs = public_hdrs,
             srcs = srcs,
-            user_compile_flags = copts,
+            user_compile_flags = copts + strict_include_flags,
             variables_extension = variables_extension,
         )
         return compilation_context, compilation_outputs
@@ -1405,9 +1604,12 @@ def _compile_c_inputs(
     # If there were no C/Objective-C inputs, create the context manually. This
     # avoids having Bazel create an action that results in an empty module map
     # that won't contribute meaningfully to layering checks anyway.
-    if defines:
+    if defines or local_defines:
         direct_compilation_contexts = [
-            cc_common.create_compilation_context(defines = depset(defines)),
+            cc_common.create_compilation_context(
+                defines = depset(defines),
+                local_defines = depset(local_defines),
+            ),
         ]
     else:
         direct_compilation_contexts = []
@@ -1465,7 +1667,6 @@ def _declare_compile_outputs(
         extract_const_values,
         feature_configuration,
         generated_header_name,
-        generated_module_deps_swift_infos,
         module_name,
         srcs,
         target_name,
@@ -1480,9 +1681,6 @@ def _declare_compile_outputs(
             `configure_features`.
         generated_header_name: The desired name of the generated header for this
             module, or `None` if no header should be generated.
-        generated_module_deps_swift_infos: `SwiftInfo` providers from
-            dependencies of the module for the generated header of the target
-            being compiled.
         module_name: The name of the Swift module being compiled.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
@@ -1586,29 +1784,8 @@ def _declare_compile_outputs(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_NO_GENERATED_MODULE_MAP,
     ):
-        # Collect the names of Clang modules that the module being built
-        # directly depends on.
-        dependent_module_names = sets.make()
-        for swift_info in generated_module_deps_swift_infos:
-            for module in swift_info.direct_modules:
-                if module.clang:
-                    sets.insert(dependent_module_names, module.name)
-
         generated_module_map = actions.declare_file(
             "{}_modulemap/_/module.modulemap".format(target_name),
-        )
-        write_module_map(
-            actions = actions,
-            dependent_module_names = sorted(
-                sets.to_list(dependent_module_names),
-            ),
-            module_map_file = generated_module_map,
-            module_name = module_name,
-            public_headers = [generated_header],
-            workspace_relative = is_feature_enabled(
-                feature_configuration = feature_configuration,
-                feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
-            ),
         )
     else:
         generated_module_map = None

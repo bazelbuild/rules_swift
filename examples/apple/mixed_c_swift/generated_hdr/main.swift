@@ -1,4 +1,4 @@
-// Copyright 2026 The Bazel Authors. All rights reserved.
+// Copyright 2024 The Bazel Authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-public func squared(_ value: Int32) -> Int32 {
-  integer_squared(value)
+import Foundation
+import Multiplier
+
+// Make sure we can access types from both the generated header and the regular
+// header.
+
+let squarer = Squarer()
+if squarer.value(byMultiplying: 10) != 100 {
+  exit(1)
+}
+
+let cuber = Cuber()
+if cuber.value(byMultiplying: 10) != 1000 {
+  exit(1)
 }

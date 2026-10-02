@@ -103,6 +103,7 @@ def _swift_compiler_plugin_impl(ctx):
         ],
         c_copts = c_copts,
         defines = ctx.attr.defines,
+        local_defines = ctx.attr.local_defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,
         module_name = module_name,
