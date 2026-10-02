@@ -118,6 +118,21 @@ To download, build, and reference external Swift packages as Bazel
 targets, check out
 [rules_swift_package_manager](https://github.com/cgrindel/rules_swift_package_manager).
 
+## Supported Xcode versions
+
+`rules_swift` is heavily tied to the Swift compiler's current feature
+set. We have the ability to add / remove flags based on the current
+Xcode / Swift version, but overtime we like to reduce the maintenance
+cost of this type of branch and remove support for older versions. We
+attempt to do this conservatively and are open to supporting more
+versions if there is a need.
+
+| Xcode release | Minimum supported rules version | Final supported rules version|
+|:-------------------:|:-------------------:|:-------------------------:|
+| 27.x | unknown | current |
+| 26.x | unknown | current |
+| 16.x | unknown | current |
+
 ## Supported bazel versions
 
 rules_apple and rules_swift are often affected by changes in bazel
