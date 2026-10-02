@@ -46,6 +46,25 @@ mac_provider_test = make_provider_test_rule(
     },
 )
 
+linux_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": "//buildenv/platforms/linux:x86_64",
+    },
+)
+
+linux_implicit_modules_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["-swift.use_c_modules"],
+        "//command_line_option:platforms": "//buildenv/platforms/linux:x86_64",
+    },
+)
+
+linux_provider_test = make_provider_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": "//buildenv/platforms/linux:x86_64",
+    },
+)
+
 def local_defines_test_suite(name, tags = []):
     """Test suite for `local_defines` attribute.
 
@@ -261,6 +280,105 @@ def local_defines_test_suite(name, tags = []):
         provider = "CcInfo",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_lib_dependent",
+    )
+
+    # Mixed C/Swift tests on Linux (CppCompile + SwiftCompileModule).
+    linux_action_command_line_test(
+        name = "{}_mixed_c_target_has_defines_swift".format(name),
+        expected_argv = [
+            "-DLOCAL_FOO",
+            "-DPROPAGATED_BAR",
+            "-import-underlying-module",
+        ],
+        expected_inputs = [
+            "mixed_c_lib_with_local_defines.swift.modulemap",
+            "mixed_c_lib_with_local_defines.swift.pcm",
+            "-mixed_c_lib.h",
+            "*",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_with_local_defines",
+    )
+
+    linux_implicit_modules_action_command_line_test(
+        name = "{}_mixed_c_target_implicit_modules_swift".format(name),
+        expected_argv = [
+            "-DLOCAL_FOO",
+            "-DPROPAGATED_BAR",
+            "-import-underlying-module",
+        ],
+        expected_inputs = [
+            "mixed_c_lib_with_local_defines.swift.modulemap",
+            "-mixed_c_lib_with_local_defines.swift.pcm",
+            "mixed_c_lib.h",
+            "*",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_with_local_defines",
+    )
+
+    linux_action_command_line_test(
+        name = "{}_mixed_c_target_has_defines_c".format(name),
+        expected_argv = ["-DLOCAL_FOO", "-DPROPAGATED_BAR"],
+        mnemonic = "CppCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_with_local_defines",
+    )
+
+    linux_action_command_line_test(
+        name = "{}_mixed_c_dependent_has_only_propagated_defines_swift".format(name),
+        expected_argv = ["-DPROPAGATED_BAR"],
+        not_expected_argv = ["-DLOCAL_FOO"],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_dependent",
+    )
+
+    linux_action_command_line_test(
+        name = "{}_mixed_c_dependent_has_only_propagated_defines_c".format(name),
+        expected_argv = ["-DPROPAGATED_BAR"],
+        not_expected_argv = ["-DLOCAL_FOO"],
+        mnemonic = "CppCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_dependent",
+    )
+
+    linux_provider_test(
+        name = "{}_mixed_c_cc_info_defines".format(name),
+        field = "compilation_context.defines!",
+        expected_values = ["PROPAGATED_BAR", "-LOCAL_FOO"],
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_with_local_defines",
+    )
+
+    linux_provider_test(
+        name = "{}_mixed_c_cc_info_local_defines".format(name),
+        field = "compilation_context.local_defines!",
+        expected_values = ["LOCAL_FOO"],
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_with_local_defines",
+    )
+
+    linux_provider_test(
+        name = "{}_mixed_c_dependent_cc_info_defines".format(name),
+        field = "compilation_context.defines!",
+        expected_values = ["PROPAGATED_BAR", "-LOCAL_FOO"],
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_dependent",
+    )
+
+    linux_provider_test(
+        name = "{}_mixed_c_dependent_cc_info_local_defines".format(name),
+        field = "compilation_context.local_defines!",
+        expected_values = ["-LOCAL_FOO"],
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/local_defines:mixed_c_lib_dependent",
     )
 
     native.test_suite(

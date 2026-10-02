@@ -1,4 +1,8 @@
 load(
+    "//swift:swift_binary.bzl",
+    "swift_binary",
+)
+load(
     "//swift:swift_library.bzl",
     "swift_library",
 )
@@ -22,4 +26,10 @@ swift_library(
         "swift.compile_in_parallel",
     ],
     tags = FIXTURE_TAGS,
+)
+
+swift_binary(
+    name = "binary",
+    tags = FIXTURE_TAGS,
+    deps = [":simple"],
 )

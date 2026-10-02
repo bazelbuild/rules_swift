@@ -65,3 +65,25 @@ swift_library(
         ":mixed_lib_with_local_defines",
     ],
 )
+
+swift_library(
+    name = "mixed_c_lib_with_local_defines",
+    srcs = [
+        "mixed_c_lib.c",
+        "mixed_c_lib.swift",
+    ],
+    hdrs = ["mixed_c_lib.h"],
+    defines = ["PROPAGATED_BAR"],
+    local_defines = ["LOCAL_FOO"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "mixed_c_lib_dependent",
+    srcs = [
+        "dependent_c.c",
+        "empty.swift",
+    ],
+    tags = FIXTURE_TAGS,
+    deps = [":mixed_c_lib_with_local_defines"],
+)
