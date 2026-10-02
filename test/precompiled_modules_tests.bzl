@@ -5,7 +5,6 @@ load(
     "//test/fixtures/precompiled_modules:cross_platform.bzl",
     "CROSS_PLATFORM_TARGETS",
 )
-load("//test/hermetic_pcm:xcode_version_at_least.bzl", "xcode_version_at_least")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -39,11 +38,6 @@ def precompiled_modules_test_suite(name, tags = []):
         tags: Additional tags to apply to each test.
     """
     all_tags = [name] + tags
-
-    xcode_version_at_least(
-        name = "xcode_at_least_26_4",
-        minimum_version = "26.4",
-    )
 
     native.config_setting(
         name = "has_testing_appkit_overlay",

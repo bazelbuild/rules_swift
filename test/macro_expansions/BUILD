@@ -8,7 +8,7 @@ licenses(["notice"])
 # Share the version flag used to discover tests for the Xcode 26.4 CI job.
 config_setting(
     name = "xcode_26_4_or_newer",
-    flag_values = {"//test/hermetic_pcm:xcode_at_least_26_4": "True"},
+    flag_values = {"//test:xcode_at_least_26_4": "True"},
 )
 
 swift_compiler_plugin(
