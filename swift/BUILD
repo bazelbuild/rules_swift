@@ -53,6 +53,7 @@ bzl_library(
         "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
+        "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
