@@ -767,7 +767,7 @@ def _xcode_env(target_triple, xcode_config):
 def _entry_point_linkopts_provider(*, entry_point_name):
     """Returns linkopts to customize the entry point of a binary."""
     return struct(
-        linkopts = ["-Wl,-alias,_{},_main".format(entry_point_name)],
+        linkopts = ["-Wl,-e,_{}".format(entry_point_name)],
     )
 
 def _dsym_provider(*, ctx):
