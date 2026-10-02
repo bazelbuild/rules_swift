@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Dispatch
 import Foundation
 
 /// An issue that occurred during a test.
@@ -148,7 +149,7 @@ public final class XUnitTestRecorder: Sendable {
   }
 
   /// Records that a test has started.
-  public func recordTestStarted(nameComponents: [String], time: any InstantProtocol) {
+  public func recordTestStarted(nameComponents: [String], time: TestInstant) {
     context.withLock { context in
       context.testCount += 1
       context.testData[nameComponents] = .init(startTime: time)
@@ -156,7 +157,7 @@ public final class XUnitTestRecorder: Sendable {
   }
 
   /// Records that a test has ended.
-  public func recordTestEnded(nameComponents: [String], time: any InstantProtocol) {
+  public func recordTestEnded(nameComponents: [String], time: TestInstant) {
     context.withLock { context in
       context.testData[nameComponents]?.endTime = time
     }
@@ -206,46 +207,60 @@ private struct TestTree: Sendable {
   }
 }
 
+/// An instant in time, expressed as seconds from an unspecified monotonic basis.
+///
+/// This deliberately avoids Swift's `Clock`/`InstantProtocol`/`Duration` API, which is only
+/// available on iOS 16, macOS 13 and later. `test_observer` is linked into every `swift_test`
+/// binary, so it has to compile at whatever deployment target the test target uses -- and
+/// `swift_test` places no lower bound on that. Only differences between instants are ever
+/// meaningful, so seconds from an arbitrary basis is sufficient.
+public struct TestInstant: Sendable, Comparable {
+  /// The number of seconds since this instant's (unspecified) basis.
+  public var seconds: Double
+
+  public init(seconds: Double) {
+    self.seconds = seconds
+  }
+
+  /// Returns the current instant on a monotonic clock that does not advance while the machine is
+  /// suspended, matching the semantics of the `SuspendingClock` this replaces.
+  public static var now: TestInstant {
+    return TestInstant(seconds: Double(DispatchTime.now().uptimeNanoseconds) / 1e9)
+  }
+
+  /// Returns the number of seconds from this instant to the given instant.
+  public func seconds(to other: TestInstant) -> Double {
+    return other.seconds - self.seconds
+  }
+
+  public static func < (lhs: TestInstant, rhs: TestInstant) -> Bool {
+    return lhs.seconds < rhs.seconds
+  }
+}
+
 /// Information about a test case.
 private struct TestInfo: Sendable {
   /// The time that the test started.
-  var startTime: any InstantProtocol
+  var startTime: TestInstant
 
   /// The time that the test ended.
-  var endTime: (any InstantProtocol)?
+  var endTime: TestInstant?
 
   /// Issues that were recorded during the test.
   var issues: [RecordedIssue]
 
   /// The duration of the test, in seconds, as a string.
   var durationInSeconds: String {
-    guard let endTime = endTime, let duration = startTime.duration(to: endTime) as? Duration else {
+    guard let endTime = endTime else {
       return ""
     }
-    let seconds =
-      Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
-    return String(format: "%.3f", seconds)
+    return String(format: "%.3f", startTime.seconds(to: endTime))
   }
 
   /// Creates a new test that started at the given time.
-  init(startTime: any InstantProtocol) {
+  init(startTime: TestInstant) {
     self.startTime = startTime
     self.endTime = nil
     self.issues = []
-  }
-}
-
-extension InstantProtocol {
-  /// Returns the duration between this instant and the given instant.
-  ///
-  /// The two instants must be of the same type.
-  fileprivate func duration(to other: any InstantProtocol) -> Duration {
-    guard let other = other as? Self else {
-      preconditionFailure("""
-        Internal error: Instant types must be the same, but got \
-        \(type(of: self)) and \(type(of: other))
-        """)
-    }
-    return self.duration(to: other)
   }
 }

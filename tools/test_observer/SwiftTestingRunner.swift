@@ -194,7 +194,7 @@ public final class SwiftTestingRunner: Sendable {
     else {
       return
     }
-    let instant = EncodedInstant(seconds: absolute.doubleValue)
+    let instant = TestInstant(seconds: absolute.doubleValue)
     let nameComponents = nameComponents(for: testID)
 
     // Later versions of swift-testing (after Xcode 16.0) stopped reporting suites that don't use
@@ -245,42 +245,33 @@ public final class SwiftTestingRunner: Sendable {
     }
   }
 
+  /// Matches the trailing source location that swift-testing appends to some test IDs.
+  ///
+  /// `NSRegularExpression` rather than a regex literal: literals require the `Regex` runtime, which
+  /// is only available on iOS 16, macOS 13 and later, and this tool is linked into every
+  /// `swift_test` binary regardless of deployment target.
+  private static let sourceLocationSuffix = try! NSRegularExpression(
+    pattern: #"\.swift:\d+:\d+"#)
+
   /// Returns a list of name components by parsing the given test identifier.
   private func nameComponents(for testID: String) -> [String] {
     let components = testID.split(separator: "/")
     // Some test IDs end with the source location of the test, which is not typically useful to show
     // as part of the hierarchy.
-    if let last = components.last, last.firstMatch(of: /\.swift:\d+:\d+/) != nil {
-      return components[..<(components.count - 1)].map(String.init)
+    if let last = components.last {
+      let lastString = String(last)
+      let range = NSRange(lastString.startIndex..., in: lastString)
+      if Self.sourceLocationSuffix.firstMatch(in: lastString, range: range) != nil {
+        return components[..<(components.count - 1)].map(String.init)
+      }
     }
     return components.map(String.init)
   }
 }
 
-/// Represents an instant in time that is encoded as part of a test event.
-///
-/// The instant is encoded as a double representing the number of seconds retrieved from
-/// `SuspendingClock` at the time the event occurred. We can't reconstitute that value back into a
-/// `SuspendingClock.Instant`, but they're all relative to each other so we can provide our own
-/// `InstantProtocol` implementation that is used to compute the duration between two events.
-private struct EncodedInstant: Comparable, InstantProtocol {
-  /// The number of seconds since the test clock's basis.
-  var seconds: Double
-
-  static func < (lhs: EncodedInstant, rhs: EncodedInstant) -> Bool {
-    return lhs.seconds < rhs.seconds
-  }
-
-  func advanced(by duration: Swift.Duration) -> EncodedInstant {
-    let components = duration.components
-    return EncodedInstant(
-      seconds: seconds + Double(components.seconds) + Double(components.attoseconds) / 1e18)
-  }
-
-  func duration(to other: EncodedInstant) -> Swift.Duration {
-    return .seconds(other.seconds - self.seconds)
-  }
-}
+// The instant in a test event is encoded as a double holding the number of seconds read from the
+// test clock when the event occurred. That is exactly `TestInstant`'s representation, so events can
+// be turned into instants directly; only differences between them are ever meaningful.
 
 /// Represents the entry point of the swift-testing framework and handles the translation of
 /// requests and responses between structured JSON and raw byte buffers.

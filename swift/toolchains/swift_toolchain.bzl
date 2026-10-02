@@ -477,6 +477,26 @@ def _swift_unix_linkopts_cc_info(
         # these libraries are still lazily loaded so it doesn't affect app size
         # if they are unused.
         "-Wl,--push-state,--as-needed",
+        # --start-group: these archives reference each other (CoreFoundation's
+        # regex support calls into _FoundationICU), and ld resolves static
+        # archives left to right, so a flat list drops symbols that a later
+        # archive still needs. The stdlib overlays and Foundation are repeated
+        # here because the autolink entries list them before the Foundation
+        # archives whose members reference them (FoundationEssentials pulls in
+        # _StringProcessing and Glibc), and bfd ld does not rescan.
+        "-Wl,--start-group",
+        "-lswiftCore",
+        "-lswiftSwiftOnoneSupport",
+        "-lswift_Concurrency",
+        "-lswift_StringProcessing",
+        "-lswift_RegexParser",
+        "-lswiftGlibc",
+        "-lswiftDispatch",
+        "-ldispatch",
+        "-lBlocksRuntime",
+        "-lFoundation",
+        "-lFoundationEssentials",
+        "-lFoundationInternationalization",
         "-lswiftSynchronization",
         "-l_FoundationICU",
         "-lCoreFoundation",
@@ -484,8 +504,11 @@ def _swift_unix_linkopts_cc_info(
         "-l_CFXMLInterface",
         "-l_FoundationCShims",
         "-l_FoundationCollections",
-        "-lcurl",
-        "-lxml2",
+        "-Wl,--end-group",
+        # NOT -lcurl/-lxml2: FoundationNetworking and FoundationXML need those
+        # system libs, but RBE worker images do not carry their linker symlinks,
+        # and every tool we link statically here (swift compiler plugins) uses
+        # neither. Consumers that need them can add the linkopts themselves.
         "-Wl,--pop-state",
     ]
 

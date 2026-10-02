@@ -492,6 +492,13 @@ transition_binary(
 swift_binary(
     name = "min_os_bin",
     srcs = ["min_os_main.swift"],
+    # The min-OS transition on min_os_lib_at_13 creates a config diamond: two
+    # configurations of the xcode toolchain each contribute an identical
+    # swift-linkopts CcInfo, and linker inputs from distinct configs don't
+    # dedup, so ld warns about duplicate -rpath entries. The repo-wide
+    # treat_warnings_as_errors turns that warning fatal (-fatal_warnings).
+    # Tolerate the warning here until the duplication is fixed upstream.
+    features = ["-treat_warnings_as_errors"],
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
     deps = [
