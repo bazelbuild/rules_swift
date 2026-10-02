@@ -61,6 +61,10 @@ build:linux --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-f
 build:macos --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
 build:macos --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
 
+# MSVC reports C4715 for the exhaustive enum switch in protobuf's string parser.
+build:windows --per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
+build:windows --host_per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
+
 # ignore warnings in external CC dependencies
 build --features=external_include_paths --host_features=external_include_paths
 
