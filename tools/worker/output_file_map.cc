@@ -52,12 +52,16 @@ static std::string MakeIncrementalOutputPath(std::string path,
 
 };  // end namespace
 
-void OutputFileMap::ReadFromPath(const std::string& path,
-                                 const std::string& emit_module_path,
-                                 const std::string& emit_objc_header_path) {
+void OutputFileMap::ReadFromPath(const std::string& path) {
   std::ifstream stream(path);
   stream >> json_;
-  UpdateForIncremental(path, emit_module_path, emit_objc_header_path);
+  UpdateForIncremental(path);
+}
+
+std::string OutputFileMap::AddOutput(const std::string& path) {
+  auto incremental_path = MakeIncrementalOutputPath(path, is_derived_);
+  incremental_outputs_[path] = incremental_path;
+  return incremental_path;
 }
 
 void OutputFileMap::WriteToPath(const std::string& path) {
@@ -65,16 +69,12 @@ void OutputFileMap::WriteToPath(const std::string& path) {
   stream << json_;
 }
 
-void OutputFileMap::UpdateForIncremental(
-    const std::string& path, const std::string& emit_module_path,
-    const std::string& emit_objc_header_path) {
-  bool derived =
-      path.find(".derived_output_file_map.json") != std::string::npos;
+void OutputFileMap::UpdateForIncremental(const std::string& path) {
+  is_derived_ = path.find(".derived_output_file_map.json") != std::string::npos;
 
   nlohmann::json new_output_file_map;
   std::map<std::string, std::string> incremental_outputs;
-  std::map<std::string, std::string> incremental_inputs;
-  std::vector<std::string> incremental_cleanup_outputs;
+  std::vector<std::string> incremental_dependencies;
 
   // The empty string key is used to represent outputs that are for the whole
   // module, rather than for a particular source file.
@@ -82,8 +82,9 @@ void OutputFileMap::UpdateForIncremental(
   // Derive the swiftdeps file name from the .output-file-map.json name.
   std::string new_path =
       std::filesystem::path(path).replace_extension(".swiftdeps").string();
-  auto swiftdeps_path = MakeIncrementalOutputPath(new_path, derived);
+  auto swiftdeps_path = MakeIncrementalOutputPath(new_path, is_derived_);
   module_map["swift-dependencies"] = swiftdeps_path;
+  incremental_dependencies.push_back(swiftdeps_path);
   new_output_file_map[""] = module_map;
 
   for (auto& element : json_.items()) {
@@ -102,7 +103,7 @@ void OutputFileMap::UpdateForIncremental(
         // If the file kind is "object" or "const-values", we want to update the
         // path to point to the incremental storage area and then add a
         // "swift-dependencies" in the same location.
-        auto new_path = MakeIncrementalOutputPath(path, derived);
+        auto new_path = MakeIncrementalOutputPath(path, is_derived_);
         src_map[kind] = new_path;
         incremental_outputs[path] = new_path;
 
@@ -112,12 +113,12 @@ void OutputFileMap::UpdateForIncremental(
                                .string();
         }
 
-        incremental_cleanup_outputs.push_back(swiftdeps_path);
+        incremental_dependencies.push_back(swiftdeps_path);
       } else if (kind == "swiftdoc" || kind == "swiftinterface" ||
                  kind == "swiftmodule" || kind == "swiftsourceinfo") {
         // Module/interface outputs should be moved to the incremental storage
         // area without additional processing.
-        auto new_path = MakeIncrementalOutputPath(path, derived);
+        auto new_path = MakeIncrementalOutputPath(path, is_derived_);
         src_map[kind] = new_path;
         incremental_outputs[path] = new_path;
 
@@ -127,14 +128,14 @@ void OutputFileMap::UpdateForIncremental(
                                .string();
         }
 
-        incremental_cleanup_outputs.push_back(swiftdeps_path);
+        incremental_dependencies.push_back(swiftdeps_path);
       } else if (kind == "swift-dependencies") {
         // Only derived-file maps need explicit per-source dependency paths.
         // So we ignore other entries, including those added by a previous
         // rewrite.
-        if (derived && !src.empty()) {
-          swiftdeps_path = MakeIncrementalOutputPath(path, derived);
-          incremental_cleanup_outputs.push_back(swiftdeps_path);
+        if (is_derived_ && !src.empty()) {
+          swiftdeps_path = MakeIncrementalOutputPath(path, is_derived_);
+          incremental_dependencies.push_back(swiftdeps_path);
 
           // Module-only compilations also produce per-source partial modules.
           // The driver checks that all outputs exist before skipping a source;
@@ -161,29 +162,7 @@ void OutputFileMap::UpdateForIncremental(
     new_output_file_map[src] = src_map;
   }
 
-  // If we don't generate a swiftmodule, don't try to copy those files
-  if (!emit_module_path.empty()) {
-    auto swiftmodule_path = emit_module_path;
-    auto copied_swiftmodule_path =
-        MakeIncrementalOutputPath(swiftmodule_path, derived);
-    incremental_inputs[swiftmodule_path] = copied_swiftmodule_path;
-
-    std::string swiftdoc_path = std::filesystem::path(swiftmodule_path)
-                                    .replace_extension(".swiftdoc")
-                                    .string();
-    auto copied_swiftdoc_path =
-        MakeIncrementalOutputPath(swiftdoc_path, derived);
-    incremental_inputs[swiftdoc_path] = copied_swiftdoc_path;
-  }
-
-  if (!emit_objc_header_path.empty()) {
-    auto copied_objc_header_path =
-        MakeIncrementalOutputPath(emit_objc_header_path, derived);
-    incremental_inputs[emit_objc_header_path] = copied_objc_header_path;
-  }
-
   json_ = new_output_file_map;
   incremental_outputs_ = incremental_outputs;
-  incremental_inputs_ = incremental_inputs;
-  incremental_cleanup_outputs_ = incremental_cleanup_outputs;
+  incremental_dependencies_ = incremental_dependencies;
 }
