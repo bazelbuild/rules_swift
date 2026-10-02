@@ -81,12 +81,19 @@ cc_tool(
 cc_tool(
     name = "clang",
     src = "usr/bin/clang",
-    data = [":swift_sdk_linker_inputs"],
+    data = [":swift_sdk_compiler_inputs"],
     tags = ["manual"],
 )
 
 cc_tool(
     name = "clang++",
+    src = "usr/bin/clang++",
+    data = [":swift_sdk_compiler_inputs"],
+    tags = ["manual"],
+)
+
+cc_tool(
+    name = "clang++_linker",
     src = "usr/bin/clang++",
     data = [":swift_sdk_linker_inputs"],
     tags = ["manual"],
@@ -118,7 +125,7 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
         "@rules_cc//cc/toolchains/actions:c_compile": ":clang",
         "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang++",
-        "@rules_cc//cc/toolchains/actions:link_actions": ":clang++",
+        "@rules_cc//cc/toolchains/actions:link_actions": ":clang++_linker",
         "@rules_cc//cc/toolchains/actions:llvm_cov": ":llvm_cov",
         "@rules_cc//cc/toolchains/actions:llvm_profdata": ":llvm_profdata",
         "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm_objcopy",
