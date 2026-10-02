@@ -1,5 +1,1 @@
-module Custom {
-  umbrella "include"
-  use test_fixtures_header_pruning_leaf
-  export *
-}
+module custom { header "custom.h" use test_fixtures_header_pruning_middle export * }

@@ -337,7 +337,8 @@ dependencies, ensuring they are available in the execution environment.
 ## create_clang_module_inputs
 
 <pre>
-create_clang_module_inputs(*, <a href="#create_clang_module_inputs-compilation_context">compilation_context</a>, <a href="#create_clang_module_inputs-module_map">module_map</a>, <a href="#create_clang_module_inputs-precompiled_module">precompiled_module</a>, <a href="#create_clang_module_inputs-strict_includes">strict_includes</a>)
+create_clang_module_inputs(*, <a href="#create_clang_module_inputs-compilation_context">compilation_context</a>, <a href="#create_clang_module_inputs-module_map">module_map</a>, <a href="#create_clang_module_inputs-precompiled_module">precompiled_module</a>, <a href="#create_clang_module_inputs-strict_includes">strict_includes</a>,
+                           <a href="#create_clang_module_inputs-unchecked_include_headers">unchecked_include_headers</a>)
 </pre>
 
 Creates a value representing a Clang module used as a Swift dependency.
@@ -351,6 +352,7 @@ Creates a value representing a Clang module used as a Swift dependency.
 | <a id="create_clang_module_inputs-module_map"></a>module_map |  The text module map file that defines this module. This argument may be specified as a `File` or as a `string`; in the latter case, it is assumed to be the path to a file that cannot be provided as an action input because it is outside the workspace (for example, the module map for a module from an Xcode SDK).   |  none |
 | <a id="create_clang_module_inputs-precompiled_module"></a>precompiled_module |  A `File` representing the precompiled module (`.pcm` file) if one was emitted for the module. This may be `None` if no explicit module was built for the module; in that case, targets that depend on the module will fall back to the text module map and headers.   |  `None` |
 | <a id="create_clang_module_inputs-strict_includes"></a>strict_includes |  A `depset` of strings representing additional Clang include paths that should be passed to the compiler when this module is a _direct_ dependency of the module being compiled. May be `None`. **This field only exists to support a specific legacy use case and should otherwise not be used, as it is fundamentally incompatible with Swift's import model.**   |  `None` |
+| <a id="create_clang_module_inputs-unchecked_include_headers"></a>unchecked_include_headers |  A `depset` of `File`s that must be present when precompiling any explicit module that depends on this module's precompiled module, because they can be reached by `#include`s that Clang does not layering-check. For example, if this module's module map declares excluded headers, any module that depends on it can include them, and the includes in those headers are not checked, so this should contain all of the transitive headers of this module. If `None` (the default), the module map does not declare any such headers (for example, it only declares modular headers and textual headers that are also in `compilation_context.direct_textual_headers`).   |  `None` |
 
 **RETURNS**
 

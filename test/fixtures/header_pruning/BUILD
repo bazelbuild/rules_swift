@@ -42,8 +42,7 @@ cc_library(
     deps = [":middle"],
 )
 
-# Reuse the middle header with alternative classifications in independent
-# dependency graphs, each with a consumer that includes it through top.h.
+# Reuse the middle header as a textual header in an independent dependency graph.
 cc_library(
     name = "textual",
     aspect_hints = ["//swift:auto_module"],
@@ -54,32 +53,60 @@ cc_library(
 
 swift_interop_hint(
     name = "excluded_hint",
-    exclude_hdrs = ["include/middle.h"],
+    exclude_hdrs = ["excluded_extra.h"],
     tags = FIXTURE_TAGS,
 )
 
 cc_library(
     name = "excluded",
-    hdrs = ["include/middle.h"],
+    hdrs = [
+        "excluded.h",
+        "excluded_extra.h",
+    ],
     aspect_hints = [":excluded_hint"],
     tags = FIXTURE_TAGS,
-    deps = [":leaf"],
+    deps = [":middle"],
 )
 
-# An umbrella-directory map also covers the client-provided module-map case.
 swift_interop_hint(
     name = "custom_hint",
     module_map = "custom.modulemap",
-    module_name = "Custom",
+    module_name = "custom",
     tags = FIXTURE_TAGS,
 )
 
 cc_library(
     name = "custom",
-    hdrs = ["include/middle.h"],
+    hdrs = ["custom.h"],
     aspect_hints = [":custom_hint"],
     tags = FIXTURE_TAGS,
-    deps = [":leaf"],
+    deps = [":middle"],
+)
+
+swift_interop_hint(
+    name = "umbrella_hint",
+    module_map = "umbrella.modulemap",
+    module_name = "Umbrella",
+    tags = FIXTURE_TAGS,
+)
+
+cc_library(
+    name = "umbrella",
+    hdrs = [
+        "umbrella.h",
+        "umbrella_headers/member.h",
+    ],
+    aspect_hints = [":umbrella_hint"],
+    tags = FIXTURE_TAGS,
+    deps = [":middle"],
+)
+
+cc_library(
+    name = "umbrella_consumer",
+    hdrs = ["umbrella_consumer.h"],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+    deps = [":umbrella"],
 )
 
 cc_inc_library(
@@ -100,7 +127,7 @@ cc_library(
 
 cc_library(
     name = "excluded_consumer",
-    hdrs = ["top.h"],
+    hdrs = ["excluded_consumer.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":excluded"],
@@ -108,7 +135,7 @@ cc_library(
 
 cc_library(
     name = "custom_consumer",
-    hdrs = ["top.h"],
+    hdrs = ["custom_consumer.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
     deps = [":custom"],
@@ -180,6 +207,7 @@ pcm_files(
         ":legacy_consumer",
         ":textual_consumer",
         ":top",
+        ":umbrella_consumer",
     ],
 )
 
