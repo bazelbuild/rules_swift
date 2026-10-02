@@ -48,9 +48,15 @@ xcode_version_at_least(
     visibility = ["//test:__subpackages__"],
 )
 
+xcode_version_at_least(
+    name = "xcode_at_least_27_0",
+    minimum_version = "27.0",
+    visibility = ["//test:__subpackages__"],
+)
+
 config_setting(
-    name = "xcode_26_4_or_newer",
-    flag_values = {":xcode_at_least_26_4": "True"},
+    name = "xcode_27_0_or_newer",
+    flag_values = {":xcode_at_least_27_0": "True"},
     visibility = ["//test:__subpackages__"],
 )
 
