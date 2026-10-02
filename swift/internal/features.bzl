@@ -193,8 +193,8 @@ def configure_features(
     def cc_feature_configuration_no_parse_headers():
         return cc_common.configure_features(
             ctx = ctx,
-            cc_toolchain = swift_toolchain.cc_toolchain_info,
-            language = swift_toolchain.cc_language,
+            cc_toolchain = toolchains.cc,
+            language = toolchains.swift.cc_language,
             requested_features = all_requestable_features,
             unsupported_features = all_unsupported_features + ["parse_headers"],
         )

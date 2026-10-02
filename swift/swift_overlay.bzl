@@ -85,6 +85,26 @@ def _swift_overlay_attrs():
     attrs = swift_library_rule_attrs(additional_deps_aspects = [
         swift_clang_module_aspect,
     ])
+    attrs["srcs"] = attr.label_list(
+        allow_empty = False,
+        allow_files = ["swift"],
+        doc = """\
+A list of `.swift` source files that will be compiled into the overlay.
+
+Unlike other `swift_*` rules, `swift_overlay` does not support C/Objective-C
+source files. Those files belong in the underlying C/Objective-C library that
+the overlay is associated with, or in a mixed-language `swift_library` if the
+Swift and C/Objective-C code need to mutually reference each other.
+
+Except in very rare circumstances, a Swift source file should only appear in a
+single `swift_*` target. Adding the same source file to multiple `swift_*`
+targets can lead to binary bloat and/or symbol collisions. If specific sources
+need to be shared by multiple targets, consider factoring them out into their
+own `swift_library` instead.
+""",
+        flags = ["DIRECT_COMPILE_TIME_INPUT"],
+        mandatory = True,
+    )
     attrs["private_deps"] = swift_deps_attr(
         aspects = [swift_clang_module_aspect],
         doc = """\
@@ -103,6 +123,7 @@ dependent for linking, but artifacts/flags required for compilation (such as
     attrs.pop("module_name")
     attrs.pop("generated_header_name")
     attrs.pop("generates_header")
+    attrs.pop("hdrs")
 
     # TODO: b/65410357 - More work is needed to support runfiles.
     attrs.pop("data")

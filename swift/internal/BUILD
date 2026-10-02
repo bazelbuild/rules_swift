@@ -88,6 +88,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":attrs",
         ":debugging",
         ":explicit_module_map_file",
         ":feature_names",
