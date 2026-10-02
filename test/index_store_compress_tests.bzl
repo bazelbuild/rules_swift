@@ -67,7 +67,7 @@ def index_store_compress_test_suite(name):
     all_tags = [name]
 
     supported_toolchain = select({
-        "//test:xcode_26_4_or_newer": [],
+        "//test:xcode_27_0_or_newer": [],
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     })
