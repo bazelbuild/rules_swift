@@ -33,8 +33,7 @@ swift_tools(
         name = "swift_toolchain_" + arch,
         arch = arch,
         copts = [
-            "-resource-dir",
-            _RESOURCE_DIRS[arch],
+            "-Xwrapped-swift=-resource-dir=" + _RESOURCE_DIRS[arch],
             "-Xcc",
             "-I{clang_builtin_headers}",
         ],

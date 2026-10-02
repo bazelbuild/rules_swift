@@ -31,8 +31,12 @@ def android_test_suite(name):
     # The Swift compile targets Android
     android_command_line_test(
         name = "{}_swiftcompile_targets_android".format(name),
-        expected_argv = ["-target aarch64-linux-android28"],
+        expected_argv = [
+            "-target aarch64-linux-android28",
+            "-Xwrapped-swift=-resource-dir",
+        ],
         mnemonic = "SwiftCompile",
+        not_expected_argv = ["-resource-dir"],
         tags = all_tags,
         target_under_test = "//test/fixtures/android:jni_lib",
     )

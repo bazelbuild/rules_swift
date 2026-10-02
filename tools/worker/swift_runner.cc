@@ -664,6 +664,14 @@ bool SwiftRunner::ProcessArgument(
       add_prefix_map_flags("-file-prefix-map");
       return true;
     }
+    if (absl::ConsumePrefix(&wrapped_arg, "-resource-dir=")) {
+      std::string resource_dir(wrapped_arg);
+      bazel_placeholder_substitutions_.Apply(resource_dir);
+      // https://github.com/swiftlang/swift/pull/92879
+      consumer("-resource-dir");
+      consumer(std::filesystem::absolute(resource_dir).string());
+      return true;
+    }
     if (absl::ConsumePrefix(&wrapped_arg, "-macro-expansion-dir=")) {
       std::string macro_expansion_dir(wrapped_arg);
       std::filesystem::create_directories(macro_expansion_dir);

@@ -54,6 +54,10 @@ extern bool ArgumentEnablesWMO(const std::string& arg);
 //     This remapping must be applied here because we do not know the current
 //     working directory at analysis time when the argument list is constructed.
 //
+// -Xwrapped-swift=-resource-dir=<path>
+//     Passes the resource directory as an absolute path, resolved against the
+//     execution root, to work around https://github.com/swiftlang/swift/pull/92879
+//
 // -Xwrapped-swift=-ephemeral-module-cache
 //     When specified, the spawner will create a new temporary directory, pass
 //     that to the Swift compiler using `-module-cache-path`, and then delete
