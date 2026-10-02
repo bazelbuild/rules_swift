@@ -51,6 +51,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "expand_make_variables",
     "get_providers",
 )
 load(":module_name.bzl", "derive_swift_module_name")
@@ -71,6 +72,9 @@ def _swift_compiler_plugin_impl(ctx):
 
     if not srcs:
         fail("A compiler plugin must have at least one file in 'srcs'.")
+
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_make_variables(ctx, c_copts, "c_copts")
 
     module_name = ctx.attr.module_name
     if not module_name:
@@ -97,6 +101,7 @@ def _swift_compiler_plugin_impl(ctx):
             "-Xfrontend",
             entry_point_name,
         ],
+        c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = ctx.attr.testonly,

@@ -34,6 +34,7 @@ load(
     "SWIFT_ACTION_PRECOMPILE_C_MODULE",
 )
 load(":actions.bzl", "is_action_enabled", "run_toolchain_action")
+load(":attrs.bzl", "C_HEADER_EXTENSIONS")
 load(":explicit_module_map_file.bzl", "write_explicit_swift_module_map_file")
 load(
     ":feature_names.bzl",
@@ -418,6 +419,7 @@ def compile(
         additional_inputs = [],
         cc_infos,
         copts = [],
+        c_copts = [],
         defines = [],
         exec_group = None,
         extra_swift_infos = [],
@@ -448,11 +450,14 @@ def compile(
             requirements of the target being compiled, such as Swift-compatible
             preprocessor defines, header search paths, and so forth. These are
             typically retrieved from a target's dependencies.
-        copts: A list of compiler flags that apply to the target being built.
+        copts: A list of compiler flags that apply to the Swift sources in the
+            target being built.
             These flags, along with those from the `@rules_swift//swift:copt`
             build setting (typically passed as `--swiftcopt`) are scanned to
             determine whether whole module optimization is being requested,
             which affects the nature of the output files.
+        c_copts: A list of compiler flags that apply to the C/Objective-C
+            sources in the target being built.
         defines: Symbols that should be defined by passing `-D` to the compiler.
         exec_group: Runs the Swift compilation action under the given execution
             group's context. If `None`, the default execution group is used.
@@ -486,7 +491,10 @@ def compile(
             modules defined by these providers are used as dependencies of the
             Swift module being compiled but not of the Clang module for the
             generated header.
-        srcs: The Swift source files to compile.
+        srcs: The source files to compile. Typically this contains only Swift
+            sources, but a mixed language module may contain C/Objective-C
+            sources as well and those will be compiled by the underlying C
+            toolchain.
         swift_infos: A list of `SwiftInfo` providers from non-private
             dependencies of the target being compiled. The modules defined by
             these providers are used as dependencies of both the Swift module
@@ -560,6 +568,20 @@ def compile(
         toolchains = toolchains,
     )
 
+    swift_srcs = []
+    c_srcs = []
+    c_private_hdrs = []
+    for src in srcs:
+        if src.extension == "swift":
+            swift_srcs.append(src)
+        elif src.extension in C_HEADER_EXTENSIONS:
+            c_private_hdrs.append(src)
+        else:
+            c_srcs.append(src)
+
+    if not swift_srcs:
+        fail("A Swift module must have at least one Swift source file.")
+
     # Apply the module alias for the module being compiled, if present.
     module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:
@@ -626,7 +648,7 @@ def compile(
     const_gather_protocols_file = toolchains.swift.const_protocols_to_gather
 
     compile_outputs = _declare_compile_outputs(
-        srcs = srcs,
+        srcs = swift_srcs,
         actions = actions,
         extract_const_values = bool(const_gather_protocols_file),
         feature_configuration = feature_configuration,
@@ -678,11 +700,9 @@ def compile(
         ]) + compile_outputs.object_files + compile_outputs.const_values_files
         all_derived_outputs = []
 
-    # In `upstream` they call `merge_compilation_contexts` on passed in
-    # `compilation_contexts` instead of merging `CcInfo`s. This is because
-    # they don't need the merged linking context to disable framework
-    # autolinking. If we ever remove our need for `-disable-autolink-framework`,
-    # we should change this to match `upstream`. Same for `ObjcInfo`.
+    # Unlike upstream, the Swift compilation needs the merged linking context
+    # to disable autolinking of static prebuilt frameworks. Retain the CcInfos
+    # for that purpose, but propagate only the public compilation contexts.
     compilation_contexts = [
         cc_info.compilation_context
         for cc_info in cc_infos
@@ -826,7 +846,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         original_module_name = original_module_name,
         package_name = package_name,
         plugins = collections.uniq(used_plugins),
-        source_files = srcs,
+        source_files = swift_srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
@@ -920,7 +940,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
 
     compilation_context = create_compilation_context(
         defines = defines,
-        srcs = srcs,
+        srcs = swift_srcs,
         transitive_modules = transitive_modules,
     )
 
@@ -938,19 +958,27 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     else:
         includes = []
 
+    c_compilation_context, c_compilation_outputs = _compile_c_inputs(
+        actions = actions,
+        additional_inputs = additional_inputs,
+        compilation_contexts = compilation_contexts,
+        copts = c_copts,
+        defines = defines,
+        feature_configuration = feature_configuration,
+        has_generated_header = bool(compile_outputs.generated_header_file),
+        includes = includes,
+        private_hdrs = c_private_hdrs,
+        public_hdrs = public_hdrs,
+        srcs = c_srcs,
+        swift_infos = swift_infos_to_propagate,
+        target_name = target_name,
+        toolchains = toolchains,
+    )
+
     module_context = create_swift_module_context(
         name = module_name,
         clang = create_clang_module_inputs(
-            compilation_context = _create_cc_compilation_context(
-                actions = actions,
-                compilation_contexts = compilation_contexts,
-                defines = defines,
-                feature_configuration = feature_configuration,
-                includes = includes,
-                public_hdrs = public_hdrs,
-                target_name = target_name,
-                toolchains = toolchains,
-            ),
+            compilation_context = c_compilation_context,
             module_map = compile_outputs.generated_module_map_file,
             precompiled_module = precompiled_module,
         ),
@@ -973,9 +1001,14 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         ),
     )
 
-    compilation_outputs = cc_common.create_compilation_outputs(
-        objects = depset(compile_outputs.object_files),
-        pic_objects = depset(compile_outputs.object_files),
+    compilation_outputs = cc_common.merge_compilation_outputs(
+        compilation_outputs = [
+            cc_common.create_compilation_outputs(
+                objects = depset(compile_outputs.object_files),
+                pic_objects = depset(compile_outputs.object_files),
+            ),
+            c_compilation_outputs,
+        ],
     )
 
     return struct(
@@ -1249,18 +1282,23 @@ def _precompile_clang_module(
         indexstore_directory = indexstore_directory,
     )
 
-def _create_cc_compilation_context(
+def _compile_c_inputs(
         *,
         actions,
+        additional_inputs,
         compilation_contexts,
+        copts,
         defines,
         feature_configuration,
         includes,
         has_generated_header = False,
+        private_hdrs,
         public_hdrs,
+        srcs,
+        swift_infos,
         target_name,
         toolchains = None):
-    """Creates a `CcCompilationContext` to propagate for a Swift module.
+    """Compiles the C/Objective-C inputs for a Swift module, if any.
 
     The returned compilation context contains the generated Objective-C header
     for the module (if any), along with any preprocessor defines based on
@@ -1268,11 +1306,14 @@ def _create_cc_compilation_context(
 
     Args:
         actions: The context's `actions` object.
+        additional_inputs: Files referenced by the C compiler options.
         compilation_contexts: A list of `CcCompilationContext`s that represent
             C/Objective-C requirements of the target being compiled, such as
             Swift-compatible preprocessor defines, header search paths, and so
             forth. These are typically retrieved from the `CcInfo` providers of
             a target's dependencies.
+        copts: A list of flags that will be passed to the C/Objective-C
+            compiler.
         defines: Symbols that should be defined by passing `-D` to the compiler.
         feature_configuration: A feature configuration obtained from
             `configure_features`.
@@ -1280,8 +1321,15 @@ def _create_cc_compilation_context(
             context.
         has_generated_header: If True, the `public_hdrs` include a generated
             Objective-C header.
+        private_hdrs: Private headers that should be used when compiling the
+            C/Objective-C sources.
         public_hdrs: Public headers that should be propagated by the new
             compilation context (for example, the module's generated header).
+        srcs: C/Objective-C source files that should be compiled, if this is a
+            mixed-language module.
+        swift_infos: The `SwiftInfo` providers of public dependencies. Their
+            direct Clang module maps must remain discoverable when an
+            Objective-C consumer imports the generated header.
         target_name: The name of the target for which the code is being
             compiled, which is used to determine unique file paths for the
             outputs.
@@ -1289,19 +1337,36 @@ def _create_cc_compilation_context(
             as returned by `swift_common.find_all_toolchains()`.
 
     Returns:
-        The `CcCompilationContext` that should be propagated by the calling
-        target.
+        A tuple containing the `CcCompilationContext` to propagate and the
+        `CcCompilationOutputs` to merge with the Swift object files.
     """
 
-    # If we are propagating headers, call `cc_common.compile` to get the
-    # compilation context instead of creating it directly. This gives the
+    # Generated headers can import Clang modules whose maps are carried only by
+    # SwiftInfo. Add maps from public direct dependencies as transitive
+    # compilation inputs.
+    module_maps = depset([
+        module.clang.module_map
+        for swift_info in swift_infos
+        for module in swift_info.direct_modules
+        if module.clang and type(module.clang.module_map) == "File"
+    ]).to_list()
+    if module_maps:
+        compilation_contexts = compilation_contexts + [
+            cc_common.create_compilation_context(
+                headers = depset(module_maps),
+                includes = depset([module_map.dirname for module_map in module_maps]),
+            ),
+        ]
+
+    # If we have C/Objective-C inputs, call `cc_common.compile` to get the
+    # compilation context even if they are only headers. This gives the
     # C++/Objective-C logic in Bazel an opportunity to register its own actions
     # relevant to the headers, like creating a layering check module map.
     # Without this, Swift targets won't be treated as `use`d modules when
     # generating the layering check module map for an `objc_library`, and those
     # layering checks will fail when the Objective-C code tries to import the
     # `swift_library`'s headers.
-    if public_hdrs:
+    if private_hdrs or public_hdrs or srcs:
         # If we have a generated header, we need to create the feature
         # configuration that disables `parse_headers` for the compilation
         # action.
@@ -1314,19 +1379,30 @@ def _create_cc_compilation_context(
                 feature_configuration = feature_configuration,
             )
 
-        compilation_context, _ = cc_common.compile(
+        language = toolchains.swift.cc_language
+        variables_extension = {}
+        if language == "objc":
+            variables_extension["objc_arc"] = ""
+
+        compilation_context, compilation_outputs = cc_common.compile(
             actions = actions,
+            additional_inputs = additional_inputs,
             cc_toolchain = toolchains.cc,
             compilation_contexts = compilation_contexts,
             defines = defines,
             feature_configuration = cc_feature_configuration,
             name = target_name,
             includes = includes,
+            language = language,
+            private_hdrs = private_hdrs,
             public_hdrs = public_hdrs,
+            srcs = srcs,
+            user_compile_flags = copts,
+            variables_extension = variables_extension,
         )
-        return compilation_context
+        return compilation_context, compilation_outputs
 
-    # If there were no headers, create the compilation context manually. This
+    # If there were no C/Objective-C inputs, create the context manually. This
     # avoids having Bazel create an action that results in an empty module map
     # that won't contribute meaningfully to layering checks anyway.
     if defines:
@@ -1336,9 +1412,12 @@ def _create_cc_compilation_context(
     else:
         direct_compilation_contexts = []
 
-    return merge_compilation_contexts(
-        direct_compilation_contexts = direct_compilation_contexts,
-        transitive_compilation_contexts = compilation_contexts,
+    return (
+        merge_compilation_contexts(
+            direct_compilation_contexts = direct_compilation_contexts,
+            transitive_compilation_contexts = compilation_contexts,
+        ),
+        cc_common.create_compilation_outputs(),
     )
 
 def _cross_imported_overlays(

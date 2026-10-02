@@ -52,6 +52,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "expand_make_variables",
     "get_providers",
     "include_developer_search_paths",
 )
@@ -87,8 +88,9 @@ def _maybe_parse_as_library_copts(srcs):
     Returns:
         A list of compiler flags to add to `copts`
     """
-    use_parse_as_library = len(srcs) == 1 and \
-                           srcs[0].basename != "main.swift"
+    swift_srcs = [src for src in srcs if src.extension == "swift"]
+    use_parse_as_library = len(swift_srcs) == 1 and \
+                           swift_srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
 def _generate_test_discovery_srcs(
@@ -258,6 +260,9 @@ def _do_compile(
     Returns:
         The same value as would be returned by `compile`.
     """
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_make_variables(ctx, c_copts, "c_copts")
+
     return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -267,6 +272,7 @@ def _do_compile(
             ctx.attr.copts,
             ctx.attr.swiftc_inputs,
         ) + additional_copts,
+        c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
