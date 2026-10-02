@@ -89,6 +89,7 @@ void WorkProcessor::ProcessWorkRequest(
   std::string emit_objc_header_path;
   bool is_wmo = false;
   bool is_dump_ast = false;
+  bool enable_incremental_file_hashing = false;
 
   std::string prev_arg;
   for (std::string arg : request.arguments) {
@@ -113,6 +114,9 @@ void WorkProcessor::ProcessWorkRequest(
       emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (arg == "-Xwrapped-swift=-enable-incremental-file-hashing") {
+      enable_incremental_file_hashing = true;
+      arg.clear();
     }
 
     if (!arg.empty()) {
@@ -143,6 +147,9 @@ void WorkProcessor::ProcessWorkRequest(
       // incremental mode anyway, but since we control the passing of this flag,
       // there's no reason to pass it when it's a no-op.
       params_file_stream << "-incremental\n";
+      if (enable_incremental_file_hashing) {
+        params_file_stream << "-enable-incremental-file-hashing\n";
+      }
     } else {
       // If WMO or -dump-ast is forcing us out of incremental mode, just put the
       // original output file map back so the outputs end up where they should.

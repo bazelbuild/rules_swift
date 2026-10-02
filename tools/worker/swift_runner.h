@@ -64,6 +64,11 @@ extern bool ArgumentEnablesWMO(const std::string& arg);
 //     the directory afterwards. This should resolve issues where the module
 //     cache state is not refreshed correctly in all situations, which
 //     sometimes results in hard-to-diagnose crashes in `swiftc`.
+//
+// -Xwrapped-swift=-enable-incremental-file-hashing
+//     Indicates that the toolchain supports incremental file hashing. The
+//     persistent worker enables it only for incremental compilations. Other
+//     invocations consume this argument.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.

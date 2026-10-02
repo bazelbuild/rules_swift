@@ -67,6 +67,7 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
+    "SWIFT_FEATURE_INCREMENTAL_FILE_HASHING",
     "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -614,6 +615,13 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [add_arg("-avoid-emit-module-source-info")],
             not_features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE, SWIFT_ACTION_DERIVE_FILES],
+            configurators = [
+                add_arg("-Xwrapped-swift=-enable-incremental-file-hashing"),
+            ],
+            features = [SWIFT_FEATURE_INCREMENTAL_FILE_HASHING],
         ),
     ]
 
