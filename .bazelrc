@@ -1,4 +1,5 @@
 common --check_direct_dependencies=off
+common --module_mirrors=https://bcr.cloudflaremirrors.com
 
 # https://github.com/bazelbuild/stardoc/issues/112
 common --incompatible_allow_tags_propagation
