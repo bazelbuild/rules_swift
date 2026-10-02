@@ -28,12 +28,18 @@ _explicit_json_config = {
     ],
 }
 
+_explicit_without_pcm_config = dict(_explicit_config, **{
+    "//command_line_option:extra_toolchains": ["//test/fixtures/toolchains:toolchain_macos_arm64_with_sdkroot"],
+})
+
 _explicit_command_line_test = make_action_command_line_test_rule(_explicit_config)
 _implicit_command_line_test = make_action_command_line_test_rule(_implicit_config)
 _explicit_json_command_line_test = make_action_command_line_test_rule(_explicit_json_config)
+_explicit_without_pcm_command_line_test = make_action_command_line_test_rule(_explicit_without_pcm_config)
 _explicit_inputs_test = make_action_inputs_test_rule(_explicit_config)
 _implicit_inputs_test = make_action_inputs_test_rule(_implicit_config)
 _explicit_json_inputs_test = make_action_inputs_test_rule(_explicit_json_config)
+_explicit_without_pcm_inputs_test = make_action_inputs_test_rule(_explicit_without_pcm_config)
 _explicit_provider_test = make_provider_test_rule(_explicit_config)
 
 def _mixed_language_coverage_test_impl(ctx):
@@ -121,6 +127,7 @@ def mixed_language_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
         target_under_test = "//examples/xplatform/mixed_c_swift:simple_library",
     )
 
@@ -131,6 +138,36 @@ def mixed_language_test_suite(name, tags = []):
             "simple_library.swift.pcm",
         ],
         not_expected_inputs = ["Private.h"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "//examples/xplatform/mixed_c_swift:simple_library",
+    )
+
+    # The generic toolchain, also used on Linux, doesn't register a Clang
+    # precompile action. Requesting explicit modules must still stage the textual
+    # map and headers when no PCM can be produced.
+    _explicit_without_pcm_command_line_test(
+        name = "{}_public_headers_explicit_without_pcm_flags".format(name),
+        expected_argv = [
+            "-import-underlying-module",
+            "-Xcc -fmodule-map-file=$(BIN_DIR)/examples/xplatform/mixed_c_swift/simple_library_modulemap/_/module.modulemap",
+        ],
+        not_expected_argv = [
+            "-Xcc -fmodule-file=MixedCSwiftLibrary=$(BIN_DIR)/examples/xplatform/mixed_c_swift/simple_library.swift.pcm",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//examples/xplatform/mixed_c_swift:simple_library",
+    )
+
+    _explicit_without_pcm_inputs_test(
+        name = "{}_public_headers_explicit_without_pcm_inputs".format(name),
+        expected_inputs = [
+            "examples/xplatform/mixed_c_swift/simple_library_modulemap/_/module.modulemap",
+            "Private.h",
+        ],
+        not_expected_inputs = ["simple_library.swift.pcm"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "//examples/xplatform/mixed_c_swift:simple_library",
