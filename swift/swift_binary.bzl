@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_helper.bzl", "cc_helper")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
@@ -26,7 +27,11 @@ load(
     "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
     "SWIFT_FEATURE_STATIC_STDLIB",
 )
-load("//swift/internal:features.bzl", "is_feature_enabled")
+load(
+    "//swift/internal:features.bzl",
+    "get_cc_feature_configuration",
+    "is_feature_enabled",
+)
 load(
     "//swift/internal:linking.bzl",
     "configure_features_for_binary",
@@ -246,6 +251,17 @@ def _swift_binary_impl(ctx):
     else:
         output_file = linking_outputs.executable
 
+    cc_helper.create_strip_action(
+        ctx,
+        toolchains.cc,
+        ctx.fragments.cpp,
+        input = output_file,
+        output = ctx.outputs.stripped_binary,
+        feature_configuration = get_cc_feature_configuration(
+            feature_configuration,
+        ),
+    )
+
     providers = [
         DefaultInfo(
             executable = output_file,
@@ -394,5 +410,8 @@ reactor module instead of an executable; see the `linkshared` attribute.
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+    outputs = {
+        "stripped_binary": "%{name}.stripped",
+    },
     toolchains = use_all_toolchains(),
 )

@@ -1,5 +1,6 @@
 """Tests for swift_binary's output path."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/rules:swift_binary_linking_test.bzl",
     "make_swift_binary_linking_test_rule",
@@ -35,6 +36,14 @@ def swift_binary_linking_test_suite(name, tags = []):
         output_binary_path = "test/fixtures/linking/bin",
         tags = all_tags,
         target_under_test = "//test/fixtures/linking:bin",
+    )
+
+    build_test(
+        name = "{}_stripped_output".format(name),
+        tags = all_tags,
+        targets = [
+            "//test/fixtures/linking:bin_without_additional_linker_inputs.stripped",
+        ],
     )
 
     native.test_suite(
