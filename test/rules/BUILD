@@ -5,3 +5,8 @@ exports_files([
     "android_so_abi_test.sh",
     "swift_shell_runner.sh.template",
 ])
+
+exports_files(
+    ["android_compilation_paths_test.sh"],
+    visibility = ["//test:__pkg__"],
+)

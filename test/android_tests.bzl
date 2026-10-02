@@ -1,5 +1,7 @@
 """Test building for android."""
 
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//test:transitions.bzl", "transition_binary")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -36,7 +38,8 @@ def android_test_suite(name):
             "-Xwrapped-swift=-resource-dir",
         ],
         mnemonic = "SwiftCompile",
-        not_expected_argv = ["-resource-dir"],
+        # Include the argument boundary so the wrapped spelling does not match.
+        not_expected_argv = [" -resource-dir"],
         tags = all_tags,
         target_under_test = "//test/fixtures/android:jni_lib",
     )
@@ -58,6 +61,24 @@ def android_test_suite(name):
         mnemonic = "CppLink",
         tags = all_tags,
         target_under_test = "//test/fixtures/android:jni_lib",
+    )
+
+    artifacts = "{}_debug_artifacts".format(name)
+    transition_binary(
+        name = artifacts,
+        compilation_mode = "dbg",
+        platform = str(Label("@rules_android//:arm64-v8a")),
+        tags = all_tags,
+        target = "//test/fixtures/android:jni_lib_artifacts",
+    )
+
+    sh_test(
+        name = "{}_compilation_paths".format(name),
+        size = "small",
+        srcs = ["//test/rules:android_compilation_paths_test.sh"],
+        args = ["$(rootpaths :{})".format(artifacts)],
+        data = [":" + artifacts],
+        tags = all_tags,
     )
 
     android_so_abi_test(
