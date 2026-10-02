@@ -54,8 +54,8 @@ build:windows --noworker_sandboxing
 build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 
 # TODO: Remove once fixed
-build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
-build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
+build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
 
 # ignore warnings in external CC dependencies
 build --features=external_include_paths --host_features=external_include_paths

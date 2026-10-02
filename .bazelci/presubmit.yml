@@ -29,6 +29,8 @@ x_defaults:
       # Exercises XCTest discovery, the test runner, and `swift_test` execution
       # on Windows.
       - "//examples/xplatform/xctest"
+      - "//tools/worker:json_worker_protocol_test"
+      - "//tools/worker:proto_worker_protocol_test"
 
 tasks:
   macos_latest:

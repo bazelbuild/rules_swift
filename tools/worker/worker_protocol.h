@@ -16,7 +16,6 @@
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_WORKER_PROTOCOL_H_
 
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
@@ -87,14 +86,14 @@ struct WorkResponse {
   bool was_cancelled;
 };
 
-// Parses and returns the next `WorkRequest` from the given stream. The format
-// of the stream must be newline-delimited JSON (i.e., each line of the input is
-// a complete JSON object). This function returns `nullopt` if the request could
-// not be read (for example, because the JSON was malformed, or the stream was
-// closed).
+// Parses and returns the next `WorkRequest` from the given stream, using
+// length-delimited protobuf when built with RULES_SWIFT_USE_PROTO_WORKER or
+// newline-delimited JSON otherwise. Returns `nullopt` if the stream is closed
+// or a protobuf request could not be read.
 std::optional<WorkRequest> ReadWorkRequest(std::istream& stream);
 
-// Writes the given `WorkResponse` as compact JSON to the given stream.
+// Writes the given `WorkResponse` using the configured protocol and flushes
+// the stream so that Bazel can immediately read the response.
 void WriteWorkResponse(const WorkResponse& response, std::ostream& stream);
 
 }  // namespace bazel_rules_swift::worker_protocol

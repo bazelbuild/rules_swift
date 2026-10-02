@@ -17,6 +17,13 @@
 #include <iostream>
 #include <optional>
 
+#if defined(RULES_SWIFT_USE_PROTO_WORKER) && defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
+
+#include <cstdio>
+#endif
+
 #include "tools/worker/work_processor.h"
 #include "tools/worker/worker_protocol.h"
 
@@ -83,6 +90,12 @@
 
 int CompileWithWorker(const std::vector<std::string>& args,
                       std::string index_import_path) {
+#if defined(RULES_SWIFT_USE_PROTO_WORKER) && defined(_WIN32)
+  // The protobuf wire format must not undergo Windows text-mode translation.
+  _setmode(_fileno(stdin), _O_BINARY);
+  _setmode(_fileno(stdout), _O_BINARY);
+#endif
+
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the

@@ -13,6 +13,7 @@ _MACOS_MINIMUM_OS = "//command_line_option:macos_minimum_os"
 _PLATFORMS = "//command_line_option:platforms"
 _SWIFTCOPTS = str(Label("//swift:copt"))
 _TVOS_MINIMUM_OS = "//command_line_option:tvos_minimum_os"
+_USE_PROTO_WORKER = str(Label("//swift:use_proto_worker"))
 
 _TRANSITION_OPTIONS = [
     _COMPILATION_MODE,
@@ -24,6 +25,7 @@ _TRANSITION_OPTIONS = [
     _PLATFORMS,
     _SWIFTCOPTS,
     _TVOS_MINIMUM_OS,
+    _USE_PROTO_WORKER,
 ]
 
 def _transition_impl(settings, attr):
@@ -37,6 +39,7 @@ def _transition_impl(settings, attr):
         _PLATFORMS: [attr.platform] if attr.platform else settings[_PLATFORMS],
         _SWIFTCOPTS: settings[_SWIFTCOPTS] + attr.swiftcopts,
         _TVOS_MINIMUM_OS: attr.tvos_minimum_os or settings[_TVOS_MINIMUM_OS],
+        _USE_PROTO_WORKER: attr.worker_protocol == "proto" if attr.worker_protocol else settings[_USE_PROTO_WORKER],
     }
 
 _transition = transition(
@@ -78,6 +81,10 @@ _TRANSITION_ATTRS = {
     "tvos_minimum_os": attr.string(
         doc = "Optional value to set `--tvos_minimum_os` to.",
     ),
+    "worker_protocol": attr.string(
+        doc = "Worker protocol to force; empty preserves the inherited setting.",
+        values = ["", "json", "proto"],
+    ),
 }
 
 def _attrs(target_doc):
@@ -112,7 +119,8 @@ transition_binary = rule(
 
 def _transition_test_impl(ctx):
     target = ctx.attr.target[0]
-    forwarded = ctx.actions.declare_file(ctx.label.name)
+    extension = ".exe" if target.files_to_run.executable.extension == "exe" else ""
+    forwarded = ctx.actions.declare_file(ctx.label.name + extension)
     ctx.actions.symlink(
         output = forwarded,
         target_file = target.files_to_run.executable,
