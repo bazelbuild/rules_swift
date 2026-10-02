@@ -237,7 +237,7 @@ use_repo(system_sdk, "system_sdk")
 swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.4.0",
+    swift_version = "6.3.2",
 )
 use_repo(
     swift,
