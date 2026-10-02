@@ -18,7 +18,7 @@
     "com.android.tools:desugar_jdk_libs_configuration_nio": 1800584355,
     "com.android.tools:desugar_jdk_libs_minimal": 1591858937,
     "com.android.tools:desugar_jdk_libs_nio": 1407847212,
-    "com.android.tools:r8": 1967354745,
+    "com.android.tools:r8": -2123757826,
     "com.android:signflinger": 5110881,
     "com.android:zipflinger": 1989593331,
     "com.beust:jcommander": -1790778431,
@@ -85,7 +85,7 @@
     "com.android.tools.analytics-library:protos": 2027590314,
     "com.android.tools.analytics-library:shared": -2090103599,
     "com.android.tools.analytics-library:tracker": 469112493,
-    "com.android.tools.apkdeployer:apkdeployer": 1221767944,
+    "com.android.tools.apkdeployer:apkdeployer": 1359439786,
     "com.android.tools.apkparser:binary-resources": 422388365,
     "com.android.tools.build.jetifier:jetifier-core": 1531128315,
     "com.android.tools.build.jetifier:jetifier-processor": -2125786732,
@@ -124,7 +124,7 @@
     "com.android.tools:desugar_jdk_libs_minimal": 2138982643,
     "com.android.tools:desugar_jdk_libs_nio": 111027300,
     "com.android.tools:dvlib": 1336874510,
-    "com.android.tools:r8": -647856975,
+    "com.android.tools:r8": 1243832708,
     "com.android.tools:repository": 1486772552,
     "com.android.tools:sdk-common": 1699346456,
     "com.android.tools:sdklib": -212682908,
@@ -676,9 +676,9 @@
     },
     "com.android.tools:r8": {
       "shasums": {
-        "jar": "3b4de3053885da105e39c15212261d22653d6d1b5eb92323dd04ae913cc8286f"
+        "jar": "e4f2d1af4adb39f0f67b4a501a08a93354c2b4f3a116ee4d0813cc87f2db7e51"
       },
-      "version": "9.1.31"
+      "version": "9.3.16"
     },
     "com.android.tools:repository": {
       "shasums": {
@@ -3103,6 +3103,8 @@
       "com.android.tools.r8.androidapi",
       "com.android.tools.r8.assistant.postprocessing",
       "com.android.tools.r8.assistant.runtime",
+      "com.android.tools.r8.com.google.protobuf",
+      "com.android.tools.r8.com.google.protobuf.compiler",
       "com.android.tools.r8.compatproguard",
       "com.android.tools.r8.dex",
       "com.android.tools.r8.diagnostic",
@@ -3118,9 +3120,11 @@
       "com.android.tools.r8.ir.desugar.varhandle",
       "com.android.tools.r8.ir.optimize",
       "com.android.tools.r8.ir.optimize.inliner",
+      "com.android.tools.r8.ir.optimize.unsafe",
       "com.android.tools.r8.it.unimi.dsi.fastutil.ints",
       "com.android.tools.r8.it.unimi.dsi.fastutil.longs",
       "com.android.tools.r8.it.unimi.dsi.fastutil.objects",
+      "com.android.tools.r8.keepradius",
       "com.android.tools.r8.kotlin",
       "com.android.tools.r8.libanalyzer",
       "com.android.tools.r8.metadata",
@@ -3134,6 +3138,7 @@
       "com.android.tools.r8.references",
       "com.android.tools.r8.relocated.keepanno.proto",
       "com.android.tools.r8.relocator",
+      "com.android.tools.r8.resourceshrinker",
       "com.android.tools.r8.retrace",
       "com.android.tools.r8.shaking",
       "com.android.tools.r8.startup",
@@ -5257,8 +5262,8 @@
       ]
     },
     "com.android.tools:r8": {
-      "com.android.tools.r8.internal.lj2": [
-        "com.android.tools.r8.internal.gv1"
+      "com.android.tools.r8.internal.wd2": [
+        "com.android.tools.r8.internal.pp1"
       ]
     },
     "com.google.auto.service:auto-service": {
