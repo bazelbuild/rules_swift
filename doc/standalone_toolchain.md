@@ -158,7 +158,7 @@ for exactly the toolchain's version):
 ```bzl
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3.2",
+    swift_version = "6.4.0",
 )
 
 swift.android_sdk()
@@ -167,7 +167,7 @@ swift.android_sdk()
 # toolchain too. For example, @androidndk//:all from hermetic_android_toolchains:
 android = use_extension("@hermetic_android_toolchains//:extensions.bzl", "android")
 android.sdk(version = "35", build_tools_version = "35.0.0")
-android.ndk(version = "r27c", api_level = 28)
+android.ndk(version = "r30", api_level = 28)
 use_repo(android, "androidndk")
 
 register_toolchains(
