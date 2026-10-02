@@ -30,8 +30,7 @@ swift_toolchain(
     name = "swift_toolchain_wasm32",
     arch = "wasm32",
     copts = [
-        "-resource-dir",
-        _RESOURCE_DIR,
+        "-Xwrapped-swift=-resource-dir=" + _RESOURCE_DIR,
     ],
     features = [
         "swift.module_map_no_private_headers",
