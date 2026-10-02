@@ -360,8 +360,9 @@ SWIFT_FEATURE_GENERATE_PATH_TO_UNDERSCORES_FROM_PROTO_FILES = "swift.generate_pa
 # rather than as part of the compilation.
 SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION = "swift.split_derived_files_generation"
 
-# If enabled the skip function bodies frontend flag is passed when using derived
-# files generation. This requires Swift 5.2
+# If enabled, derived files generation skips non-inlinable function bodies that
+# do not declare nested types, preserving those types for the debugger. This
+# requires Swift 5.4.
 SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES = "swift.skip_function_bodies_for_derived_files"
 
 # If enabled remap the absolute path to Xcode in debug info. When used with
