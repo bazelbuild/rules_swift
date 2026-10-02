@@ -22,7 +22,7 @@ private let xcTestCasePreciseIdentifier = "s:6XCTest0A4CaseC"
 
 /// Collects information from one or more symbol graphs in order to determine which classes and
 /// methods correspond to `XCTest`-style test cases.
-final class SymbolCollector {
+package final class SymbolCollector {
   /// `inheritsFrom` relationships collected from symbol graphs, keyed by their source identifier
   /// (i.e., the subclass in the relationship).
   private var inheritanceRelationships: [String: SymbolGraph.Relationship] = [:]
@@ -51,9 +51,11 @@ final class SymbolCollector {
   /// declared.
   private var modulesForClassIdentifiers: [String: String] = [:]
 
+  package init() {}
+
   /// Collects information from the given symbol graph that is needed to discover test classes and
   /// test methods in the module.
-  func consume(_ symbolGraph: SymbolGraph) {
+  package func consume(_ symbolGraph: SymbolGraph) {
     // First, collect all the inheritance and member relationships from the graph. We cannot filter
     // them at this time, since they only contain the identifiers and might reference symbols in
     // modules whose graphs haven't been processed yet.
@@ -112,7 +114,7 @@ final class SymbolCollector {
 
   /// Returns a `DiscoveredTests` value containing structured information about the tests discovered
   /// in the symbol graph.
-  func discoveredTests() -> DiscoveredTests {
+  package func discoveredTests() -> DiscoveredTests {
     var discoveredTests = DiscoveredTests()
 
     for method in possibleTestMethods {

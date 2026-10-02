@@ -15,7 +15,7 @@
 extension String.StringInterpolation {
   /// Appends the given string to a string interpolation, escaping any characters with special XML
   /// meanings.
-  mutating func appendInterpolation<S: StringProtocol>(xmlEscaping string: S) {
+  package mutating func appendInterpolation<S: StringProtocol>(xmlEscaping string: S) {
     var remainder = string[...]
     while let escapeIndex = remainder.firstIndex(where: { xmlEscapeMapping[$0] != nil }) {
       appendLiteral(String(remainder[..<escapeIndex]))

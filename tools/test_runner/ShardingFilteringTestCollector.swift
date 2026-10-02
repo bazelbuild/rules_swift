@@ -17,7 +17,7 @@ import Foundation
 /// Types representing tests that can be processed by the test collector should implement this
 /// protocol to provide the test identifier that will be checked against the `--test_filter`
 /// regular expression.
-protocol Testable {
+package protocol Testable {
   /// The unique identifier for this test, which will be checked against the `--test_filter`
   /// regular expression.
   var testIdentifier: String { get }
@@ -25,13 +25,13 @@ protocol Testable {
 
 /// A test collector that filters out tests that should not be run in the current shard and also
 /// filters out tests that do not match the `--test_filter` regular expression.
-struct ShardingFilteringTestCollector<Test: Testable> {
-  struct Error: Swift.Error, CustomStringConvertible {
-    var message: String
-    var description: String { message }
+package struct ShardingFilteringTestCollector<Test: Testable> {
+  package struct Error: Swift.Error, CustomStringConvertible {
+    package var message: String
+    package var description: String { message }
   }
 
-  private(set) var testsInCurrentShard: [Test]
+  package private(set) var testsInCurrentShard: [Test]
 
   private var shardCount: Int
   private var shardIndex: Int
@@ -48,17 +48,18 @@ struct ShardingFilteringTestCollector<Test: Testable> {
   ///
   /// This property can be used as a fast-path to avoid walking the test hierarchy if no
   /// sharding or filtering is requested.
-  var willShardOrFilter: Bool {
+  package var willShardOrFilter: Bool {
     shardCount != 0 || filter != nil
   }
 
   /// Creates a new test collector.
   ///
+  /// - Parameter environment: The environment dictionary to read sharding and filtering variables
+  ///   from. Defaults to the current process's environment.
   /// - Throws: If the environment variables indicating sharding and/or filtering are invalid.
-  init() throws {
+  package init(environment: [String: String] = ProcessInfo.processInfo.environment) throws {
     // Bazel requires us to write out an empty file at this path to tell it that we support
     // sharding.
-    let environment = ProcessInfo.processInfo.environment
     if let statusPath = environment["TEST_SHARD_STATUS_FILE"] {
       guard FileManager.default.createFile(atPath: statusPath, contents: nil, attributes: nil)
       else {
@@ -93,7 +94,7 @@ struct ShardingFilteringTestCollector<Test: Testable> {
   ///
   /// If the test does not match the `--test_filter` regular expression, it will be ignored. If it
   /// belongs in the current shard, it will be added to the list of tests to run in that shard.
-  mutating func addTest(_ test: Test) {
+  package mutating func addTest(_ test: Test) {
     guard isIncludedByFilter(test.testIdentifier) else {
       // Tests that are filtered out do not advance the shard.
       return

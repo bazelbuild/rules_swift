@@ -13,43 +13,43 @@
 // limitations under the License.
 
 /// Structured information about test classes and methods discovered by scanning symbol graphs.
-struct DiscoveredTests {
+package struct DiscoveredTests {
   /// The modules containing test classes/methods that were discovered in the symbol graph, keyed by
   /// the module name.
-  var modules: [String: Module] = [:]
+  package var modules: [String: Module] = [:]
 }
 
 extension DiscoveredTests {
   /// Information about a module discovered in the symbol graphs that contains tests.
-  struct Module {
+  package struct Module {
     /// The name of the module.
-    var name: String
+    package var name: String
 
     /// The `XCTestCase`-inheriting classes (or extensions to `XCTestCase`-inheriting classes) in
     /// the module, keyed by the class name.
-    var classes: [String: Class] = [:]
+    package var classes: [String: Class] = [:]
   }
 }
 
 extension DiscoveredTests {
   /// Information about a class or class extension discovered in the symbol graphs that inherits
   /// (directly or indirectly) from `XCTestCase`.
-  struct Class {
+  package struct Class {
     /// The name of the `XCTestCase`-inheriting class.
-    var name: String
+    package var name: String
 
     /// The methods that were discovered in the class to represent tests.
-    var methods: [Method] = []
+    package var methods: [Method] = []
   }
 }
 
 extension DiscoveredTests {
   /// Information about a discovered test method in an `XCTestCase` subclass.
-  struct Method {
+  package struct Method {
     /// The name of the discovered test method.
-    var name: String
+    package var name: String
 
     /// Indicates whether the test method was declared `async` or not.
-    var isAsync: Bool
+    package var isAsync: Bool
   }
 }

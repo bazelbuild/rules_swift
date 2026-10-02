@@ -66,6 +66,8 @@ public final class XUnitTestRecorder: Sendable {
   /// The context that is mutated by the test reader, protected by a lock.
   private let context: Locked<Context> = Locked(.init())
 
+  package init() {}
+
   /// Indicates whether any tests have run.
   public var didTestsRun: Bool {
     context.withLock { context in
@@ -82,8 +84,13 @@ public final class XUnitTestRecorder: Sendable {
 
   /// Writes the test results to the XML output file dictated by the environment variable passed by
   /// Bazel.
-  public func writeXML() throws {
-    guard let outputPath = ProcessInfo.processInfo.environment["XML_OUTPUT_FILE"] else {
+  ///
+  /// - Parameter environment: The environment dictionary to read `XML_OUTPUT_FILE` from. Defaults
+  ///   to the current process's environment.
+  public func writeXML(
+    environment: [String: String] = ProcessInfo.processInfo.environment
+  ) throws {
+    guard let outputPath = environment["XML_OUTPUT_FILE"] else {
       return
     }
     let output = context.withLock { context in
@@ -234,7 +241,8 @@ extension InstantProtocol {
   /// The two instants must be of the same type.
   fileprivate func duration(to other: any InstantProtocol) -> Duration {
     guard let other = other as? Self else {
-      preconditionFailure("""
+      preconditionFailure(
+        """
         Internal error: Instant types must be the same, but got \
         \(type(of: self)) and \(type(of: other))
         """)

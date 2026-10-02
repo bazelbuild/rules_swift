@@ -1,4 +1,5 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(
     default_visibility = [
@@ -80,6 +81,25 @@ cc_library(
     name = "temp_file",
     hdrs = ["temp_file.h"],
     deps = ["@com_google_absl//absl/strings"],
+)
+
+cc_test(
+    name = "common_test",
+    srcs = ["common_test.cc"],
+    deps = [
+        ":bazel_substitutions",
+        ":color",
+        ":file_system",
+        ":path_utils",
+        ":process",
+        ":status",
+        ":target_triple",
+        ":temp_file",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 # Consumed by Bazel integration tests.

@@ -46,17 +46,17 @@ private func allTestsIdentifier(for module: DiscoveredTests.Module) -> String {
 
 /// Prints discovered test entries and a test runner as Swift source code to be compiled in order to
 /// run the tests.
-struct SymbolGraphTestPrinter {
+package struct SymbolGraphTestPrinter {
   /// The discovered tests whose entries and runner should be printed as Swift source code.
-  let discoveredTests: DiscoveredTests
+  package let discoveredTests: DiscoveredTests
 
-  init(discoveredTests: DiscoveredTests) {
+  package init(discoveredTests: DiscoveredTests) {
     self.discoveredTests = discoveredTests
   }
 
   /// Writes the accessor for the test entries discovered in the given module to a Swift source
   /// file.
-  func printTestEntries(forModule moduleName: String, toFileAt url: URL) {
+  package func printTestEntries(forModule moduleName: String, toFileAt url: URL) {
     guard let discoveredModule = discoveredTests.modules[moduleName] else {
       // No tests were discovered in a module passed to the tool, but Bazel still declared the file
       // and expects us to generate something, so print an "empty" file for it to compile.
@@ -132,7 +132,7 @@ struct SymbolGraphTestPrinter {
   }
 
   /// Returns the Swift source code for the test runner.
-  func testRunnerSource() -> String {
+  package func testRunnerSource() -> String {
     var contents = """
       \(availabilityAttribute)
       @MainActor
