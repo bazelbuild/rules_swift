@@ -99,6 +99,10 @@ SWIFT_FEATURE_EMIT_LOCALIZED_STRINGS = "swift.emit_localized_strings"
 # https://docs.google.com/document/d/1cH2sTpgSnJZCkZtJl1aY-rzy4uGPcrI-6RrUpdATO2Q/
 SWIFT_FEATURE_INDEX_WHILE_BUILDING = "swift.index_while_building"
 
+# Compress index-store unit and record files when indexing is enabled Index
+# readers must support compressed stores.
+SWIFT_FEATURE_INDEX_STORE_COMPRESS = "swift.index_store_compress"
+
 # If enabled alongside `swift.index_while_building`, the indexstore will not
 # contain records for symbols in system modules imported by the code being
 # indexed.

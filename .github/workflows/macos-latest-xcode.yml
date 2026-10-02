@@ -39,9 +39,10 @@ jobs:
           test_targets_file=$(mktemp)
           trap 'rm -f "$test_targets_file"' EXIT
 
-          DEVELOPER_DIR="$developer_dir" bazel query 'tests(rdeps(//..., //test/hermetic_pcm:xcode_at_least_26_4))' > "$test_targets_file"
+          # Select individual test rules without expanding their test suites.
+          DEVELOPER_DIR="$developer_dir" bazel query 'kind(".*_test rule", rdeps(//..., //test:xcode_at_least_26_4))' > "$test_targets_file"
           if [[ ! -s "$test_targets_file" ]]; then
-            echo "No tests found for //test/hermetic_pcm:xcode_at_least_26_4" >&2
+            echo "No tests found for //test:xcode_at_least_26_4" >&2
             exit 1
           fi
           DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors --build_tests_only --target_pattern_file="$test_targets_file"

@@ -1,4 +1,5 @@
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("//test/hermetic_pcm:xcode_version_at_least.bzl", "xcode_version_at_least")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
 load(":android_tests.bzl", "android_test_suite")
 load(":aspect_tests.bzl", "aspect_tests")
@@ -13,6 +14,7 @@ load(":environment_tests.bzl", "environment_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":imported_framework_tests.bzl", "imported_framework_test_suite")
+load(":index_store_compress_tests.bzl", "index_store_compress_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":layering_check_tests.bzl", "layering_check_test_suite")
 load(":localized_strings_tests.bzl", "localized_strings_test_suite")
@@ -39,6 +41,18 @@ load(":xctest_runner_tests.bzl", "xctest_runner_test_suite")
 
 licenses(["notice"])
 
+xcode_version_at_least(
+    name = "xcode_at_least_26_4",
+    minimum_version = "26.4",
+    visibility = ["//test:__subpackages__"],
+)
+
+config_setting(
+    name = "xcode_26_4_or_newer",
+    flag_values = {":xcode_at_least_26_4": "True"},
+    visibility = ["//test:__subpackages__"],
+)
+
 additional_linker_inputs_test_suite(name = "additional_linker_inputs")
 
 android_test_suite(name = "android")
@@ -64,6 +78,8 @@ features_test_suite(name = "features")
 generated_header_test_suite(name = "generated_header")
 
 imported_framework_test_suite(name = "imported_framework")
+
+index_store_compress_test_suite(name = "index_store_compress")
 
 interop_hints_test_suite(name = "interop_hints")
 
