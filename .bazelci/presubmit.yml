@@ -21,6 +21,7 @@ x_defaults:
     platform: windows
     build_targets:
       - "//tools/..."
+      - "@swift_argument_parser//:ArgumentParser"
       # Cross-platform Swift examples that exercise the Windows host toolchain:
       # a `swift_binary` executable and a `linkshared` Windows DLL.
       - "//examples/xplatform/hello_world"
