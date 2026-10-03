@@ -20,6 +20,22 @@ negatively impact the IDE experience, more testing is needed):
 build --features=swift.use_explicit_swift_module_map --host_features=swift.use_explicit_swift_module_map
 ```
 
+## Optional: Header pruning
+
+With explicit modules enabled as above, you can optionally reduce PCM
+compilation inputs by pruning redundant transitive C/Objective-C headers.
+To enable this optimization, add this to your `.bazelrc`:
+
+```
+build --features=swift.layering_check_for_c_deps --host_features=swift.layering_check_for_c_deps
+```
+
+This enables Clang layering checks, so targets must declare direct
+dependencies on the modules their headers include. Required headers are
+retained automatically. If you have enabled
+`swift.headers_always_action_inputs` (disabled by default), disable it
+to allow pruning.
+
 ## Debugging
 
 In order to debug your application built with explicit modules in `lldb`
