@@ -90,3 +90,12 @@ swift_module_mapping_test(
     tags = FIXTURE_TAGS,
     deps = [":ExistingLibrary"],
 )
+
+swift_module_mapping(
+    name = "duplicate_alias_mapping",
+    aliases = {
+        "FirstOriginal": "SameAlias",
+        "SecondOriginal": "SameAlias",
+    },
+    tags = FIXTURE_TAGS,
+)

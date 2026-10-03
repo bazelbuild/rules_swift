@@ -204,6 +204,10 @@ bzl_library(
 bzl_library(
     name = "swift_protoc_gen_aspect",
     srcs = ["swift_protoc_gen_aspect.bzl"],
+    visibility = [
+        "//swift:__subpackages__",
+        "//test:__pkg__",
+    ],
     deps = [
         ":attrs",
         ":compiling",

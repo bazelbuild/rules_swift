@@ -5,12 +5,15 @@ load(":debug_settings_tests.bzl", "debug_settings_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
+load(":label_module_name_tests.bzl", "label_module_name_test_suite")
+load(":layering_check_tests.bzl", "layering_check_test_suite")
 load(":local_defines_tests.bzl", "local_defines_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":overlay_tests.bzl", "overlay_test_suite")
 load(":parallel_compilation_tests.bzl", "parallel_compilation_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
+load(":proto_tests.bzl", "proto_test_suite")
 load(":swift_test_and_binary_tests.bzl", "swift_test_and_binary_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
@@ -44,6 +47,14 @@ interop_hints_test_suite(
     name = "interop_hints",
 )
 
+label_module_name_test_suite(
+    name = "label_module_name",
+)
+
+layering_check_test_suite(
+    name = "layering_check",
+)
+
 local_defines_test_suite(
     name = "local_defines",
 )
@@ -66,6 +77,10 @@ parallel_compilation_test_suite(
 
 private_deps_test_suite(
     name = "private_deps",
+)
+
+proto_test_suite(
+    name = "proto",
 )
 
 swift_test_and_binary_test_suite(
@@ -100,9 +115,12 @@ bzl_library(
     name = "starlark_tests_bzls",
     srcs = glob(["*.bzl"]),
     deps = [
+        "//swift:module_name",
         "//swift:swift_clang_module_aspect",
         "//swift:swift_module_mapping_test",
+        "//swift/internal:swift_protoc_gen_aspect",
         "//test/rules:starlark_tests_bzls",
+        "@bazel_skylib//lib:unittest",
         "@bazel_skylib//rules:build_test",
     ],
 )

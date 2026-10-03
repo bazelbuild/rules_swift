@@ -19,6 +19,7 @@ load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
     "SwiftClangModuleAspectInfo",
+    "SwiftProtoInfo",
 )
 load(":expected_files.bzl", "compare_expected_files")
 
@@ -43,6 +44,7 @@ _aspect_action_retrieving_aspect = aspect(
     implementation = _aspect_action_retrieving_aspect_impl,
     required_aspect_providers = [
         [SwiftClangModuleAspectInfo],
+        [SwiftProtoInfo],
     ],
 )
 

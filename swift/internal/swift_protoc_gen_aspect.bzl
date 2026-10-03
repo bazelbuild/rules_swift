@@ -42,6 +42,7 @@ load(":utils.bzl", "get_compilation_contexts")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
+    "@build_bazel_rules_swift//test/...",
 ])
 
 SwiftProtoCompilationInfo = provider(

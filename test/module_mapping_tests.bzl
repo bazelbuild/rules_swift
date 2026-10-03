@@ -22,8 +22,14 @@ load(
     "@build_bazel_rules_swift//swift:swift_module_mapping_test.bzl",
     "swift_module_mapping_test",
 )
+load(
+    "@build_bazel_rules_swift//test/rules:analysis_failure_test.bzl",
+    "make_analysis_failure_test_rule",
+)
 
 visibility("private")
+
+analysis_failure_test = make_analysis_failure_test_rule()
 
 def module_mapping_test_suite(name, tags = []):
     """Tests for Swift module aliases using the `:module_mapping` flag.
@@ -65,6 +71,15 @@ def module_mapping_test_suite(name, tags = []):
         deps = [
             "@build_bazel_rules_swift//test/fixtures/module_mapping:ExistingLibrary",
         ],
+    )
+
+    # Verify that a `swift_module_mapping` that maps two original module names
+    # to the same alias fails analysis.
+    analysis_failure_test(
+        name = "{}_duplicate_alias_fails".format(name),
+        expected_message = "Cannot alias SecondOriginal to SameAlias; it was already aliased to FirstOriginal",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_mapping:duplicate_alias_mapping",
     )
 
     native.test_suite(
