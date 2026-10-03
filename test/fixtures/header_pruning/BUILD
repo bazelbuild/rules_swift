@@ -181,11 +181,16 @@ cc_library(
     deps = [":pure"],
 )
 
+# This fixture requires the Xcode toolchain's SwiftPrecompileCModule action.
 legacy_precompile(
     name = "legacy",
     hdrs = ["top.h"],
     module_map = "legacy.modulemap",
     tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [":middle"],
 )
 
@@ -194,12 +199,20 @@ cc_library(
     hdrs = ["empty.h"],
     aspect_hints = ["//swift:auto_module"],
     tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [":legacy"],
 )
 
 pcm_files(
     name = "pcm_files",
     tags = FIXTURE_TAGS,
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":custom_consumer",
         ":excluded_consumer",
@@ -215,6 +228,10 @@ transition_binary(
     name = "pruned_pcms",
     tags = FIXTURE_TAGS,
     target = ":pcm_files",
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",

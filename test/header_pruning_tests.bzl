@@ -44,6 +44,12 @@ def header_pruning_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
+    # Only the Xcode toolchain registers SwiftPrecompileCModule actions.
+    pcm_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    })
+
     # Keep direct dependency headers, but prune headers embedded in their PCMs.
     _pruned_test(
         name = "{}_top".format(name),
@@ -56,6 +62,7 @@ def header_pruning_test_suite(name, tags = []):
         mnemonic = "SwiftPrecompileCModule",
         not_expected_inputs = ["leaf.h"],
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:top",
     )
 
@@ -73,6 +80,7 @@ def header_pruning_test_suite(name, tags = []):
             "top.h",
         ],
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:through_pure",
     )
 
@@ -86,6 +94,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:legacy",
     )
 
@@ -99,6 +108,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:legacy_consumer",
     )
 
@@ -112,6 +122,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:system",
     )
 
@@ -125,6 +136,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:textual_consumer",
     )
 
@@ -138,6 +150,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:excluded",
     )
 
@@ -151,6 +164,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:excluded_consumer",
     )
 
@@ -163,6 +177,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:custom",
     )
 
@@ -175,6 +190,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:custom_consumer",
     )
 
@@ -188,6 +204,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:umbrella_consumer",
     )
 
@@ -201,6 +218,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:inc_consumer",
     )
 
@@ -215,6 +233,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:generated",
     )
 
@@ -224,6 +243,7 @@ def header_pruning_test_suite(name, tags = []):
         expected_inputs = ["leaf.h"],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:top",
     )
 
@@ -233,6 +253,7 @@ def header_pruning_test_suite(name, tags = []):
         expected_inputs = ["leaf.h"],
         mnemonic = "SwiftPrecompileCModule",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:top",
     )
 
@@ -250,6 +271,7 @@ def header_pruning_test_suite(name, tags = []):
             "leaf.h",
         ],
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:consumer",
     )
 
@@ -263,6 +285,7 @@ def header_pruning_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompile",
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
         target_under_test = "//test/fixtures/header_pruning:consumer",
     )
 
@@ -298,6 +321,7 @@ def header_pruning_test_suite(name, tags = []):
         name = "{}_build".format(name),
         targets = ["//test/fixtures/header_pruning:pruned_pcms"],
         tags = all_tags,
+        target_compatible_with = pcm_compatible_with,
     )
 
     build_test(
