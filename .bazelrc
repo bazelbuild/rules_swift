@@ -52,11 +52,19 @@ build:windows --noworker_sandboxing
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
-build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+# These Clang warning flags are not supported by MSVC.
+build:linux --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+build:macos --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 
 # TODO: Remove once fixed
-build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
-build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
+build:linux --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:linux --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:macos --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:macos --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+
+# MSVC reports C4715 for the exhaustive enum switch in protobuf's string parser.
+build:windows --per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
+build:windows --host_per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
 
 # ignore warnings in external CC dependencies
 build --features=external_include_paths --host_features=external_include_paths

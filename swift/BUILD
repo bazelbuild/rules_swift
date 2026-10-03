@@ -401,6 +401,18 @@ bool_flag(
     build_setting_default = False,
 )
 
+# Use the protobuf persistent worker protocol instead of JSON.
+bool_flag(
+    name = "use_proto_worker",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_proto_worker_enabled",
+    flag_values = {":use_proto_worker": "true"},
+    visibility = ["//tools/worker:__pkg__"],
+)
+
 config_setting(
     name = "universal_tools_config",
     flag_values = {

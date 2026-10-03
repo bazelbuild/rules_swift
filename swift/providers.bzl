@@ -461,6 +461,10 @@ when `swift.static_stdlib` is enabled; it is not propagated by libraries.
 compiler and other Swift tools (for both incremental and non-incremental
 compiles).
 """,
+        "swift_worker_protocol": """\
+`String`. The persistent worker protocol ("json" or "proto") supported by
+`swift_worker`.
+""",
         "system_modules": """\
 A `struct` with the following fields, which represent providers from targets
 that should be added as implicit dependencies of any compilation or

@@ -982,6 +982,7 @@ def _xcode_swift_toolchain_impl(ctx):
             [ctx.attr.implicit_system_modules] if ctx.attr.implicit_system_modules else [],
         ),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+        swift_worker_protocol = "proto" if ctx.attr._use_proto_worker[BuildSettingInfo].value else "json",
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
             binary_name = "{bundle_name}.xctest/Contents/MacOS/{name}",
@@ -1149,6 +1150,11 @@ to the compiler for exec transition builds.
             "_module_mapping": attr.label(
                 default = Label("//swift:module_mapping"),
                 providers = [[SwiftModuleAliasesInfo]],
+            ),
+            "_use_proto_worker": attr.label(
+                cfg = "exec",
+                default = Label("//swift:use_proto_worker"),
+                providers = [BuildSettingInfo],
             ),
             "_worker": attr.label(
                 cfg = "exec",

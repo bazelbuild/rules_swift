@@ -872,6 +872,7 @@ def _swift_toolchain_impl(ctx):
         system_modules = collect_implicit_deps_providers([]),
         implicit_system_modules = collect_implicit_deps_providers([]),
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
+        swift_worker_protocol = "proto" if ctx.attr._use_proto_worker[BuildSettingInfo].value else "json",
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,
         test_configuration = struct(
             binary_name = "{name}",
@@ -1043,6 +1044,11 @@ to the compiler for exec transition builds.
             "_module_mapping": attr.label(
                 default = Label("//swift:module_mapping"),
                 providers = [[SwiftModuleAliasesInfo]],
+            ),
+            "_use_proto_worker": attr.label(
+                cfg = "exec",
+                default = Label("//swift:use_proto_worker"),
+                providers = [BuildSettingInfo],
             ),
             "_worker": attr.label(
                 cfg = "exec",
