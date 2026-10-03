@@ -5,6 +5,12 @@ load("//test:transitions.bzl", "transition_test")
 
 licenses(["notice"])
 
+# Share the version flag used to discover tests for the Xcode 26.4 CI job.
+config_setting(
+    name = "xcode_26_4_or_newer",
+    flag_values = {"//test/hermetic_pcm:xcode_at_least_26_4": "True"},
+)
+
 swift_compiler_plugin(
     name = "nested_macros",
     srcs = ["NestedMacros.swift"],
@@ -43,4 +49,9 @@ transition_test(
     args = ["test/macro_expansions/nested_macro_user.macro-expansions"],
     compilation_mode = "dbg",
     target = ":_macro_expansion_paths_test",
+    target_compatible_with = select({
+        ":xcode_26_4_or_newer": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )

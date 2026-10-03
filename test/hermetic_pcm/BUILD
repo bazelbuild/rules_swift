@@ -12,6 +12,7 @@ load(":xcode_version_at_least.bzl", "xcode_version_at_least")
 xcode_version_at_least(
     name = "xcode_at_least_26_4",
     minimum_version = "26.4",
+    visibility = ["//test/macro_expansions:__pkg__"],
 )
 
 config_setting(
