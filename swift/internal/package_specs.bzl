@@ -16,6 +16,7 @@
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
+    "@build_bazel_rules_swift//test/...",
 ])
 
 def _parse_package_spec(*, package_spec, workspace_name):

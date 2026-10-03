@@ -11,6 +11,7 @@ load(":local_defines_tests.bzl", "local_defines_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":overlay_tests.bzl", "overlay_test_suite")
+load(":package_configuration_tests.bzl", "package_configuration_test_suite")
 load(":parallel_compilation_tests.bzl", "parallel_compilation_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":proto_tests.bzl", "proto_test_suite")
@@ -71,6 +72,10 @@ overlay_test_suite(
     name = "overlay",
 )
 
+package_configuration_test_suite(
+    name = "package_configuration",
+)
+
 parallel_compilation_test_suite(
     name = "parallel_compilation",
 )
@@ -116,8 +121,11 @@ bzl_library(
     srcs = glob(["*.bzl"]),
     deps = [
         "//swift:module_name",
+        "//swift:providers",
         "//swift:swift_clang_module_aspect",
+        "//swift:swift_common",
         "//swift:swift_module_mapping_test",
+        "//swift/internal:package_specs",
         "//swift/internal:swift_protoc_gen_aspect",
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//lib:unittest",

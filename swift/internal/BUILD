@@ -181,6 +181,10 @@ bzl_library(
 bzl_library(
     name = "package_specs",
     srcs = ["package_specs.bzl"],
+    visibility = [
+        "//swift:__subpackages__",
+        "//test:__subpackages__",
+    ],
 )
 
 bzl_library(
