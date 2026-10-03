@@ -191,10 +191,16 @@ system_sdk.configure_sdks(
         "AppleTVOS": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
+            # Xcode 27.0–27.2 ship these overlays without their tvOS dependencies.
+            "_AppIntents_HealthKit",
+            "_Contacts_AppIntents",
         ],
         "AppleTVSimulator": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
+            # Xcode 27.0–27.2 ship these overlays without their tvOS dependencies.
+            "_AppIntents_HealthKit",
+            "_Contacts_AppIntents",
         ],
         "MacOSX": [
             "MobileGestaltPrivate",

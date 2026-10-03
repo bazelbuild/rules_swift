@@ -1,0 +1,5 @@
+module HermeticUmbrella {
+    umbrella header "Umbrella.h"
+    export *
+    module * { export * }
+}

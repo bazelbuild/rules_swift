@@ -165,6 +165,10 @@ SWIFT_FEATURE_CODEVIEW_DEBUG_INFO = "swift.codeview_debug_info"
 # themselves will still be treated as modulemap-relative.
 SWIFT_FEATURE_MODULE_HOME_IS_CWD = "swift.module_home_is_cwd"
 
+# Preload textual module maps before reading workspace-relative PCMs, working
+# around Clang's missing module directory crash in Xcode 27.
+SWIFT_FEATURE__PRELOAD_C_MODULE_MAPS = "swift._preload_c_module_maps"
+
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
 # (i.e., the workspace root); if disabled, header paths in module maps are
