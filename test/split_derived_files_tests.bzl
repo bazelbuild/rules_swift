@@ -48,14 +48,14 @@ split_swiftmodule_provider_test = make_provider_test_rule(
     },
 )
 
-split_swiftmodule_skip_function_bodies_test = make_action_command_line_test_rule(
+split_swiftmodule_no_skip_function_bodies_test = make_action_command_line_test_rule(
     config_settings = {
         str(Label("//swift:copt")): [
             "-whole-module-optimization",
         ],
         "//command_line_option:features": [
             "swift.split_derived_files_generation",
-            "swift.enable_skip_function_bodies",
+            "-swift.skip_function_bodies_for_derived_files",
         ],
     },
 )
@@ -159,6 +159,8 @@ def split_derived_files_test_suite(name, tags = []):
             "simple.output_file_map.json",
         ],
         not_expected_argv = [
+            "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
             "simple.derived_output_file_map.json",
         ],
         mnemonic = "SwiftCompile",
@@ -310,6 +312,8 @@ def split_derived_files_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         not_expected_argv = [
             "-emit-module-path",
+            "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
             "simple.derived_output_file_map.json",
         ],
         tags = all_tags,
@@ -322,11 +326,13 @@ def split_derived_files_test_suite(name, tags = []):
             "-avoid-emit-module-source-info",
             "-emit-module-path",
             "-enable-batch-mode",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
             "simple.derived_output_file_map.json",
         ],
         mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
+            "-experimental-skip-non-inlinable-function-bodies",
             "simple.output_file_map.json",
         ],
         tags = all_tags,
@@ -451,7 +457,7 @@ def split_derived_files_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    split_swiftmodule_skip_function_bodies_test(
+    split_swiftmodule_wmo_test(
         name = "{}_no_skip_function_bodies".format(name),
         expected_argv = [
             "-emit-object",
@@ -459,19 +465,35 @@ def split_derived_files_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         not_expected_argv = [
             "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    split_swiftmodule_skip_function_bodies_test(
+    split_swiftmodule_wmo_test(
         name = "{}_skip_function_bodies".format(name),
         expected_argv = [
-            "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
         ],
         mnemonic = "SwiftDeriveFiles",
         not_expected_argv = [
             "-emit-object",
+            "-experimental-skip-non-inlinable-function-bodies",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    split_swiftmodule_no_skip_function_bodies_test(
+        name = "{}_skip_function_bodies_disabled".format(name),
+        expected_argv = [
+            "-emit-module-path",
+        ],
+        mnemonic = "SwiftDeriveFiles",
+        not_expected_argv = [
+            "-experimental-skip-non-inlinable-function-bodies",
+            "-experimental-skip-non-inlinable-function-bodies-without-types",
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/debug_settings:simple",

@@ -1200,11 +1200,12 @@ def compile_action_configs(
             configurators = [_package_name_configurator],
         ),
 
-        # Extra flags for swiftmodule only compilations.
+        # Match the driver's body-skipping mode for module emission, preserving
+        # bodies that declare nested types needed by the debugger.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
             configurators = [
-                add_arg("-experimental-skip-non-inlinable-function-bodies"),
+                add_arg("-experimental-skip-non-inlinable-function-bodies-without-types"),
             ],
             features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES],
         ),
