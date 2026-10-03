@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
           runfiles->Rlocation("rules_swift_index_import_5_8/index-import");
     } else {
       index_import_path =
-          runfiles->Rlocation("rules_swift_index_import_6_1/index-import");
+          runfiles->Rlocation("rules_swift_index_import_6_4/index-import");
     }
   }
 
