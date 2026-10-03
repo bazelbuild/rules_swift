@@ -209,6 +209,9 @@ def _mixed_language_library_impl(ctx):
                     compilation_context = cc_info.compilation_context,
                     module_map = extended_module_map,
                     precompiled_module = precompiled_module,
+                    unchecked_include_headers = (
+                        compile_result.clang_module.unchecked_include_headers if compile_result else None
+                    ),
                 ),
                 label = ctx.label,
                 swift = swift_module.swift,

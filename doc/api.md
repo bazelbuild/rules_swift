@@ -622,7 +622,7 @@ check it.
 swift_common.precompile_clang_module(*, <a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
                                      <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>, <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>,
                                      <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchains">toolchains</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>,
-                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>, <a href="#swift_common.precompile_clang_module-user_compile_flags">user_compile_flags</a>)
+                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>, <a href="#swift_common.precompile_clang_module-unchecked_include_headers">unchecked_include_headers</a>, <a href="#swift_common.precompile_clang_module-user_compile_flags">user_compile_flags</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -643,6 +643,7 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers representing dependencies required to compile this module.   |  `[]` |
+| <a id="swift_common.precompile_clang_module-unchecked_include_headers"></a>unchecked_include_headers |  A `depset` of `File`s that can be reached by `#include`s in the files of this module that Clang does not layering-check, such as all of the module's transitive headers if its module map declares excluded headers. If this is not `None` and `swift.layering_check_for_c_deps` is enabled, only the headers that Clang can read while compiling the module are provided as inputs: the headers of the module and of its direct dependencies, the headers in this `depset`, and the headers of dependencies that don't have a precompiled module or that can be reached by includes that Clang does not check. If `None` (the default), all of the headers in `cc_compilation_context` are provided as inputs, and the returned `clang_module` treats all of them as reachable by such includes.   |  `None` |
 | <a id="swift_common.precompile_clang_module-user_compile_flags"></a>user_compile_flags |  Additional Clang flags to pass to the precompile action. Each flag is forwarded to the underlying clang invocation via `-Xcc`.   |  `[]` |
 
 **RETURNS**

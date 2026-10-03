@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES",
     "SWIFT_FEATURE_MODULAR_INDEXING",
@@ -1007,6 +1008,7 @@ def precompile_clang_module(
         toolchains = None,
         toolchain_type = SWIFT_TOOLCHAIN_TYPE,
         swift_infos = [],
+        unchecked_include_headers = None,
         user_compile_flags = []):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -1038,6 +1040,18 @@ def precompile_clang_module(
         toolchain_type: The toolchain type of the Swift toolchain.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
+        unchecked_include_headers: A `depset` of `File`s that can be reached by
+            `#include`s in the files of this module that Clang does not
+            layering-check, such as all of the module's transitive headers if
+            its module map declares excluded headers. If this is not `None` and
+            `swift.layering_check_for_c_deps` is enabled, only the headers that
+            Clang can read while compiling the module are provided as inputs:
+            the headers of the module and of its direct dependencies, the
+            headers in this `depset`, and the headers of dependencies that don't
+            have a precompiled module or that can be reached by includes that
+            Clang does not check. If `None` (the default), all of the headers in
+            `cc_compilation_context` are provided as inputs, and the returned
+            `clang_module` treats all of them as reachable by such includes.
         user_compile_flags: Additional Clang flags to pass to the precompile
             action. Each flag is forwarded to the underlying clang invocation
             via `-Xcc`.
@@ -1068,6 +1082,7 @@ def precompile_clang_module(
         target_name = target_name,
         toolchains = toolchains,
         toolchain_type = toolchain_type,
+        unchecked_include_headers = unchecked_include_headers,
         user_compile_flags = user_compile_flags,
     )
 
@@ -1085,6 +1100,7 @@ def _precompile_clang_module(
         target_name,
         toolchains = None,
         toolchain_type,
+        unchecked_include_headers = None,
         user_compile_flags):
     """Precompiles an explicit Clang module that is compatible with Swift.
 
@@ -1118,6 +1134,7 @@ def _precompile_clang_module(
         toolchains: The struct containing the Swift and C++ toolchain providers,
             as returned by `swift_common.find_all_toolchains()`.
         toolchain_type: The toolchain type of the Swift toolchain.
+        unchecked_include_headers: See `precompile_clang_module`.
         user_compile_flags: Additional Clang flags to pass to the precompile
             action. Each flag is forwarded to the underlying clang invocation
             via `-Xcc`.
@@ -1210,6 +1227,63 @@ def _precompile_clang_module(
         swift_infos = swift_infos,
     )
 
+    # With `-fmodules-strict-decluse`, the files of the module being compiled
+    # can only include the headers of that module and of the modules that it
+    # depends on directly. Clang needs those headers to be present so that it
+    # can map them to their modules, but the headers that they include are
+    # embedded in the dependencies' precompiled modules, so the remaining
+    # transitive headers don't need to be inputs of the action. The exceptions
+    # are the headers that can be reached by includes that Clang doesn't check,
+    # which are the includes in files that don't belong to the module being
+    # compiled:
+    #
+    # *   The textual headers of direct dependencies can be included, and the
+    #     includes in them can reach any of those dependencies' transitive
+    #     headers.
+    # *   Excluded headers of this module or of any of its dependencies can be
+    #     included. Those are covered by `unchecked_include_headers` and by the
+    #     `unchecked_include_headers` of each dependency's `clang_module`.
+    #
+    # The headers of the toolchain's implicit dependencies are also kept.
+    if (
+        unchecked_include_headers != None and
+        not is_swift_generated_header and
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
+        ) and
+        not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
+        ) and
+        not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
+        )
+    ):
+        transitive_headers_to_stage = [unchecked_include_headers]
+        for swift_info in swift_infos:
+            for module in swift_info.direct_modules:
+                clang = module.clang
+                if (
+                    clang and
+                    clang.module_map and
+                    clang.compilation_context and
+                    clang.compilation_context.direct_textual_headers
+                ):
+                    transitive_headers_to_stage.append(depset(
+                        clang.compilation_context.direct_textual_headers,
+                        transitive = [clang.compilation_context.headers],
+                    ))
+        for compilation_context in additional_compilation_contexts:
+            transitive_headers_to_stage.append(compilation_context.headers)
+        unchecked_include_headers_to_stage = depset(
+            transitive = transitive_headers_to_stage,
+        )
+    else:
+        # Provide all of the transitive headers as inputs.
+        unchecked_include_headers_to_stage = None
+
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = compilation_context_for_compilation,
@@ -1225,6 +1299,7 @@ def _precompile_clang_module(
         source_files = [module_map_file],
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
+        unchecked_include_headers = unchecked_include_headers_to_stage,
         user_compile_flags = user_compile_flags,
     )
 
@@ -1240,11 +1315,21 @@ def _precompile_clang_module(
         toolchain_type = toolchain_type,
     )
 
+    if unchecked_include_headers == None:
+        # We don't know what the module map declares, so assume that modules
+        # that depend on this one can reach all of its headers by includes
+        # that Clang doesn't check.
+        unchecked_include_headers = depset(
+            compilation_context_for_compilation.direct_textual_headers,
+            transitive = [compilation_context_for_compilation.headers],
+        )
+
     return struct(
         clang_module = create_clang_module_inputs(
             compilation_context = compilation_context_for_compilation,
             module_map = module_map_file,
             precompiled_module = precompiled_module,
+            unchecked_include_headers = unchecked_include_headers,
         ),
         indexstore_directory = indexstore_directory,
     )

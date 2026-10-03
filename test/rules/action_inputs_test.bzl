@@ -2,6 +2,27 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
+load("//swift:providers.bzl", "SwiftClangModuleAspectInfo")
+
+_AspectActionInfo = provider(
+    doc = "Contains actions registered on a target including by aspects.",
+    fields = ["actions"],
+)
+
+def _aspect_action_retrieving_aspect_impl(target, _ctx):
+    return [
+        _AspectActionInfo(
+            actions = target.actions,
+        ),
+    ]
+
+_aspect_action_retrieving_aspect = aspect(
+    attr_aspects = [],
+    implementation = _aspect_action_retrieving_aspect_impl,
+    required_aspect_providers = [
+        [SwiftClangModuleAspectInfo],
+    ],
+)
 
 def _matches_expected_input(expected_input, input_path):
     if "/" in expected_input:
@@ -12,7 +33,9 @@ def _action_inputs_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)
 
-    actions = analysistest.target_actions(env)
+    actions = (
+        target_under_test[_AspectActionInfo].actions if _AspectActionInfo in target_under_test else analysistest.target_actions(env)
+    )
     mnemonic = ctx.attr.mnemonic
     matching_actions = [
         action
@@ -86,17 +109,22 @@ def _action_inputs_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_action_inputs_test_rule(config_settings = {}):
+def make_action_inputs_test_rule(config_settings = {}, extra_target_under_test_aspects = []):
     """A `action_inputs_test`-like rule with custom configs.
 
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
+        extra_target_under_test_aspects: Aspects whose actions should be inspected.
 
     Returns:
         A rule returned by `analysistest.make` that has the `action_inputs_test`
         interface and the given config settings.
     """
+    aspects = list(extra_target_under_test_aspects)
+    if aspects:
+        aspects.append(_aspect_action_retrieving_aspect)
+
     return analysistest.make(
         _action_inputs_test_impl,
         attrs = {
@@ -114,6 +142,7 @@ def make_action_inputs_test_rule(config_settings = {}):
             ),
         },
         config_settings = config_settings,
+        extra_target_under_test_aspects = aspects,
     )
 
 # A default instantiation of the rule when no custom config settings are needed.
