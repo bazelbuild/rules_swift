@@ -684,6 +684,7 @@ def _compile_swift_overlay(
             cc_info.compilation_context
             for cc_info in overlay_info.private_deps.cc_infos
         ],
+        private_swift_infos = overlay_info.private_deps.swift_infos,
         srcs = overlay_info.srcs,
         swift_infos = swift_infos,
         toolchains = toolchains,

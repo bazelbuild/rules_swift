@@ -8,6 +8,7 @@ load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":local_defines_tests.bzl", "local_defines_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
+load(":overlay_tests.bzl", "overlay_test_suite")
 load(":parallel_compilation_tests.bzl", "parallel_compilation_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
 load(":swift_test_and_binary_tests.bzl", "swift_test_and_binary_test_suite")
@@ -55,6 +56,10 @@ module_mapping_test_suite(
     name = "module_mapping",
 )
 
+overlay_test_suite(
+    name = "overlay",
+)
+
 parallel_compilation_test_suite(
     name = "parallel_compilation",
 )
@@ -77,10 +82,6 @@ symbol_graphs_test_suite(
 
 synthesize_interface_test_suite(
     name = "synthesize_interface",
-    # Don't run this on CI until Xcode 16.3 is available.
-    tags = [
-        "manual",
-    ],
 )
 
 tree_artifact_test_suite(
