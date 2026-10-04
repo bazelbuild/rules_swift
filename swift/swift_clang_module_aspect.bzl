@@ -109,6 +109,24 @@ def _compute_all_excluded_headers(*, exclude_headers, target):
 
     return exclude_headers + virtual_exclude_headers
 
+# Resolve the label in this repository rather than assuming its apparent name.
+# This also preserves the default paths when rules_swift is a bzlmod dependency.
+_DEFAULT_ASPECT_LABEL = Label("//swift:swift_clang_module_aspect.bzl")
+
+def _target_output_prefix(aspect_ctx, target):
+    """Disambiguates outputs of custom aspects while preserving default paths."""
+
+    # The last ID identifies the currently executing aspect. Using its identity
+    # also distinguishes custom aspects that use the same Swift toolchain.
+    aspect_id = aspect_ctx.aspect_ids[-1]
+    aspect_label, _, aspect_name = aspect_id.rpartition("%")
+    if (
+        aspect_name == "swift_clang_module_aspect" and
+        Label(aspect_label) == _DEFAULT_ASPECT_LABEL
+    ):
+        return target.label.name
+    return "{}-{}".format(target.label.name, hash(aspect_id))
+
 def _generate_module_map(
         *,
         actions,
@@ -182,7 +200,9 @@ def _generate_module_map(
         )
 
     module_map_file = actions.declare_file(
-        "{}_modulemap/_/module.modulemap".format(target.label.name),
+        "{}_modulemap/_/module.modulemap".format(
+            _target_output_prefix(aspect_ctx, target),
+        ),
     )
 
     if exclude_headers:
@@ -468,7 +488,7 @@ def _handle_module(
         module_name = module_name,
         swift_infos = swift_infos,
         toolchains = toolchains,
-        target_name = target.label.name,
+        target_name = _target_output_prefix(aspect_ctx, target),
         toolchain_type = toolchain_type,
         user_compile_flags = local_defines,
     )
