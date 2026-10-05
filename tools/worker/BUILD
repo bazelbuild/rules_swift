@@ -60,10 +60,10 @@ cc_library(
     copts = select({
         "//tools:clang-cl": [
             "-Xclang=-fno-split-cold-code",
-            "/std=c++17",
+            "/std:c++17",
         ],
         "//tools:msvc": [
-            "/std=c++17",
+            "/std:c++17",
         ],
         "//conditions:default": [
             "-std=c++17",
