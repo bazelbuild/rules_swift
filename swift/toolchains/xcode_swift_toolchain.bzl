@@ -55,6 +55,7 @@ load(
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
+    "SWIFT_FEATURE_INCREMENTAL_FILE_HASHING",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
@@ -868,6 +869,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "27.0"):
         requested_features.append(SWIFT_FEATURE_DEBUG_MODULE_PATH)
+        requested_features.append(SWIFT_FEATURE_INCREMENTAL_FILE_HASHING)
 
     # Xcode toolchains always support DEVELOPER_DIR
     requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)

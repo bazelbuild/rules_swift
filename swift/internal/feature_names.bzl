@@ -145,6 +145,10 @@ SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
 # source files.
 SWIFT_FEATURE_ENABLE_BATCH_MODE = "swift.enable_batch_mode"
 
+# If enabled, incremental builds hash source and dependency contents during
+# incremental compilation to avoid invalidation when only timestamps change.
+SWIFT_FEATURE_INCREMENTAL_FILE_HASHING = "swift.incremental_file_hashing"
+
 # If enabled, Swift compilation actions will pass the `-enable-testing` flag
 # that modifies visibility controls to let a module be imported with the
 # `@testable` attribute. This feature will be enabled by default for
