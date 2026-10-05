@@ -1,5 +1,6 @@
 """Tests for derived files related command line flags under various configs."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("//test/rules:swift_shell_test.bzl", "swift_shell_test")
 
 _NO_TESTS_DISCOVERED = "ERROR: No tests were discovered"
@@ -12,6 +13,13 @@ def xctest_runner_test_suite(name, tags = []):
         tags: Additional tags to apply to each test.
     """
     all_tags = [name] + tags
+
+    build_test(
+        name = "{}_macos_11_0_build".format(name),
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+        targets = ["//test/fixtures/xctest_runner:PassingUnitTests_macos_11_0"],
+    )
 
     swift_shell_test(
         name = "{}_pass".format(name),
