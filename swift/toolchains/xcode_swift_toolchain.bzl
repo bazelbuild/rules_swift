@@ -656,7 +656,7 @@ def _xcode_env(target_triple, xcode_config):
 
     Args:
         target_triple: The triple of the platform being targeted.
-        xcode_config: The `XcodeVersionConfig` provider that contains
+        xcode_config: The `XcodeVersionInfo` provider that contains
             information about the current Xcode configuration.
 
     Returns:
