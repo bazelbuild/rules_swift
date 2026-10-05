@@ -89,6 +89,9 @@ def layering_check_test_suite(name, tags = []):
         targets = [
             "//test/fixtures/layering_check:foundation_consumer",
             "//test/fixtures/layering_check:self_importing_consumer",
+            # Unused dependencies are allowed without the separate opt-in.
+            "//test/fixtures/layering_check:unused_dependency",
+            "//test/fixtures/layering_check:unused_test_dependency",
             "//test/fixtures/module_mapping:MySDK_with_mapping_and_layering_check",
         ],
         tags = all_tags,
@@ -114,21 +117,30 @@ def layering_check_test_suite(name, tags = []):
         name = "{}_xctest_test".format(name),
         tags = all_tags,
         target = "//test/fixtures/xctest_runner:PassingUnitTests",
-        transitive_features = ["swift.layering_check_swift"],
+        transitive_features = [
+            "swift.layering_check_swift",
+            "swift.layering_check_unused_deps",
+        ],
     )
 
     transition_test(
         name = "{}_xctest_without_sources_test".format(name),
         tags = all_tags,
         target = "//test/fixtures/xctest_runner:MainLibraryTestsWithoutSources",
-        transitive_features = ["swift.layering_check_swift"],
+        transitive_features = [
+            "swift.layering_check_swift",
+            "swift.layering_check_unused_deps",
+        ],
     )
 
     transition_test(
         name = "{}_swift_testing_test".format(name),
         tags = all_tags,
         target = "//test/fixtures/xctest_runner:PassingSwiftTestingTests",
-        transitive_features = ["swift.layering_check_swift"],
+        transitive_features = [
+            "swift.layering_check_swift",
+            "swift.layering_check_unused_deps",
+        ],
     )
 
     native.test_suite(

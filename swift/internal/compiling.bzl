@@ -52,6 +52,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_LAYERING_CHECK_UNUSED_DEPS",
     "SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -737,15 +738,19 @@ def compile(
 
         # Excludes implicitly added deps
         unused_check_module_name_groups = []
-        for dep_swift_info in swift_infos + private_swift_infos:
-            direct_module_names_for_dep = [
-                dep_module_context.name
-                for dep_module_context in dep_swift_info.direct_modules
-            ]
-            if direct_module_names_for_dep:
-                unused_check_module_name_groups.append(
-                    ",".join(direct_module_names_for_dep),
-                )
+        if is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_LAYERING_CHECK_UNUSED_DEPS,
+        ):
+            for dep_swift_info in swift_infos + private_swift_infos:
+                direct_module_names_for_dep = [
+                    dep_module_context.name
+                    for dep_module_context in dep_swift_info.direct_modules
+                ]
+                if direct_module_names_for_dep:
+                    unused_check_module_name_groups.append(
+                        ",".join(direct_module_names_for_dep),
+                    )
 
         validate_system_modules = is_feature_enabled(
             feature_configuration = feature_configuration,

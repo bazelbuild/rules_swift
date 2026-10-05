@@ -34,7 +34,8 @@ check_unused_failure() {
   local target="$1"
   local expected_module="${2:-DirectDependency}"
 
-  if "$bazel" build "$target" &>"$log"; then
+  if "$bazel" build "$target" \
+    --features=swift.layering_check_unused_deps &>"$log"; then
     cat "$log"
     echo "Expected $target to fail to build" >&2
     exit 1
