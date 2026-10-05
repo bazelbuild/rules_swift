@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Test
-    runs-on: xcode-27
+    runs-on: macos-26
     timeout-minutes: 120
     concurrency:
       group: macos-latest-xcode-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          sudo xcode-select -s /Applications/Xcode_27.0.app
+          sudo xcode-select -s /Applications/Xcode_26.4.app
           xcode-select -p
           xcodebuild -version
 
@@ -40,7 +40,7 @@ jobs:
           trap 'rm -f "$test_targets_file"' EXIT
 
           # Select individual test rules without expanding their test suites.
-          DEVELOPER_DIR="$developer_dir" bazel query 'kind(".*_test rule", rdeps(//..., set(//test:xcode_at_least_26_4 //test:xcode_at_least_27_0)))' > "$test_targets_file"
+          DEVELOPER_DIR="$developer_dir" bazel query 'kind(".*_test rule", rdeps(//..., set(//test:xcode_at_least_26_4)))' > "$test_targets_file"
           if [[ ! -s "$test_targets_file" ]]; then
             echo "No tests found for the Xcode version requirements" >&2
             exit 1
