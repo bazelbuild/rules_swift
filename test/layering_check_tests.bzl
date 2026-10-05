@@ -1,6 +1,7 @@
 """Tests for Swift layering checks."""
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("//test:transitions.bzl", "transition_test")
 load(
     "//test/rules:action_command_line_test.bzl",
     "action_command_line_test",
@@ -63,6 +64,16 @@ def layering_check_test_suite(name, tags = []):
         target_under_test = "@rules_swift_layering_check_external_test//:lib",
     )
 
+    layering_check_swift_test(
+        name = "{}_generated_test_runner_disabled".format(name),
+        not_expected_argv = [
+            "-Xwrapped-swift=-layering-check-deps-modules",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:MainLibraryTestsWithoutSources",
+    )
+
     layering_check_external_swift_test(
         name = "{}_external_swift_enabled".format(name),
         expected_argv = [
@@ -97,6 +108,27 @@ def layering_check_test_suite(name, tags = []):
             "@apple_support//configs:apple": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
+    )
+
+    transition_test(
+        name = "{}_xctest_test".format(name),
+        tags = all_tags,
+        target = "//test/fixtures/xctest_runner:PassingUnitTests",
+        transitive_features = ["swift.layering_check_swift"],
+    )
+
+    transition_test(
+        name = "{}_xctest_without_sources_test".format(name),
+        tags = all_tags,
+        target = "//test/fixtures/xctest_runner:MainLibraryTestsWithoutSources",
+        transitive_features = ["swift.layering_check_swift"],
+    )
+
+    transition_test(
+        name = "{}_swift_testing_test".format(name),
+        tags = all_tags,
+        target = "//test/fixtures/xctest_runner:PassingSwiftTestingTests",
+        transitive_features = ["swift.layering_check_swift"],
     )
 
     native.test_suite(

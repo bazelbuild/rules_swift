@@ -69,3 +69,4 @@ check_failure \
   "TransitiveDependency" \
   "//test/fixtures/layering_check:layering_violation"
 check_unused_failure "//test/fixtures/layering_check:unused_dependency"
+check_unused_failure "//test/fixtures/layering_check:unused_test_dependency"

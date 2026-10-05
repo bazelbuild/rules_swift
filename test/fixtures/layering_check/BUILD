@@ -2,6 +2,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_overlay.bzl", "swift_overlay")
+load("//swift:swift_test.bzl", "swift_test")
 load("//test:transitions.bzl", "transition_binary")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
@@ -107,6 +108,13 @@ swift_library(
     name = "unused_dependency",
     srcs = ["UnusedDependency.swift"],
     module_name = "UnusedDependency",
+    tags = FIXTURE_TAGS,
+    deps = [":DirectDependency"],
+)
+
+swift_test(
+    name = "unused_test_dependency",
+    srcs = ["UnusedDependency.swift"],
     tags = FIXTURE_TAGS,
     deps = [":DirectDependency"],
 )
