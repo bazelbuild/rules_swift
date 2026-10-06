@@ -40,6 +40,7 @@ filegroup(
             "usr/lib/swift/host/**",
             "usr/lib/swift/linux/**",
             "usr/lib/swift/macosx/**",
+            "usr/lib/swift/swiftToCxx/**",
         ],
         allow_empty = True,
     ),
