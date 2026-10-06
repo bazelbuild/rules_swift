@@ -296,8 +296,16 @@ bazel_dep(name = "hermetic_android_toolchains", version = "0.4.0", dev_dependenc
 bazel_dep(name = "rules_android", version = "0.8.0", dev_dependency = True)
 bazel_dep(name = "rules_android_ndk", version = "0.1.5", dev_dependency = True)
 bazel_dep(name = "rules_java", version = "9.3.0", dev_dependency = True)
-bazel_dep(name = "rules_jvm_external", version = "7.0", dev_dependency = True)
+bazel_dep(name = "rules_jvm_external", version = "7.1", dev_dependency = True)
 bazel_dep(name = "rules_kotlin", version = "2.2.2", dev_dependency = True)
+
+# TODO: Remove once a release includes https://github.com/bazel-contrib/rules_jvm_external/pull/1620.
+archive_override(
+    module_name = "rules_jvm_external",
+    integrity = "sha256-xLO0uCpzSupyXT3DmAKQNvLEKIg2OzTl0yyIkSwjDC0=",
+    strip_prefix = "rules_jvm_external-e98a2bcebf3038243243941f458fefe940e980fb",
+    urls = ["https://github.com/bazel-contrib/rules_jvm_external/archive/e98a2bcebf3038243243941f458fefe940e980fb.tar.gz"],
+)
 
 swift.android_sdk()
 
