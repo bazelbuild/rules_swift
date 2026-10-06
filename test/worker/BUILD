@@ -17,6 +17,7 @@ load(":worker_test.bzl", "worker_test")
         "changed_arguments",
         "changed_universal_arguments",
         "missing_digest",
+        "removed_dependency_input",
         "missing_input_record",
         "corrupt_input_record",
         "failed_dependency_change",

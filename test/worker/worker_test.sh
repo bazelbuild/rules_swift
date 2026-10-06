@@ -66,6 +66,7 @@ if [[ "$test_name" == module_outputs_survive_failure ]]; then
 fi
 universal_argument="-DOLD_DEFINE"
 missing_digest=false
+include_dependency=true
 fail_output_copy=false
 hashing_argument=""
 if [[ "${WORKER_TEST_FILE_HASHING:-0}" == 1 &&
@@ -79,10 +80,14 @@ write_source oldAPI 202001010000
 
 run_worker() {
 	local expected_exit_code="${1:-0}"
-	local dependency_digest
-	dependency_digest="$(digest Dependency.swiftmodule)"
-	if "$missing_digest"; then
-		dependency_digest=""
+	local dependency_input=""
+	if "$include_dependency"; then
+		local dependency_digest
+		dependency_digest="$(digest Dependency.swiftmodule)"
+		if "$missing_digest"; then
+			dependency_digest=""
+		fi
+		dependency_input="{\"path\": \"Dependency.swiftmodule\", \"digest\": \"$dependency_digest\"},"
 	fi
 	rm -rf observed_dependencies
 	# Bazel removes declared outputs before executing an action.
@@ -105,7 +110,7 @@ run_worker() {
   ],
   "inputs": [
     {"path": "source.swift", "digest": "$(digest source.swift)"},
-    {"path": "Dependency.swiftmodule", "digest": "$dependency_digest"},
+    $dependency_input
     {"path": "$output_dir/module.json", "digest": "$(digest "$output_dir/module.json")"}
   ]
 }
@@ -240,6 +245,29 @@ missing_digest)
 	run_worker
 	assert_dependencies_removed
 	# Equal but empty digests must not make subsequent builds reusable.
+	run_worker
+	assert_dependencies_removed
+	assert_module_outputs 4
+	;;
+removed_dependency_input)
+	# Remove the dependency from both the compilation and the request. Source
+	# digests are excluded from the comparison, so the missing input entry must
+	# invalidate the records even though every remaining digest is unchanged.
+	include_dependency=false
+	rm Dependency.swiftmodule
+	echo 'public func oldAPI() -> Int { return 8 }' >source.swift
+	touch -t 202001010001 source.swift
+	run_worker
+	assert_dependencies_removed
+	assert_module_outputs 8
+	# The reduced input set is complete and may be reused on the next request.
+	run_worker
+	assert_dependencies_kept
+	assert_module_outputs 8
+	# Reintroducing an input must also invalidate the records.
+	include_dependency=true
+	build_dependency Int32
+	write_source oldAPI 202001010002
 	run_worker
 	assert_dependencies_removed
 	assert_module_outputs 4
