@@ -60,8 +60,9 @@ EOF_MAP
 
 extra_arguments=""
 if [[ "$test_name" == module_outputs_survive_failure ]]; then
-	# Match the default rules_swift configuration. An uncached source-info file
-	# would force older workers to re-emit the module and hide the stale module.
+	# Match rules_swift with swift.emit_swiftsourceinfo disabled. With the old
+	# copy-back worker, a missing source-info output can cause Swift to re-emit
+	# the module, masking the stale-module bug.
 	extra_arguments=', "-avoid-emit-module-source-info"'
 fi
 universal_argument="-DOLD_DEFINE"
@@ -116,7 +117,7 @@ run_worker() {
 }
 EOF_REQUEST
 	# Requests are newline-delimited JSON. The worker exits with 254 at EOF;
-	# the compilation's exit code is in its response.
+	# the request's exit code (including output-copy failures) is in its response.
 	local worker_exit_code=0
 	{
 		tr -d '\n' <request.json
@@ -127,7 +128,7 @@ EOF_REQUEST
 	if [[ "$worker_exit_code" != 254 ]] ||
 		! grep -Fq "\"exitCode\":$expected_exit_code," response.json; then
 		cat response.json worker.log >&2
-		echo "Expected compilation exit code $expected_exit_code" >&2
+		echo "Expected request exit code $expected_exit_code" >&2
 		exit 1
 	fi
 	if "$fail_output_copy"; then
@@ -136,10 +137,11 @@ EOF_REQUEST
 	fi
 }
 
+# These assertions inspect record presence before Swift runs.
 assert_dependencies_kept() {
 	for dependency in "${dependencies[@]}"; do
 		if [[ ! -f "observed_dependencies/$dependency" ]]; then
-			echo "Expected the compiler to reuse $dependency" >&2
+			echo "Expected the worker to retain $dependency before compilation" >&2
 			exit 1
 		fi
 	done
@@ -252,7 +254,7 @@ missing_digest)
 removed_dependency_input)
 	# Remove the dependency from both the compilation and the request. Source
 	# digests are excluded from the comparison, so the missing input entry must
-	# invalidate the records even though every remaining digest is unchanged.
+	# invalidate the records even though the remaining non-source digests match.
 	include_dependency=false
 	rm Dependency.swiftmodule
 	echo 'public func oldAPI() -> Int { return 8 }' >source.swift
@@ -260,7 +262,8 @@ removed_dependency_input)
 	run_worker
 	assert_dependencies_removed
 	assert_module_outputs 8
-	# The reduced input set is complete and may be reused on the next request.
+	# With the import removed and non-source inputs unchanged, the worker should
+	# retain the dependency records on the next request.
 	run_worker
 	assert_dependencies_kept
 	assert_module_outputs 8
