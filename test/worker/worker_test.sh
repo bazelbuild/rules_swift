@@ -19,7 +19,8 @@ readonly output_dir="bazel-out/config/bin"
 export INCREMENTAL_DIR="$output_dir/_swift_incremental"
 
 compile() {
-	"$WORKER_TEST_WORKER" "$compiler" "${compiler_arguments[@]}" "$@"
+	"$WORKER_TEST_WORKER" "$compiler" "${compiler_arguments[@]}" \
+		-module-cache-path "$TEST_TMPDIR/module-cache" "$@"
 }
 
 # Worker digests are opaque strings. Compute them from the actual fixture bytes.
