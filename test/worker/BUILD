@@ -1,19 +1,10 @@
-load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load(":worker_test.bzl", "worker_test")
 
 [
-    sh_test(
+    worker_test(
         name = name + "_test",
-        size = "small",
-        srcs = ["worker_test.sh"],
-        args = [
-            "$(rootpath //tools/worker:worker)",
-            "$(rootpath :fake_swiftc.sh)",
-            name,
-        ],
-        data = [
-            "fake_swiftc.sh",
-            "//tools/worker",
-        ],
+        size = "medium",
+        scenario = name,
         target_compatible_with = select({
             "@platforms//os:windows": ["@platforms//:incompatible"],
             "//conditions:default": [],
@@ -21,8 +12,8 @@ load("@rules_shell//shell:sh_test.bzl", "sh_test")
     )
     for name in [
         "module_outputs_survive_failure",
-        "source_changes_keep_dependencies",
         "changed_dependency_digest",
+        "changed_dependency_digest_without_hashing",
         "changed_arguments",
         "changed_universal_arguments",
         "missing_digest",
