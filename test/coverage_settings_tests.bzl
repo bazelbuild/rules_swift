@@ -11,6 +11,20 @@ default_coverage_test = make_action_command_line_test_rule(
     },
 )
 
+filtered_coverage_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:collect_code_coverage": "true",
+        "//command_line_option:instrumentation_filter": "-.*",
+    },
+)
+
+dependency_coverage_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:collect_code_coverage": "true",
+        "//command_line_option:instrumentation_filter": "//test/fixtures/debug_settings:simple$",
+    },
+)
+
 disabled_coverage_prefix_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:collect_code_coverage": "true",
@@ -60,6 +74,55 @@ def coverage_settings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
+    for target in ["simple", "binary"]:
+        filtered_coverage_test(
+            name = "{}_filtered_{}".format(name, target),
+            tags = all_tags,
+            not_expected_argv = [
+                "-profile-generate",
+                "-profile-coverage-mapping",
+                "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+                "-coverage-prefix-map",
+            ],
+            mnemonic = "SwiftCompile",
+            target_under_test = "//test/fixtures/debug_settings:" + target,
+        )
+
+    dependency_coverage_test(
+        name = "{}_selected_dependency".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-profile-generate",
+            "-profile-coverage-mapping",
+            "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    # Swift instrumentation follows the filter for the target itself, even
+    # when one of its dependencies is instrumented.
+    dependency_coverage_test(
+        name = "{}_filtered_binary_with_instrumented_dependency".format(name),
+        tags = all_tags,
+        not_expected_argv = [
+            "-profile-generate",
+            "-profile-coverage-mapping",
+            "-Xwrapped-swift=-coverage-prefix-pwd-is-dot",
+            "-coverage-prefix-map",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
+    )
+
+    dependency_coverage_test(
+        name = "{}_filtered_binary_runtime".format(name),
+        tags = all_tags,
+        expected_argv = ["-fprofile-instr-generate"],
+        mnemonic = "CppLink",
+        target_under_test = "//test/fixtures/debug_settings:module_path_binary",
+    )
+
     disabled_coverage_prefix_map_test(
         name = "{}_prefix_map".format(name),
         tags = all_tags,
@@ -96,4 +159,9 @@ def coverage_settings_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    native.test_suite(
+        name = name,
+        tags = all_tags,
     )
