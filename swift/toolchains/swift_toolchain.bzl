@@ -51,6 +51,7 @@ load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_INCREMENTAL_FILE_HASHING",
+    "SWIFT_FEATURE_INDEX_STORE_COMPRESS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
@@ -779,6 +780,7 @@ def _swift_toolchain_impl(ctx):
 
     if apple_common.dotted_version(ctx.attr.parsed_version) >= apple_common.dotted_version("6.4"):
         requested_features.append(SWIFT_FEATURE_INCREMENTAL_FILE_HASHING)
+        requested_features.append(SWIFT_FEATURE_INDEX_STORE_COMPRESS)
 
     requested_features.extend(ctx.features)
 
