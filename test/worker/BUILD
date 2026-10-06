@@ -20,6 +20,7 @@ load(":worker_test.bzl", "worker_test")
         "removed_dependency_input",
         "missing_input_record",
         "corrupt_input_record",
+        "atomic_input_record",
         "failed_dependency_change",
     ]
 ]

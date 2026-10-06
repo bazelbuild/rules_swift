@@ -312,12 +312,21 @@ void WorkProcessor::ProcessWorkRequest(
       }
     }
 
-    std::ofstream inputs_stream(LongPath(incremental_inputs_path));
+    auto temporary_inputs_path = incremental_inputs_path;
+    temporary_inputs_path += ".tmp";
+    std::ofstream inputs_stream(LongPath(temporary_inputs_path));
     inputs_stream << incremental_inputs;
     inputs_stream.close();
-    if (!inputs_stream) {
+    std::error_code ec;
+    if (inputs_stream) {
+      std::filesystem::rename(LongPath(temporary_inputs_path),
+                              LongPath(incremental_inputs_path), ec);
+    }
+    if (!inputs_stream || ec) {
       stderr_stream << "swift_worker: Could not write "
-                    << incremental_inputs_path << "\n";
+                    << incremental_inputs_path << " ("
+                    << (ec ? ec.message() : "stream failure") << ")\n";
+      RemoveFile(temporary_inputs_path, stderr_stream);
       FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
       return;
     }

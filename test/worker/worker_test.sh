@@ -287,6 +287,26 @@ corrupt_input_record)
 	assert_dependencies_removed
 	assert_module_outputs 4
 	;;
+atomic_input_record)
+	# A failed metadata write must leave a reusable record intact.
+	cp "$INCREMENTAL_DIR/module.inputs.json" expected.inputs.json
+	ln "$INCREMENTAL_DIR/module.inputs.json" original.inputs.json
+	mkdir "$INCREMENTAL_DIR/module.inputs.json.tmp"
+	run_worker 1
+	grep -Fq 'Could not write' response.json
+	cmp expected.inputs.json "$INCREMENTAL_DIR/module.inputs.json"
+	assert_dependencies_kept
+	[[ ! -e "$INCREMENTAL_DIR/module.inputs.json.tmp" ]]
+
+	# Replacement must publish a new file, leaving readers of the old one intact.
+	run_worker
+	assert_dependencies_kept
+	assert_module_outputs 4
+	cmp expected.inputs.json original.inputs.json
+	cmp expected.inputs.json "$INCREMENTAL_DIR/module.inputs.json"
+	[[ ! "$INCREMENTAL_DIR/module.inputs.json" -ef original.inputs.json ]]
+	[[ ! -e "$INCREMENTAL_DIR/module.inputs.json.tmp" ]]
+	;;
 failed_dependency_change)
 	cp Dependency.swiftmodule original.swiftmodule
 	build_dependency Int64
