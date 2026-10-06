@@ -24,6 +24,7 @@ load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
     "SWIFT_FEATURE_STATIC_STDLIB",
 )
@@ -459,7 +460,17 @@ def _swift_test_impl(ctx):
             # The generated test runner uses `@main`.
             additional_copts = discovery_copts,
             cc_infos = test_runner_deps_cc_infos,
-            feature_configuration = feature_configuration,
+            # The generated runner's deps are internal implementation details.
+            # Runtime test discovery does not require importing every test module.
+            feature_configuration = configure_features_for_binary(
+                ctx = ctx,
+                requested_features = ctx.features,
+                toolchains = toolchains,
+                unsupported_features = ctx.disabled_features + [
+                    SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+                    SWIFT_FEATURE_STATIC_STDLIB,
+                ],
+            ),
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = discovery_module_name,
             name = ctx.label.name + "__GeneratedTestDiscoveryRunner",

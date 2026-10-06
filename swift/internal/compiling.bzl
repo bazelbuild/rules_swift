@@ -52,6 +52,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_EXTERNAL_SWIFT",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_LAYERING_CHECK_UNUSED_DEPS",
     "SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -735,6 +736,22 @@ def compile(
             for dep_module_context in dep_swift_info.direct_modules:
                 direct_module_names.append(dep_module_context.name)
 
+        # Excludes implicitly added deps
+        unused_check_module_name_groups = []
+        if is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_LAYERING_CHECK_UNUSED_DEPS,
+        ):
+            for dep_swift_info in swift_infos + private_swift_infos:
+                direct_module_names_for_dep = [
+                    dep_module_context.name
+                    for dep_module_context in dep_swift_info.direct_modules
+                ]
+                if direct_module_names_for_dep:
+                    unused_check_module_name_groups.append(
+                        ",".join(direct_module_names_for_dep),
+                    )
+
         validate_system_modules = is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_USE_C_MODULES,
@@ -765,6 +782,7 @@ def compile(
             deps_modules_file = deps_modules_file,
             direct_module_names = direct_module_names,
             transitive_modules = layering_check_transitive_modules,
+            unused_check_module_name_groups = unused_check_module_name_groups,
         )
     else:
         deps_modules_file = None
@@ -1960,7 +1978,8 @@ def _write_deps_modules_file(
         actions,
         deps_modules_file,
         direct_module_names,
-        transitive_modules):
+        transitive_modules,
+        unused_check_module_name_groups):
     """Writes a file containing dependency module names and owning labels.
 
     This file is used by the Swift worker process to perform layering checks.
@@ -1977,6 +1996,9 @@ def _write_deps_modules_file(
             dependencies of the code being compiled.
         transitive_modules: The list of module contexts in the target's
             transitive dependency graph.
+        unused_check_module_name_groups: A list of comma-separated module name
+            groups. Each group represents the direct modules provided by one
+            user-declared dependency and is used to detect unused dependencies.
     """
     deps_mapping = actions.args()
     deps_mapping.set_param_file_format("multiline")
@@ -1990,6 +2012,7 @@ def _write_deps_modules_file(
             format_joined = "transitive:%s",
             join_with = "\t",
         )
+    deps_mapping.add_all(unused_check_module_name_groups, format_each = "unused-check:%s")
 
     actions.write(
         content = deps_mapping,

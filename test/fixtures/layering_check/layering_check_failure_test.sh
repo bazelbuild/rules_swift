@@ -30,6 +30,30 @@ check_failure() {
   done
 }
 
+check_unused_failure() {
+  local target="$1"
+  local expected_module="${2:-DirectDependency}"
+
+  if "$bazel" build "$target" \
+    --features=swift.layering_check_unused_deps &>"$log"; then
+    cat "$log"
+    echo "Expected $target to fail to build" >&2
+    exit 1
+  fi
+
+  for expected in \
+    "Unused dependencies in" \
+    "$target" \
+    "$expected_module" \
+    "Please remove the unused 'deps'"; do
+    if ! grep -Fq "$expected" "$log"; then
+      cat "$log"
+      echo "Expected failure log for $target to contain: $expected" >&2
+      exit 1
+    fi
+  done
+}
+
 check_failure \
   "//test/fixtures/layering_check:foundation_consumer_violation_precompiled_modules" \
   "Foundation" \
@@ -45,3 +69,5 @@ check_failure \
   "//test/fixtures/layering_check:layering_violation_explicit_modules_default_precompiled_modules" \
   "TransitiveDependency" \
   "//test/fixtures/layering_check:layering_violation"
+check_unused_failure "//test/fixtures/layering_check:unused_dependency"
+check_unused_failure "//test/fixtures/layering_check:unused_test_dependency"
