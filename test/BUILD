@@ -18,6 +18,7 @@ load(":imported_framework_tests.bzl", "imported_framework_test_suite")
 load(":index_store_compress_tests.bzl", "index_store_compress_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":layering_check_tests.bzl", "layering_check_test_suite")
+load(":local_defines_tests.bzl", "local_defines_test_suite")
 load(":localized_strings_tests.bzl", "localized_strings_test_suite")
 load(":macro_plugin_tests.bzl", "macro_plugin_test_suite")
 load(":mainattr_tests.bzl", "mainattr_test_suite")
@@ -93,6 +94,8 @@ index_store_compress_test_suite(name = "index_store_compress")
 interop_hints_test_suite(name = "interop_hints")
 
 layering_check_test_suite(name = "layering_check")
+
+local_defines_test_suite(name = "local_defines")
 
 localized_strings_test_suite(name = "localized_strings")
 
