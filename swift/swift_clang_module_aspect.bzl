@@ -109,8 +109,8 @@ def _compute_all_excluded_headers(*, exclude_headers, target):
 
     return exclude_headers + virtual_exclude_headers
 
-# Fully qualified aspect ID that represents the canonical swift_clang_module_aspect.
-_CANONICAL_ASPECT_ID = "@build_bazel_rules_swift//swift:swift_clang_module_aspect.bzl%swift_clang_module_aspect"
+# Compare labels so the canonical aspect is recognized under repository mappings.
+_DEFAULT_ASPECT_LABEL = Label("//swift:swift_clang_module_aspect.bzl")
 
 def _hex(n):
     """Converts a 32-bit integer into its hex representation."""
@@ -121,21 +121,6 @@ def _hex(n):
         n //= 16
     return ret
 
-def _aspect_ids(aspect_ctx, target):
-    """Returns the aspect IDs attached to the current target and context."""
-
-    # HACK: This is the only way today to check whether the caller is inside an
-    # aspect context, because accessing `aspect_ctx.aspect_ids` halts the build
-    # if called from outside an aspect, and `hasattr` cannot be used because the
-    # attribute is present on both rule and aspect contexts.
-    # TODO(b/319132714): Replace this with a real API because there's no API for it.
-    is_aspect = repr(aspect_ctx).startswith("<aspect context ")
-    if is_aspect:
-        return aspect_ctx.aspect_ids
-    if hasattr(target, "aspect_ids"):
-        return target.aspect_ids
-    return []
-
 def _target_output_prefix(aspect_ctx, target):
     """Computes an output prefix to use in the paths of files written by aspect actions.
 
@@ -143,12 +128,13 @@ def _target_output_prefix(aspect_ctx, target):
     of aspects returned by `make_swift_clang_module_aspect`.
     """
     output_prefix = target.label.name
-    ids = _aspect_ids(aspect_ctx, target)
+    ids = aspect_ctx.aspect_ids
     if ids:
         # According to the Bazel team, the last element in `aspect_ids` is the
         # currently running aspect (b/319132714).
         running_aspect_id = ids[-1]
-        if running_aspect_id != _CANONICAL_ASPECT_ID:
+        aspect_label, _, aspect_name = running_aspect_id.rpartition("%")
+        if aspect_name != "swift_clang_module_aspect" or Label(aspect_label) != _DEFAULT_ASPECT_LABEL:
             aspect_hash = _hex(hash(running_aspect_id))
             output_prefix = output_prefix + "-" + aspect_hash
     return output_prefix
@@ -227,7 +213,7 @@ def _generate_module_map(
 
     output_prefix = _target_output_prefix(aspect_ctx, target)
     module_map_file = actions.declare_file(
-        "{}_modulemap/_/module.modulemap".format(target.label.name),
+        "{}_modulemap/_/module.modulemap".format(output_prefix),
     )
 
     if exclude_headers:
@@ -486,7 +472,23 @@ def _handle_module(
 
     output_groups = {}
 
-    pcm_outputs = precompile_clang_module(
+    # Private -D flags might be needed to compile the PCM.
+    tokenization = not (
+        is_feature_enabled(feature_configuration, "no_copts_tokenization") or
+        "no_copts_tokenization" in requested_features
+    )
+    local_defines = []
+    for copt in getattr(attr, "copts", []):
+        if copt.startswith("-D") and "$(" not in copt:
+            if tokenization:
+                local_defines.extend(aspect_ctx.tokenize(copt))
+            else:
+                local_defines.append(copt)
+    for define in getattr(attr, "local_defines", []):
+        local_defines.append("-D" + define)
+
+    output_prefix = _target_output_prefix(aspect_ctx, target)
+    compile_result = precompile_clang_module(
         actions = aspect_ctx.actions,
         cc_compilation_context = compilation_context_to_compile,
         feature_configuration = feature_configuration,
