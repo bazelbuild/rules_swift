@@ -77,7 +77,9 @@ tasks:
     bazel: latest
     platform: ubuntu2404
     test_targets:
+      - "//test/linux_static_stdlib:linux_ubuntu22.04_cc_test"
       - "//test/linux_static_stdlib:linux_ubuntu22.04_foundation_test"
+      - "//test/linux_static_stdlib:linux_ubuntu24.04_cc_test"
       - "//test/linux_static_stdlib:linux_ubuntu24.04_foundation_test"
 
   ubuntu2204_latest_non_hermetic:

@@ -1,9 +1,40 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift.bzl", "swift_binary")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_test.bzl", "swift_test")
 load("//test:transitions.bzl", "transition_test")
 load("//test/rules:provider_test.bzl", "provider_test")
+
+cc_test(
+    name = "sysroot_cc_test",
+    srcs = [
+        "sysroot.c",
+        "sysroot.h",
+        "sysroot_test.cc",
+    ],
+    tags = ["manual"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+[
+    transition_test(
+        name = "linux_ubuntu{}_cc_test".format(version),
+        extra_toolchains = [
+            "@swift_toolchain//:cc_toolchain_exec_ubuntu{}".format(version),
+            "@swift_toolchain//:cc_toolchain_exec_ubuntu{}-aarch64".format(version),
+        ],
+        target = ":sysroot_cc_test",
+        target_compatible_with = [
+            "@platforms//os:linux",
+            "@platforms_contrib//os/linux/libc/glibc:at_least_{}_available".format(glibc),
+        ],
+    )
+    for version, glibc in [
+        ("22.04", "2.35"),
+        ("24.04", "2.39"),
+    ]
+]
 
 swift_library(
     name = "foundation_library",

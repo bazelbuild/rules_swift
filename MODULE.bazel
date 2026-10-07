@@ -51,11 +51,7 @@ apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
     apt.ubuntu(
         name = "swift_ubuntu24.04_{}_sysroot".format(arch),
         architectures = [arch],
-        # Keep GCC's relative C++ include paths rooted under /usr
-        glob_excludes = [
-            "lib/gcc/**",
-            "usr/share/man/**",
-        ],
+        glob_excludes = ["usr/share/man/**"],
         lockfile = "//swift/internal/extensions:ubuntu24.04_{}_sysroot.lock.json".format(arch),
         packages = [
             # Supplies the /lib symlink required by libc's linker scripts
