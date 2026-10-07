@@ -42,7 +42,7 @@ jobs:
             --bes_backend=grpcs://remote.buildbuddy.io \
             --bes_results_url=https://app.buildbuddy.io/invocation/ \
             --execution_log_compact_file=execution_log.binpb.zst \
-            --remote_cache=grpcs://remote.buildbuddy.io \
+            --remote_cache=grpcs://app.buildbuddy.io \
             --remote_cache_compression \
             --test_output=errors \
             --build_tests_only \
