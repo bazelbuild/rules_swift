@@ -135,6 +135,14 @@ tasks:
     test_targets:
       - "doc/..."
 
+  sysroot_lockfiles_check:
+    name: "Sysroot lockfiles up-to-date"
+    platform: ubuntu2204
+    bazel: latest
+    shell_commands:
+      - "bazel run //tools/sysroots:lock"
+      - "git diff --exit-code -- 'swift/internal/extensions/*_sysroot.lock.json' || { echo '::error::Sysroot lockfiles are out of date. Run: bazel run //tools/sysroots:lock'; exit 1; }"
+
   gazelle_check:
     name: "Gazelle up-to-date"
     platform: ubuntu2204
