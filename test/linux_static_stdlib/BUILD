@@ -198,7 +198,10 @@ transition_test(
         "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04-aarch64",
     ],
     target = ":foundation_library_test",
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms_contrib//os/linux/libc/glibc:at_least_2.35_available",
+    ],
 )
 
 transition_test(
@@ -209,8 +212,9 @@ transition_test(
         "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04",
         "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04-aarch64",
     ],
-    # Requires glibc version from 24.04+
-    tags = ["manual"],
     target = ":foundation_library_test",
-    target_compatible_with = ["@platforms//os:linux"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms_contrib//os/linux/libc/glibc:at_least_2.39_available",
+    ],
 )

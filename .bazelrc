@@ -14,6 +14,9 @@ common --flag_alias=host_swiftcopt=//swift:exec_copt
 build --host_macos_minimum_os=14.0
 build --macos_minimum_os=14.0
 
+# Include the host's libc version so runtime tests can declare their minimum.
+build --host_platform=@platforms_contrib//host:host
+
 # We don't need to bump some of our dependencies, just becuse our dev
 # dependencies cause us to use a newer version
 build --check_direct_dependencies=off
