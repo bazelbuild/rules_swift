@@ -36,13 +36,10 @@ jobs:
           set -euo pipefail
 
           developer_dir=$(xcode-select -p)
-          test_targets_file=$(mktemp)
-          trap 'rm -f "$test_targets_file"' EXIT
 
-          # Select individual test rules without expanding their test suites.
-          DEVELOPER_DIR="$developer_dir" bazel query 'kind(".*_test rule", rdeps(//..., set(//test:xcode_at_least_26_4)))' > "$test_targets_file"
-          if [[ ! -s "$test_targets_file" ]]; then
-            echo "No tests found for the Xcode version requirements" >&2
-            exit 1
-          fi
-          DEVELOPER_DIR="$developer_dir" bazel test --test_output=errors --build_tests_only --target_pattern_file="$test_targets_file"
+          # Opt tests into this job with the latest-xcode tag.
+          DEVELOPER_DIR="$developer_dir" bazel test \
+            --test_output=errors \
+            --build_tests_only \
+            --test_tag_filters=latest-xcode \
+            //...

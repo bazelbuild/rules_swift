@@ -162,7 +162,7 @@ def precompiled_modules_test_suite(name, tags = []):
 
     _explicit_precompiled_modules_test(
         name = "{}_linking_cross_import_overlay_transitioned_test".format(name),
-        tags = all_tags,
+        tags = all_tags + ["latest-xcode"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/precompiled_modules:linking_cross_import_overlay",
         expected_argv = [

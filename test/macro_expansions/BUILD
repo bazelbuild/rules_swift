@@ -5,7 +5,7 @@ load("//test:transitions.bzl", "transition_test")
 
 licenses(["notice"])
 
-# Share the version flag used to discover tests for the Xcode 26.4 CI job.
+# Macro expansion paths require Xcode 26.4 or newer on Apple platforms.
 config_setting(
     name = "xcode_26_4_or_newer",
     flag_values = {"//test:xcode_at_least_26_4": "True"},
@@ -48,6 +48,7 @@ transition_test(
     name = "macro_expansion_paths_test",
     args = ["test/macro_expansions/nested_macro_user.macro-expansions"],
     compilation_mode = "dbg",
+    tags = ["latest-xcode"],
     target = ":_macro_expansion_paths_test",
     target_compatible_with = select({
         ":xcode_26_4_or_newer": [],
