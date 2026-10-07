@@ -16,6 +16,8 @@ build --macos_minimum_os=14.0
 
 # Include the host's libc version so runtime tests can declare their minimum.
 build --host_platform=@platforms_contrib//host:host
+# https://github.com/bazelbuild/bazel/issues/25145
+info --platforms=@platforms//host
 
 # We don't need to bump some of our dependencies, just becuse our dev
 # dependencies cause us to use a newer version
