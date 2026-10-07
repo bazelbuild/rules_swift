@@ -72,6 +72,16 @@ tasks:
     bazel: last_green
     <<: *linux_common
 
+  ubuntu2404_latest_sysroots:
+    name: "Current LTS Ubuntu sysroots"
+    bazel: latest
+    platform: ubuntu2404
+    test_targets:
+      - "//test/linux_static_stdlib:linux_ubuntu22.04_cc_test"
+      - "//test/linux_static_stdlib:linux_ubuntu22.04_foundation_test"
+      - "//test/linux_static_stdlib:linux_ubuntu24.04_cc_test"
+      - "//test/linux_static_stdlib:linux_ubuntu24.04_foundation_test"
+
   ubuntu2204_latest_non_hermetic:
     name: "Current LTS non-hermetic toolchain"
     bazel: latest

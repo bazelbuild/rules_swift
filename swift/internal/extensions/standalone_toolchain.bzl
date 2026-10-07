@@ -101,10 +101,13 @@ def _standalone_toolchain_impl(repository_ctx):
         repository_ctx.symlink("usr/bin/llvm-objcopy", "usr/bin/llvm-strip")
 
     repository_ctx.file(".swift-version", repository_ctx.attr.swift_version)
+
+    linux_sysroot_version = "24.04" if repository_ctx.attr.platform.startswith("ubuntu24.04") else "22.04"
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
         substitutions = {
+            "{linux_sysroot_version}": linux_sysroot_version,
             "{swift_version}": repository_ctx.attr.swift_version,
         },
     )

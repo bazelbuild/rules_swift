@@ -147,8 +147,9 @@ cc_sysroot(
         "@rules_cc//cc/toolchains/actions:link_actions",
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    data = ["@swift_ubuntu22.04_aarch64_sysroot//:root"],
-    sysroot = "@swift_ubuntu22.04_aarch64_sysroot//:root",
+    args = ["--gcc-toolchain={sysroot}/usr"],
+    data = ["@swift_ubuntu{linux_sysroot_version}_arm64_sysroot//:root"],
+    sysroot = "@swift_ubuntu{linux_sysroot_version}_arm64_sysroot//:root",
     tags = ["manual"],
     visibility = ["//visibility:private"],
 )
@@ -167,8 +168,9 @@ cc_sysroot(
         "@rules_cc//cc/toolchains/actions:link_actions",
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    data = ["@swift_ubuntu22.04_sysroot//:root"],
-    sysroot = "@swift_ubuntu22.04_sysroot//:root",
+    args = ["--gcc-toolchain={sysroot}/usr"],
+    data = ["@swift_ubuntu{linux_sysroot_version}_amd64_sysroot//:root"],
+    sysroot = "@swift_ubuntu{linux_sysroot_version}_amd64_sysroot//:root",
     tags = ["manual"],
     visibility = ["//visibility:private"],
 )
