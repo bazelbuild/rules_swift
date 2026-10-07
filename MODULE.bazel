@@ -294,6 +294,7 @@ register_toolchains("//swift/toolchains:all")
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
 bazel_dep(name = "gazelle", version = "0.46.0", dev_dependency = True)
+bazel_dep(name = "platforms_contrib", version = "0.2.3", dev_dependency = True)
 bazel_dep(name = "rules_go", version = "0.59.0", dev_dependency = True)  # TODO: Remove when transitives update past this version
 bazel_dep(name = "rules_python", version = "2.2.0", dev_dependency = True)
 bazel_dep(name = "stardoc", version = "0.8.0", dev_dependency = True)
@@ -302,6 +303,14 @@ bazel_dep(name = "rules_swift_layering_check_external_test", version = "0.0.0", 
 local_path_override(
     module_name = "rules_swift_layering_check_external_test",
     path = "third_party/rules_swift_layering_check_external_test",
+)
+
+# TODO: Use a release once platforms_contrib includes host libc detection.
+archive_override(
+    module_name = "platforms_contrib",
+    integrity = "sha256-kj0hka+hWv1khEjLUeB2NQF8b50v7MmihsJy5QUQHvc=",
+    strip_prefix = "platforms_contrib-94eb2db76709c1fb597b33969a48cfef3d76a259",
+    urls = ["https://github.com/bazel-contrib/platforms_contrib/archive/94eb2db76709c1fb597b33969a48cfef3d76a259.tar.gz"],
 )
 
 # TODO: In stardoc 0.7.1+, the `load` statements added to the docs are relative to the `alias` targets which is incorrect.
