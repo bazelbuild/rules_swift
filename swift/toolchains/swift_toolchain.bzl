@@ -760,6 +760,10 @@ def _swift_toolchain_impl(ctx):
 
     swiftcopts = []
 
+    for arg in _c_compile_args(ctx, cc_toolchain):
+        if arg.startswith("--gcc-toolchain="):
+            swiftcopts.extend(["-Xcc", arg])
+
     if is_exec_config(ctx):
         swiftcopts.extend(ctx.attr._exec_copts[BuildSettingInfo].value)
     else:
