@@ -188,3 +188,29 @@ sh_test(
         "@platforms//os:linux",
     ],
 )
+
+transition_test(
+    name = "linux_ubuntu22.04_foundation_test",
+    extra_toolchains = [
+        "@swift_toolchain//:cc_toolchain_exec_ubuntu22.04",
+        "@swift_toolchain//:cc_toolchain_exec_ubuntu22.04-aarch64",
+        "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04",
+        "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04-aarch64",
+    ],
+    target = ":foundation_library_test",
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+transition_test(
+    name = "linux_ubuntu24.04_foundation_test",
+    extra_toolchains = [
+        "@swift_toolchain//:cc_toolchain_exec_ubuntu24.04",
+        "@swift_toolchain//:cc_toolchain_exec_ubuntu24.04-aarch64",
+        "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04",
+        "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04-aarch64",
+    ],
+    # Requires glibc version from 24.04+
+    tags = ["manual"],
+    target = ":foundation_library_test",
+    target_compatible_with = ["@platforms//os:linux"],
+)
