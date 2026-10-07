@@ -22,46 +22,40 @@ bazel_dep(name = "swift_argument_parser", version = "1.7.0")
 # Regenerate lockfiles with:
 # bazel run //tools/sysroots:lock
 apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
+apt.index_integrity(
+    integrities = {
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/jammy/main/binary-amd64/Packages.xz": "sha256-N8tX8VVMv6ccWinun/7hipqMF4K7BWjgh0t/9M6PnBE=",
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/jammy/main/binary-arm64/Packages.xz": "sha256-uA0fCXGY9KLYD4TbAlImPZAgUaaVBArLwIXwMwSLybs=",
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/noble/main/binary-amd64/Packages.xz": "sha256-KmoZnhAxpcJ5yzRmRtWUmT81scA91KgqqgMjmA3ZJFE=",
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/noble/main/binary-arm64/Packages.xz": "sha256-ShkB5hJPsKER9d/8j1wUR09Eni7Ppx8urwspkX7bU/k=",
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/resolute/main/binary-amd64/Packages.xz": "sha256-7ZrEHLJj767MWgagdC3FZXDi+1/5TE8uSy+9zd1zzyQ=",
+        "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z/dists/resolute/main/binary-arm64/Packages.xz": "sha256-U3cVgX2e13zJGfUSPtuRpI2a6Xq/BViKjxggjMcifgg=",
+    },
+)
 
 [
     apt.ubuntu(
-        name = "swift_ubuntu22.04_{}_sysroot".format(arch),
-        architectures = [arch],
-        lockfile = "//swift/internal/extensions:ubuntu22.04_{}_sysroot.lock.json".format(arch),
-        packages = [
-            "libc6-dev",
-            "libcurl4-openssl-dev",
-            "libstdc++-11-dev",
-            "libxml2-dev",
-            "linux-libc-dev",
-            "zlib1g-dev",
-        ],
-        suites = ["jammy"],
-    )
-    for arch in [
-        "amd64",
-        "arm64",
-    ]
-]
-
-[
-    apt.ubuntu(
-        name = "swift_ubuntu24.04_{}_sysroot".format(arch),
+        name = "swift_ubuntu{}_{}_sysroot".format(version, arch),
         architectures = [arch],
         glob_excludes = ["usr/share/man/**"],
-        lockfile = "//swift/internal/extensions:ubuntu24.04_{}_sysroot.lock.json".format(arch),
-        packages = [
-            # Supplies the /lib symlink required by libc's linker scripts
-            "base-files",
+        lockfile = "//swift/internal/extensions:ubuntu{}_{}_sysroot.lock.json".format(version, arch),
+        # Supplies the /lib symlink required by libc's linker scripts on 24.04+.
+        packages = (["base-files"] if version != "22.04" else []) + [
             "libc6-dev",
             "libcurl4-openssl-dev",
-            "libstdc++-13-dev",
+            "libstdc++-{}-dev".format(gcc),
             "libxml2-dev",
             "linux-libc-dev",
             "zlib1g-dev",
         ],
-        suites = ["noble"],
+        suites = [suite],
+        uri = "https://snapshot.ubuntu.com/ubuntu/20261001T000000Z",
     )
+    for version, suite, gcc in [
+        ("22.04", "jammy", "11"),
+        ("24.04", "noble", "13"),
+        ("26.04", "resolute", "15"),
+    ]
     for arch in [
         "amd64",
         "arm64",
@@ -74,6 +68,8 @@ use_repo(
     "swift_ubuntu22.04_arm64_sysroot",
     "swift_ubuntu24.04_amd64_sysroot",
     "swift_ubuntu24.04_arm64_sysroot",
+    "swift_ubuntu26.04_amd64_sysroot",
+    "swift_ubuntu26.04_arm64_sysroot",
 )
 
 swift_autoconfiguration = use_repo_rule("//swift/internal:swift_autoconfiguration.bzl", "swift_autoconfiguration")

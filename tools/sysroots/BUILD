@@ -11,6 +11,8 @@ _SYSROOTS = [
     "ubuntu22.04_arm64",
     "ubuntu24.04_amd64",
     "ubuntu24.04_arm64",
+    "ubuntu26.04_amd64",
+    "ubuntu26.04_arm64",
 ] if _IS_LINUX_HOST else []
 
 [

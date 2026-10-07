@@ -102,7 +102,10 @@ def _standalone_toolchain_impl(repository_ctx):
 
     repository_ctx.file(".swift-version", repository_ctx.attr.swift_version)
 
-    linux_sysroot_version = "24.04" if repository_ctx.attr.platform.startswith("ubuntu24.04") else "22.04"
+    linux_sysroot_version = "22.04"
+    for version in ["24.04", "26.04"]:
+        if repository_ctx.attr.platform.startswith("ubuntu" + version):
+            linux_sysroot_version = version
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
