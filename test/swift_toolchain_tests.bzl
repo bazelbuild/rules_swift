@@ -32,7 +32,7 @@ def swift_toolchain_test_suite(name, tags = []):
 
     action_command_line_test(
         name = "{}_linux_sdk_from_cc_sysroot".format(name),
-        expected_argv = ["-sdk", "swift_ubuntu22.04_sysroot"],
+        expected_argv = ["-sdk", "swift_ubuntu22.04_amd64_sysroot"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_compatible_with = [
