@@ -147,8 +147,8 @@ cc_sysroot(
         "@rules_cc//cc/toolchains/actions:link_actions",
         "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    data = ["@swift_ubuntu{linux_sysroot_version}_aarch64_sysroot//:root"],
-    sysroot = "@swift_ubuntu{linux_sysroot_version}_aarch64_sysroot//:root",
+    data = ["@swift_ubuntu{linux_sysroot_version}_arm64_sysroot//:root"],
+    sysroot = "@swift_ubuntu{linux_sysroot_version}_arm64_sysroot//:root",
     tags = ["manual"],
     visibility = ["//visibility:private"],
 )

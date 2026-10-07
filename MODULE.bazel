@@ -43,7 +43,7 @@ apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
     )
     for arch in [
         "amd64",
-        "aarch64",
+        "arm64",
     ]
 ]
 
@@ -71,16 +71,16 @@ apt = use_extension("@bazel_linux_packages//apt:extensions.bzl", "apt")
     )
     for arch in [
         "amd64",
-        "aarch64",
+        "arm64",
     ]
 ]
 
 use_repo(
     apt,
-    "swift_ubuntu22.04_aarch64_sysroot",
     "swift_ubuntu22.04_amd64_sysroot",
-    "swift_ubuntu24.04_aarch64_sysroot",
+    "swift_ubuntu22.04_arm64_sysroot",
     "swift_ubuntu24.04_amd64_sysroot",
+    "swift_ubuntu24.04_arm64_sysroot",
 )
 
 swift_autoconfiguration = use_repo_rule("//swift/internal:swift_autoconfiguration.bzl", "swift_autoconfiguration")
