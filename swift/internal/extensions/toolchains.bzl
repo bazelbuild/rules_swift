@@ -137,6 +137,8 @@ def toolchains_for_platform(platform, toolchain_repository):
         "ubuntu22.04-aarch64",
         "ubuntu24.04",
         "ubuntu24.04-aarch64",
+        "ubuntu26.04",
+        "ubuntu26.04-aarch64",
     ):
         content += _CC_EXEC_TOOLCHAIN_PLATFORM.format(
             exec_compatible_with = _exec_compatible_with_for_platform(platform),

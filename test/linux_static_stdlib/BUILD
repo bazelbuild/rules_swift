@@ -33,6 +33,7 @@ cc_test(
     for version, glibc in [
         ("22.04", "2.35"),
         ("24.04", "2.39"),
+        ("26.04", "2.43"),
     ]
 ]
 
@@ -220,32 +221,24 @@ sh_test(
     ],
 )
 
-transition_test(
-    name = "linux_ubuntu22.04_foundation_test",
-    extra_toolchains = [
-        "@swift_toolchain//:cc_toolchain_exec_ubuntu22.04",
-        "@swift_toolchain//:cc_toolchain_exec_ubuntu22.04-aarch64",
-        "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04",
-        "@swift_toolchain//:swift_toolchain_exec_ubuntu22.04-aarch64",
-    ],
-    target = ":foundation_library_test",
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms_contrib//os/linux/libc/glibc:at_least_2.35_available",
-    ],
-)
-
-transition_test(
-    name = "linux_ubuntu24.04_foundation_test",
-    extra_toolchains = [
-        "@swift_toolchain//:cc_toolchain_exec_ubuntu24.04",
-        "@swift_toolchain//:cc_toolchain_exec_ubuntu24.04-aarch64",
-        "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04",
-        "@swift_toolchain//:swift_toolchain_exec_ubuntu24.04-aarch64",
-    ],
-    target = ":foundation_library_test",
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms_contrib//os/linux/libc/glibc:at_least_2.39_available",
-    ],
-)
+[
+    transition_test(
+        name = "linux_ubuntu{}_foundation_test".format(version),
+        extra_toolchains = [
+            "@swift_toolchain//:cc_toolchain_exec_ubuntu{}".format(version),
+            "@swift_toolchain//:cc_toolchain_exec_ubuntu{}-aarch64".format(version),
+            "@swift_toolchain//:swift_toolchain_exec_ubuntu{}".format(version),
+            "@swift_toolchain//:swift_toolchain_exec_ubuntu{}-aarch64".format(version),
+        ],
+        target = ":foundation_library_test",
+        target_compatible_with = [
+            "@platforms//os:linux",
+            "@platforms_contrib//os/linux/libc/glibc:at_least_{}_available".format(glibc),
+        ],
+    )
+    for version, glibc in [
+        ("22.04", "2.35"),
+        ("24.04", "2.39"),
+        ("26.04", "2.43"),
+    ]
+]
