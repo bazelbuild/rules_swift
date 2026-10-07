@@ -39,6 +39,8 @@ jobs:
 
           # Opt tests into this job with the latest-xcode tag.
           DEVELOPER_DIR="$developer_dir" bazel test \
+            --remote_cache=grpcs://remote.buildbuddy.io \
+            --remote_cache_compression \
             --test_output=errors \
             --build_tests_only \
             --test_tag_filters=latest-xcode \
