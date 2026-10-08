@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
 import argparse
 import io
 import json
@@ -10,7 +12,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 
 _SDK_CONSTRAINTS = {
     "MacOSX": ["@platforms//os:macos"],
@@ -228,7 +230,7 @@ def _write_transition_attrs(
 
 
 def _render_clang_module_groups(
-    modules: list["_Module"],
+    modules: list[_Module],
     clang_only_names: set[str],
     sdk: str,
     sdk_version: str,
@@ -304,7 +306,7 @@ def _render_implicit_modules_group(
 
 
 def _render_cross_import_overlay_targets(
-    overlays: list["_CrossImportOverlay"],
+    overlays: list[_CrossImportOverlay],
     sdk: str,
     out: TextIO,
 ) -> None:
@@ -419,7 +421,7 @@ class _Module:
         self,
         out: TextIO,
         *,
-        deps_by_cpu: Optional[dict[str, set[str]]] = None,
+        deps_by_cpu: dict[str, set[str]] | None = None,
     ) -> None:
         if deps_by_cpu is None:
             deps_by_cpu = self.deps_by_cpu

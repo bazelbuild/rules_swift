@@ -12,8 +12,9 @@ repos:
     rev: v0.16.10
     hooks:
       - id: ruff
-        args: [--fix]
+        args: [--fix, --target-version=py39]
       - id: ruff-format
+        args: [--target-version=py39]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v23.1.3
