@@ -1863,7 +1863,8 @@ def _collect_clang_module_inputs(
         explicit_module_compilation_context,
         modules,
         prefer_precompiled_modules,
-        mixed_module_clang_inputs = None):
+        mixed_module_clang_inputs = None,
+        unchecked_include_headers = None):
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
@@ -1884,6 +1885,15 @@ def _collect_clang_module_inputs(
             be preferred over textual module map files and headers for modules
             that have them. If False, textual module map files and headers
             should always be used.
+        unchecked_include_headers: A `depset` of `File`s that the explicit
+            module compilation needs in addition to the headers of the module
+            being compiled and of its direct dependencies, because they can be
+            reached by includes that Clang doesn't layering-check. If this is
+            not `None`, only those headers (and the `unchecked_include_headers`
+            of the precompiled modules of dependencies) are passed as inputs,
+            instead of all of the transitive headers of the module being
+            compiled. Ignored if `explicit_module_compilation_context` is
+            `None`.
 
     Returns:
         A toolchain configuration result (i.e.,
@@ -1893,22 +1903,41 @@ def _collect_clang_module_inputs(
     direct_inputs = []
     transitive_inputs = []
 
+    prune_headers = (
+        explicit_module_compilation_context != None and
+        prefer_precompiled_modules and
+        not always_include_headers and
+        unchecked_include_headers != None
+    )
+
     if explicit_module_compilation_context:
         # This is a `SwiftPrecompileCModule` action, so by definition we're
-        # only here in a build with explicit modules enabled. We should only
-        # need the direct headers of the module being compiled and its
-        # direct dependencies (the latter because Clang needs them present
-        # on the file system to map them to the module that contains them.)
-        # However, we may also need some of the transitive headers, if the
-        # module has dependencies that aren't recognized as modules (e.g.,
-        # `cc_library` targets without an aspect hint) and the module's
-        # headers include those. This will likely over-estimate the needed
-        # inputs, but we can't do better without include scanning in
-        # Starlark.
-        transitive_inputs.append(explicit_module_compilation_context.headers)
-        transitive_inputs.append(
-            depset(explicit_module_compilation_context.direct_textual_headers),
-        )
+        # only here in a build with explicit modules enabled.
+        if prune_headers:
+            # We only need the headers of the module being compiled and of its
+            # direct dependencies (the latter because Clang needs them present
+            # on the file system to map them to the module that contains them),
+            # plus the ones that can be reached by includes that Clang doesn't
+            # check (see `_precompile_clang_module`).
+            transitive_inputs.append(depset(
+                explicit_module_compilation_context.direct_headers +
+                explicit_module_compilation_context.direct_textual_headers,
+            ))
+            transitive_inputs.append(unchecked_include_headers)
+        else:
+            # We should only need the direct headers of the module being
+            # compiled and its direct dependencies (the latter because Clang
+            # needs them present on the file system to map them to the module
+            # that contains them.) However, we may also need some of the
+            # transitive headers, if the module has dependencies that aren't
+            # recognized as modules (e.g., `cc_library` targets without an
+            # aspect hint) and the module's headers include those. This will
+            # likely over-estimate the needed inputs, but we can't do better
+            # without include scanning in Starlark.
+            transitive_inputs.append(explicit_module_compilation_context.headers)
+            transitive_inputs.append(
+                depset(explicit_module_compilation_context.direct_textual_headers),
+            )
 
     for module in modules:
         clang_module = module.clang
@@ -1926,16 +1955,25 @@ def _collect_clang_module_inputs(
 
         if use_precompiled_module:
             # For builds preferring explicit modules, use it if we have it
-            # and don't include any headers as inputs.
+            # and don't include any headers as inputs, other than the ones that
+            # can be reached by includes that Clang doesn't check.
             direct_inputs.append(precompiled_module)
+            if prune_headers:
+                transitive_inputs.append(clang_module.unchecked_include_headers)
 
-        if not use_precompiled_module or always_include_headers:
+        if always_include_headers or (
+            not use_precompiled_module and
+            (module_map or not prefer_precompiled_modules)
+        ):
             # If we don't have an explicit module (or we're not using it), we
             # need the transitive headers from the compilation context
             # associated with the module. This will likely overestimate the
             # headers that will actually be used in the action, but until we can
             # use include scanning from Starlark, we can't compute a more
-            # precise input set.
+            # precise input set. Modules without a module map (i.e., pure Swift
+            # modules) are skipped in explicit module builds, because Clang
+            # never reads their headers directly; the headers that it reads
+            # through other modules are covered by those modules.
             compilation_context = clang_module.compilation_context
             transitive_inputs.append(compilation_context.headers)
             transitive_inputs.append(
@@ -2119,6 +2157,7 @@ def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system 
         mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
         prefer_precompiled_modules = True,
+        unchecked_include_headers = getattr(prerequisites, "unchecked_include_headers", None),
     )
 
 def _framework_search_paths_configurator(prerequisites, args, is_swift):
