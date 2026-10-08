@@ -632,14 +632,14 @@ def parallel_compilation_test_suite(name, tags = []):
     parallel_action_test(
         name = "{}_const_values_on_codegen".format(name),
         expected_arg_substrings = [
-            "const_values_const_extract_protocols.json",
+            "const_values_driver_flag_const_extract_protocols.json",
         ],
         expected_argv = [
             "-emit-const-values",
-            "-Xfrontend -const-gather-protocols-file",
+            "-const-gather-protocols-list",
         ],
         expected_inputs = [
-            "const_values_const_extract_protocols.json",
+            "const_values_driver_flag_const_extract_protocols.json",
             "*",
         ],
         expected_outputs = [
@@ -647,8 +647,36 @@ def parallel_compilation_test_suite(name, tags = []):
             "*",
         ],
         mnemonic = "SwiftCompileCodegen",
+        not_expected_argv = [
+            "-const-gather-protocols-file",
+        ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_driver_flag",
+    )
+
+    parallel_action_test(
+        name = "{}_const_values_legacy_on_codegen".format(name),
+        expected_arg_substrings = [
+            "const_values_legacy_const_extract_protocols.json",
+        ],
+        expected_argv = [
+            "-emit-const-values",
+            "-Xfrontend -const-gather-protocols-file",
+        ],
+        expected_inputs = [
+            "const_values_legacy_const_extract_protocols.json",
+            "*",
+        ],
+        expected_outputs = [
+            "Empty.swift.swiftconstvalues",
+            "*",
+        ],
+        mnemonic = "SwiftCompileCodegen",
+        not_expected_argv = [
+            "-const-gather-protocols-list",
+        ],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_legacy",
     )
 
     parallel_action_test(
@@ -665,24 +693,27 @@ def parallel_compilation_test_suite(name, tags = []):
     parallel_action_test(
         name = "{}_const_values_wmo_on_codegen".format(name),
         expected_arg_substrings = [
-            "const_values_wmo_const_extract_protocols.json",
+            "const_values_wmo_driver_flag_const_extract_protocols.json",
         ],
         expected_argv = [
             "-emit-const-values",
-            "-Xfrontend -const-gather-protocols-file",
+            "-const-gather-protocols-list",
         ],
         expected_inputs = [
-            "const_values_wmo_const_extract_protocols.json",
+            "const_values_wmo_driver_flag_const_extract_protocols.json",
             "*",
         ],
         expected_outputs = [
-            "const_values_wmo.swiftconstvalues",
-            "const_values_wmo_objs/Empty.swift.o",
+            "const_values_wmo_driver_flag.swiftconstvalues",
+            "const_values_wmo_driver_flag_objs/Empty.swift.o",
             "*",
         ],
         mnemonic = "SwiftCompileCodegen",
+        not_expected_argv = [
+            "-const-gather-protocols-file",
+        ],
         tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_wmo",
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_wmo_driver_flag",
     )
 
     # Verify codegen batching when len(srcs) > codegen_batch_size (9 > 8),

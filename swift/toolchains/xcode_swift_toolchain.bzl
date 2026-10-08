@@ -50,6 +50,7 @@ load(
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",  # @unused
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -762,6 +763,11 @@ def _xcode_swift_toolchain_impl(ctx):
         # Ensure hermetic PCM files (no absolute workspace paths).
         SWIFT_FEATURE_MODULE_HOME_IS_CWD,
     ])
+
+    if _is_xcode_at_least_version(xcode_config, "27.0"):
+        requested_features.append(
+            SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST,
+        )
 
     unsupported_features.extend(build_mode_unsupported_features)
     unsupported_features.extend(ctx.attr.default_unsupported_features)

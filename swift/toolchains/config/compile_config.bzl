@@ -65,6 +65,7 @@ load(
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -213,7 +214,25 @@ def compile_action_configs(
         # Configure constant value extraction.
         ActionConfigInfo(
             actions = all_compile_action_names(),
-            configurators = [_constant_value_extraction_configurator],
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = True,
+                ),
+            ],
+            features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = False,
+                ),
+            ],
+            not_features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
         ),
     ]
 
@@ -1892,19 +1911,29 @@ def _package_identifier_configurator(prerequisites, args):
     if label:
         args.add("-package-name", label.package)
 
-def _constant_value_extraction_configurator(prerequisites, args):
+def _constant_value_extraction_configurator(
+        prerequisites,
+        args,
+        *,
+        use_driver_flag = False):
     """Adds flags related to constant value extraction to the command line."""
     if not prerequisites.const_gather_protocols_file:
         return None
 
     args.add("-emit-const-values")
-    args.add_all(
-        [
-            "-const-gather-protocols-file",
+    if use_driver_flag:
+        args.add(
+            "-const-gather-protocols-list",
             prerequisites.const_gather_protocols_file,
-        ],
-        before_each = "-Xfrontend",
-    )
+        )
+    else:
+        args.add_all(
+            [
+                "-const-gather-protocols-file",
+                prerequisites.const_gather_protocols_file,
+            ],
+            before_each = "-Xfrontend",
+        )
     return ConfigResultInfo(
         inputs = [prerequisites.const_gather_protocols_file],
     )

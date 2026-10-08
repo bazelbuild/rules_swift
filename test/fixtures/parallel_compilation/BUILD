@@ -162,9 +162,34 @@ swift_library(
 )
 
 swift_library(
+    name = "const_values_driver_flag",
+    srcs = ["Empty.swift"],
+    features = ["swift._supports_const_gather_protocols_list"],
+    tags = FIXTURE_TAGS,
+    deps = [":const_protocol_dep"],
+)
+
+swift_library(
+    name = "const_values_legacy",
+    srcs = ["Empty.swift"],
+    features = ["-swift._supports_const_gather_protocols_list"],
+    tags = FIXTURE_TAGS,
+    deps = [":const_protocol_dep"],
+)
+
+swift_library(
     name = "const_values_wmo",
     srcs = ["Empty.swift"],
     copts = ["-wmo"],
+    tags = FIXTURE_TAGS,
+    deps = [":const_protocol_dep"],
+)
+
+swift_library(
+    name = "const_values_wmo_driver_flag",
+    srcs = ["Empty.swift"],
+    copts = ["-wmo"],
+    features = ["swift._supports_const_gather_protocols_list"],
     tags = FIXTURE_TAGS,
     deps = [":const_protocol_dep"],
 )

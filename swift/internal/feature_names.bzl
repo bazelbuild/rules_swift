@@ -262,3 +262,8 @@ SWIFT_FEATURE_NO_IMPLICIT_DEPS = "swift.no_implicit_deps"
 # If enabled, the Bazel label itself will be used as the module name for the
 # target. This is only supported by Swift 6.2 and above.
 SWIFT_FEATURE_LABEL_AS_MODULE_NAME = "swift.label_as_module_name"
+
+# A private feature that is set by the toolchain if it supports the
+# `-const-gather-protocols-list` driver flag (Swift 6.4 and above). Users should
+# never manually enable, disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST = "swift._supports_const_gather_protocols_list"
