@@ -470,3 +470,8 @@ SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
 # Before swift 6.3 using macros lead to absolute paths in swiftmodule files
 # even with -prefix-serialized-debugging-options
 SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"
+
+# A private feature that is set by the toolchain if it supports the
+# `-const-gather-protocols-list` driver flag (Swift 6.4 and above). Users should
+# never manually enable, disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST = "swift._supports_const_gather_protocols_list"

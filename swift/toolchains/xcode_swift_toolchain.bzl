@@ -62,6 +62,7 @@ load(
     "SWIFT_FEATURE_REMAP_XCODE_PATH",
     "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
 )
@@ -872,6 +873,9 @@ def _xcode_swift_toolchain_impl(ctx):
         requested_features.append(SWIFT_FEATURE_DEBUG_MODULE_PATH)
         requested_features.append(SWIFT_FEATURE_INCREMENTAL_FILE_HASHING)
         requested_features.append(SWIFT_FEATURE_INDEX_STORE_COMPRESS)
+        requested_features.append(
+            SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST,
+        )
 
     # Xcode toolchains always support DEVELOPER_DIR
     requested_features.append(SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR)
