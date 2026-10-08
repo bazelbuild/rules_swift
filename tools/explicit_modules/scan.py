@@ -259,15 +259,14 @@ def _render_clang_module_groups(
         out.write("\n")
         out.write("system_module_group(\n")
         out.write(f'    name = "{_canonical_name(module.name, sdk, "alias")}",\n')
-        out.write("    modules = [\n")
-        deps = [_canonical_name(module.name, sdk, "clang")]
-        for dep in sorted(module.all_dependencies):
-            if dep.endswith("_clang"):
-                deps.append(dep[: -len("_clang")])
-            else:
-                deps.append(dep)
-        _write_labels(out, set(deps))
-        out.write("    ],\n")
+        module._render_deps(
+            out,
+            deps_by_cpu={
+                cpu: {_canonical_name(module.name, sdk, "clang")}
+                | {dep.removesuffix("_clang") for dep in deps}
+                for cpu, deps in module.deps_by_cpu.items()
+            },
+        )
         _write_transition_attrs(out, sdk=sdk, sdk_version=sdk_version)
         out.write(")\n")
 
@@ -416,13 +415,20 @@ class _Module:
     def should_compile_swiftinterface(self) -> bool:
         return bool(self.swiftinterface_paths_by_cpu)
 
-    def _render_deps(self, out: TextIO) -> None:
-        if not self.all_dependencies:
+    def _render_deps(
+        self,
+        out: TextIO,
+        *,
+        deps_by_cpu: dict[str, set[str]] | None = None,
+    ) -> None:
+        if deps_by_cpu is None:
+            deps_by_cpu = self.deps_by_cpu
+        if not any(deps_by_cpu.values()):
             return
 
-        shared_deps = set.intersection(*self.deps_by_cpu.values())
-        cpus = sorted(self.deps_by_cpu)
-        cpu_specific_deps = {cpu: self.deps_by_cpu[cpu] - shared_deps for cpu in cpus}
+        shared_deps = set.intersection(*deps_by_cpu.values())
+        cpus = sorted(deps_by_cpu)
+        cpu_specific_deps = {cpu: deps_by_cpu[cpu] - shared_deps for cpu in cpus}
         has_cpu_specific_deps = any(cpu_specific_deps.values())
         if not has_cpu_specific_deps:
             out.write("    modules = [\n")
