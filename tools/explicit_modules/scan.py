@@ -4,7 +4,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any, Optional, TextIO
 import argparse
 import io
 import json
@@ -419,7 +419,7 @@ class _Module:
         self,
         out: TextIO,
         *,
-        deps_by_cpu: dict[str, set[str]] | None = None,
+        deps_by_cpu: Optional[dict[str, set[str]]] = None,
     ) -> None:
         if deps_by_cpu is None:
             deps_by_cpu = self.deps_by_cpu
