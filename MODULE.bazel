@@ -206,10 +206,14 @@ system_sdk.configure_sdks(
         "AppleTVOS": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
+            "_AppIntents_HealthKit",  # Imports HealthKit, which is unavailable on tvOS.
+            "_Contacts_AppIntents",  # Imports Contacts, which is unavailable on tvOS.
         ],
         "AppleTVSimulator": [
             "CoreAudio_Private",  # TODO: Remove once CI >= Xcode 26.4
             "MobileGestaltPrivate",
+            "_AppIntents_HealthKit",  # Imports HealthKit, which is unavailable on tvOS.
+            "_Contacts_AppIntents",  # Imports Contacts, which is unavailable on tvOS.
         ],
         "MacOSX": [
             "MobileGestaltPrivate",
