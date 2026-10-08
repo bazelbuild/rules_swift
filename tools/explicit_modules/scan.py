@@ -684,6 +684,7 @@ def _get_deployment_target(sdk: str, sdk_path: Path) -> str:
 
 def _scan(
     *,
+    developer_dir: Path,
     sdk: str,
     modules: set[str],
     sdk_path: Path,
@@ -714,7 +715,9 @@ def _scan(
             + [f"-F{p}" for p in framework_search_paths]
             + [f"-I{p}" for p in swift_search_paths]
         )
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        env = dict(os.environ)
+        env["DEVELOPER_DIR"] = developer_dir.as_posix()
+        res = subprocess.run(cmd, env=env, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(
                 f"[{sdk}] swiftc -scan-dependencies exited {res.returncode}:\n{res.stderr}"
@@ -835,6 +838,7 @@ def _discover_all_modules(
         scan_futures = {
             pool.submit(
                 _scan,
+                developer_dir=developer_dir,
                 sdk=sdk,
                 modules=modules,
                 sdk_path=sdk_path,
