@@ -803,7 +803,7 @@ def _discover_all_modules(
             if not x.is_dir():
                 if x.suffix == ".modulemap":
                     if x.stem == "module":
-                        modules |= _parse_modulemap_for_modules(x)
+                        modules |= _parse_modulemap_for_modules(x) - excluded_modules
                     else:
                         modules.add(x.stem)
                 continue
