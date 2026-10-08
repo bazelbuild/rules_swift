@@ -77,7 +77,7 @@ _TARGETS_PER_SDK = {
     ],
     "iphoneos": [
         ("@platforms//cpu:arm64", "arm64-apple-ios{ver}"),
-        ("@platforms//cpu:arm64e", "arm64-apple-ios{ver}"),
+        ("@platforms//cpu:arm64e", "arm64e-apple-ios{ver}"),
     ],
     "iphonesimulator": [
         ("@platforms//cpu:arm64", "arm64-apple-ios{ver}-simulator"),
