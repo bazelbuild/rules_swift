@@ -9,7 +9,7 @@ or watch [Fabian's BazelCon talk](https://www.youtube.com/watch?v=5NbgUMH1OGo).
 
 1.  Depend on this runfiles library from your build rule:
 
-```python
+```bzl
 swift_binary(
     name = "my_binary",
     ...
