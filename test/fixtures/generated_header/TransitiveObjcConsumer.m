@@ -14,6 +14,4 @@
 
 #import "test/fixtures/generated_header/generated_header_with_transitive_c_dep-Swift.h"
 
-void useGeneratedHeaderWithTransitiveDependency(void) {
-  (void)[GHUsesTransitiveCDependency new];
-}
+void useGeneratedHeaderWithTransitiveDependency(void) { (void)[GHUsesTransitiveCDependency new]; }

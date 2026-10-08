@@ -14,6 +14,4 @@
 
 #include "examples/xplatform/mixed_c_swift/Private.h"
 
-int integer_squared(int x) {
-  return x * x * MIXED_LANGUAGE_FACTOR;
-}
+int integer_squared(int x) { return x * x * MIXED_LANGUAGE_FACTOR; }

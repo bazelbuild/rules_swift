@@ -15,9 +15,7 @@
 #import "Multiplier.h"
 #import "examples/apple/mixed_c_swift/generated_hdr/Multiplier-Swift.h"
 
-NSInteger multiply_values(NSInteger value, NSInteger factor) {
-  return value * factor;
-}
+NSInteger multiply_values(NSInteger value, NSInteger factor) { return value * factor; }
 
 @implementation Cuber {
   Squarer *_squarer;

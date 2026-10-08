@@ -11,6 +11,6 @@
 
 @implementation MixedLib
 - (void)doSomething {
-    NSLog(@"Doing something with Foundation");
+  NSLog(@"Doing something with Foundation");
 }
 @end
