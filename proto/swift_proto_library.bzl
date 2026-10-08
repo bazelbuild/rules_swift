@@ -147,7 +147,7 @@ from which the Swift source files should be generated.
     doc = """\
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
-```python
+```bzl
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
@@ -165,7 +165,7 @@ swift_proto_library(
 If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
-```python
+```bzl
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
