@@ -417,10 +417,10 @@ class _Module:
         return bool(self.swiftinterface_paths_by_cpu)
 
     def _render_deps(self, out: TextIO) -> None:
-        shared_deps = set(self.all_dependencies)
-        if not shared_deps:
+        if not self.all_dependencies:
             return
 
+        shared_deps = set.intersection(*self.deps_by_cpu.values())
         cpus = sorted(self.deps_by_cpu)
         cpu_specific_deps = {cpu: self.deps_by_cpu[cpu] - shared_deps for cpu in cpus}
         has_cpu_specific_deps = any(cpu_specific_deps.values())
