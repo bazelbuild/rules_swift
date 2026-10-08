@@ -94,6 +94,7 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -288,7 +289,25 @@ def compile_action_configs(
         # Configure constant value extraction.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
-            configurators = [_constant_value_extraction_configurator],
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = True,
+                ),
+            ],
+            features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = False,
+                ),
+            ],
+            not_features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
         ),
 
         # Record this object's own module path in debugging configurations.
@@ -2589,19 +2608,29 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         uniquify = True,
     )
 
-def _constant_value_extraction_configurator(prerequisites, args):
+def _constant_value_extraction_configurator(
+        prerequisites,
+        args,
+        *,
+        use_driver_flag = False):
     """Adds flags related to constant value extraction to the command line."""
     if not prerequisites.const_gather_protocols_file:
         return None
 
     args.add("-emit-const-values-path", prerequisites.const_values_files[0])
-    args.add_all(
-        [
-            "-const-gather-protocols-file",
+    if use_driver_flag:
+        args.add(
+            "-const-gather-protocols-list",
             prerequisites.const_gather_protocols_file,
-        ],
-        before_each = "-Xfrontend",
-    )
+        )
+    else:
+        args.add_all(
+            [
+                "-const-gather-protocols-file",
+                prerequisites.const_gather_protocols_file,
+            ],
+            before_each = "-Xfrontend",
+        )
     return ConfigResultInfo(
         inputs = [prerequisites.const_gather_protocols_file],
     )
