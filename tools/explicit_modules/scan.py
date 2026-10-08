@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Optional, TextIO
 import argparse
 import io
 import json
 import os
 import subprocess
 import tempfile
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Optional, TextIO
 
 _SDK_CONSTRAINTS = {
     "MacOSX": ["@platforms//os:macos"],
@@ -144,8 +144,7 @@ def _canonical_name(name: str, sdk: str, module_type: str) -> str:
 
 
 def _write_labels(out: TextIO, labels: set[str], indent: str = "        ") -> None:
-    for label in sorted(labels):
-        out.write(f'{indent}":{label}",\n')
+    out.writelines(f'{indent}":{label}",\n' for label in sorted(labels))
 
 
 def _get_full_xcode_version(developer_dir: Path) -> str:
@@ -212,8 +211,9 @@ def _write_string_attr(
         return
 
     out.write(f"    {name} = select({{\n")
-    for cpu, value in sorted(values_by_cpu.items()):
-        out.write(f'        "{cpu}": "{value}",\n')
+    out.writelines(
+        f'        "{cpu}": "{value}",\n' for cpu, value in sorted(values_by_cpu.items())
+    )
     out.write("    }),\n")
 
 
@@ -374,10 +374,10 @@ class _Module:
     )
 
     def set_deps(self, cpu: str, direct_dependencies: list[tuple[str, str]]) -> None:
-        self.deps_by_cpu[cpu] = set(
+        self.deps_by_cpu[cpu] = {
             _canonical_name(dep_name, self.sdk, dep_type)
             for dep_type, dep_name in direct_dependencies
-        )
+        }
 
     def set_swiftinterface(
         self,
@@ -723,7 +723,7 @@ def _scan(
         )
         env = dict(os.environ)
         env["DEVELOPER_DIR"] = developer_dir.as_posix()
-        res = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=False)
         if res.returncode != 0:
             raise RuntimeError(
                 f"[{sdk}] swiftc -scan-dependencies exited {res.returncode}:\n{res.stderr}"

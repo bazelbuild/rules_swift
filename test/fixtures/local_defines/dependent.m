@@ -1,5 +1,5 @@
-#import "test/fixtures/local_defines/mixed_lib.h"
 #import <Foundation/Foundation.h>
+#import "test/fixtures/local_defines/mixed_lib.h"
 
 #ifdef LOCAL_FOO
 #error LOCAL_FOO should NOT be defined
@@ -15,6 +15,6 @@
 
 @implementation Dependent
 - (void)doSomethingElse {
-    NSLog(@"Dependent doing something");
+  NSLog(@"Dependent doing something");
 }
 @end

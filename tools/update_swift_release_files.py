@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
 
-
 _SWIFT_RELEASES_URL = "https://www.swift.org/api/v1/install/releases.json"
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _METADATA_JSON = _REPO_ROOT / "swift/internal/extensions/swift_release_metadata.json"

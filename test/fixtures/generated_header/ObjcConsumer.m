@@ -14,6 +14,4 @@
 
 #import "test/fixtures/generated_header/generated_header_with_c_dep-Swift.h"
 
-void useGeneratedHeader(GHUsesCDependency *object, NSObject *value) {
-  (void)[object box:value];
-}
+void useGeneratedHeader(GHUsesCDependency *object, NSObject *value) { (void)[object box:value]; }
