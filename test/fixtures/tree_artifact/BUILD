@@ -11,6 +11,12 @@ package(
 
 licenses(["notice"])
 
+# Shared with the whole-module optimization variants in subpackages.
+exports_files([
+    "Regular.swift",
+    "main.swift",
+])
+
 generate_swift_directory(
     name = "generated",
     srcs = {
@@ -60,10 +66,14 @@ sh_test(
     args = [
         "$(rootpath :tree_artifact_binary)",
         "$(rootpath :tree_artifact_main_binary)",
+        "$(rootpath //test/fixtures/tree_artifact/wmo:binary)",
+        "$(rootpath //test/fixtures/tree_artifact/wmo_single_threaded:binary)",
     ],
     data = [
         ":tree_artifact_binary",
         ":tree_artifact_main_binary",
+        "//test/fixtures/tree_artifact/wmo:binary",
+        "//test/fixtures/tree_artifact/wmo_single_threaded:binary",
     ],
 )
 
