@@ -1,3 +1,7 @@
-// Keep the attribute in this textual header so diagnostic notes must read its
+// Give each PCM a distinct macro so expanding both reads this textual header's
 // source locations from both the workspace and system PCMs.
-#define TEXTUAL_DEPRECATED __attribute__((deprecated))
+#ifdef BUILD_EMBEDDED_TEXTUAL_HEADER
+#define EMBEDDED_TEXTUAL_VALUE 1
+#else
+#define SYSTEM_TEXTUAL_VALUE 2
+#endif

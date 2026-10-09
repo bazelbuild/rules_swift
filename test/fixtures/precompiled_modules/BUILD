@@ -29,7 +29,7 @@ swift_binary(
 )
 
 # Model a textual SDK header (such as Clang's stddef.h) shared by a workspace
-# module and a system module. Diagnostic notes force both copies' source
+# module and a system module. Macro expansions force both copies' source
 # locations to be read, exposing inconsistent embedding of the shared header.
 cc_library(
     name = "embedded_textual_header",

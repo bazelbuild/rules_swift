@@ -1,13 +1,9 @@
 #include "embedded_textual_header.h"
 
-// Read the embedded header's source locations before the system header's.
-// These warnings are intentional: their notes load the shared macro definition.
-static inline int readEmbeddedTextualValue(void) {
-  return embeddedTextualValue;
-}
+// Expand the embedded macro before the system macro so Clang reads the shared
+// header's embedded source locations before its non-embedded source locations.
+_Static_assert(EMBEDDED_TEXTUAL_VALUE == 1, "embedded textual macro");
 
 #include "system_textual_header.h"
 
-static inline int readSystemTextualValue(void) {
-  return systemTextualValue;
-}
+_Static_assert(SYSTEM_TEXTUAL_VALUE == 2, "system textual macro");
