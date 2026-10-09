@@ -96,6 +96,18 @@ def output_file_map_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
+    # Parsing the map must preserve quotes in source-path keys.
+    output_file_map_test(
+        name = "{}_quoted_source".format(name),
+        expected_mapping = {
+            "object": "test/fixtures/tree_artifacts/with_quoted_source_objs/Quoted\"Source.swift.o",
+        },
+        output_file_map = "test/fixtures/tree_artifacts/with_quoted_source.output_file_map.json",
+        source_file = "//test/fixtures/tree_artifacts:quoted_source",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifacts:with_quoted_source",
+    )
+
     output_file_map_test(
         name = "{}_default".format(name),
         expected_mapping = {
