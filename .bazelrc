@@ -45,7 +45,6 @@ common --tool_java_language_version=17
 common --tool_java_runtime_version=remotejdk_17
 
 common:linux --repo_env=CC=clang
-build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
 common:linux --//test:apple_build_tests=False
 
 # Worker sandboxing copies the worker into a sandbox exec root and cleans it
