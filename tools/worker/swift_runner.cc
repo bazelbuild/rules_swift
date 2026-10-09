@@ -315,8 +315,9 @@ int SpawnCompileCodegenStep(
 int SpawnPlanStep(const std::vector<std::string>& tool_args,
                   const std::vector<std::string>& args,
                   const absl::flat_hash_map<std::string, std::string>* env,
-                  CompileStep compile_step, std::ostream& stdout_stream,
-                  std::ostream& stderr_stream) {
+                  CompileStep compile_step,
+                  bool disable_skip_non_inlinable_function_bodies,
+                  std::ostream& stdout_stream, std::ostream& stderr_stream) {
   // Add `-driver-print-jobs` to the command line, which will cause the driver
   // to print the command lines of the frontend jobs it would normally spawn and
   // then exit without running them.
@@ -334,7 +335,8 @@ int SpawnPlanStep(const std::vector<std::string>& tool_args,
     return exit_code;
   }
 
-  CompilationPlan plan(captured_stdout_stream.str());
+  CompilationPlan plan(captured_stdout_stream.str(),
+                       disable_skip_non_inlinable_function_bodies);
   if (compile_step.action == "SwiftCompileModule") {
     return SpawnCompileModuleStep(plan, compile_step, env, stdout_stream,
                                   stderr_stream);
@@ -500,7 +502,9 @@ void ExtractFlagsFromInterfaceFile(
 
 }  // namespace
 
-CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
+CompilationPlan::CompilationPlan(
+    absl::string_view print_jobs_output,
+    bool disable_skip_non_inlinable_function_bodies) {
   // Looks for the `-o` flags in the command line and captures the path to that
   // file. This captures both regular paths (group 2) and single-quoted paths
   // (group 1).
@@ -549,7 +553,14 @@ CompilationPlan::CompilationPlan(absl::string_view print_jobs_output) {
             index;
       }
     } else {
-      module_jobs_.push_back(std::string(command_line_without_expansions));
+      std::string module_job(command_line_without_expansions);
+      if (disable_skip_non_inlinable_function_bodies) {
+        absl::StrReplaceAll(
+            {{" -experimental-skip-non-inlinable-function-bodies-without-types",
+              ""}},
+            &module_job);
+      }
+      module_jobs_.push_back(std::move(module_job));
     }
   }
 }
@@ -624,6 +635,7 @@ SwiftRunner::SwiftRunner(
       last_flag_was_tools_directory_(false),
       last_flag_was_target_(false),
       last_flag_was_module_alias_(false),
+      disable_skip_non_inlinable_function_bodies_(false),
       get_current_directory_(std::move(get_current_directory)) {
   ProcessArguments(args);
 
@@ -666,6 +678,7 @@ int SwiftRunner::Run(std::ostream& stdout_stream, std::ostream& stderr_stream) {
   if (compile_step_.has_value()) {
     std::ostringstream captured_stderr_stream;
     exit_code = SpawnPlanStep(tool_args_, args_, &job_env_, *compile_step_,
+                              disable_skip_non_inlinable_function_bodies_,
                               stdout_stream, captured_stderr_stream);
     ProcessDiagnostics(captured_stderr_stream.str(), stderr_stream, exit_code);
     if (exit_code != 0) {
@@ -889,6 +902,13 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (trimmed_arg ==
+        "-disable-experimental-skip-non-inlinable-function-bodies-without-"
+        "types") {
+      disable_skip_non_inlinable_function_bodies_ = true;
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;
@@ -1073,6 +1093,7 @@ int SwiftRunner::PerformJsonAstDump(JsonAstOptions json_opts,
     // all jobs to generate all possible AST files.
     CompileStep ast_step("SwiftCompileCodegen", json_opts.output);
     exit_code = SpawnPlanStep(tool_args_, ast_dump_args, &job_env_, ast_step,
+                              disable_skip_non_inlinable_function_bodies_,
                               stdout_stream, stderr_stream);
   } else {
     // If the caller requested a subset of AST files but is not using

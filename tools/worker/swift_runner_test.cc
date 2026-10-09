@@ -220,6 +220,41 @@ TEST(CompilationPlanTest, ModuleJobs) {
                           "MyModule.swift"));
 }
 
+TEST(CompilationPlanTest,
+     ModuleJobsStripsSkipNonInlinableFunctionBodiesWhenRequested) {
+  std::string driver_output =
+      "swift-frontend -frontend -emit-module "
+      "-experimental-skip-non-inlinable-function-bodies-without-types "
+      "-o Swift.swiftmodule Swift.swift\n"
+      "swift-frontend -frontend -c -o Swift.o Swift.swift\n";
+  CompilationPlan default_plan(driver_output);
+  EXPECT_THAT(
+      default_plan.ModuleJobs(),
+      ElementsAre("swift-frontend -frontend -emit-module "
+                  "-experimental-skip-non-inlinable-function-bodies-without-"
+                  "types -o Swift.swiftmodule Swift.swift"));
+
+  CompilationPlan stripped_plan(
+      driver_output, /*disable_skip_non_inlinable_function_bodies=*/true);
+  EXPECT_THAT(stripped_plan.ModuleJobs(),
+              ElementsAre("swift-frontend -frontend -emit-module -o "
+                          "Swift.swiftmodule Swift.swift"));
+}
+
+TEST(SwiftRunnerTest,
+     ArgsProcessingDisableSkipNonInlinableFunctionBodiesWithoutTypes) {
+  SwiftRunner default_runner({"swiftc", "main.swift"});
+  EXPECT_FALSE(default_runner.GetDisableSkipNonInlinableFunctionBodies());
+
+  SwiftRunner disabled_runner(
+      {"swiftc",
+       "-Xwrapped-swift=-disable-experimental-skip-non-inlinable-function-"
+       "bodies-without-types",
+       "main.swift"});
+  EXPECT_TRUE(disabled_runner.GetDisableSkipNonInlinableFunctionBodies());
+  EXPECT_THAT(disabled_runner.GetArgs(), ElementsAre("main.swift"));
+}
+
 TEST(CompilationPlanTest, CodegenJobsEmptyReturnsAll) {
   std::string driver_output =
       "swift-frontend -emit-module -o MyModule.swiftmodule MyModule.swift\n"

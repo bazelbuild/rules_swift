@@ -56,7 +56,9 @@ struct JsonAstOptions {
 class CompilationPlan {
  public:
   // Creates a new compilation plan by parsing the given driver output.
-  explicit CompilationPlan(absl::string_view print_jobs_output);
+  explicit CompilationPlan(
+      absl::string_view print_jobs_output,
+      bool disable_skip_non_inlinable_function_bodies = false);
 
   // Returns the list of module jobs extracted from the plan. Each job is a
   // command line that should be invoked to emit some module-wide output.
@@ -123,6 +125,12 @@ class CompilationPlan {
 //     files by specifying them as a comma separated list. Extracting a subset
 //     of files is helpful when combined with the
 //     "-Xwrapped-swift=-compile-step" options.
+//
+// -Xwrapped-swift=-disable-experimental-skip-non-inlinable-function-bodies-without-types
+//     When specified, the spawner will strip the
+//     `-experimental-skip-non-inlinable-function-bodies-without-types` flag
+//     that `swift-driver` unconditionally injects into `EmitModuleJob`
+//     frontend commands during parallel compilation.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
@@ -295,6 +303,11 @@ class SwiftRunner {
   // Whether the worker should emit a JSON AST dump of the compilation.
   std::optional<JsonAstOptions> emit_json_ast_;
 
+  // Whether the worker should strip
+  // `-experimental-skip-non-inlinable-function-bodies-without-types` from
+  // module-emission jobs in a parallel compilation plan.
+  bool disable_skip_non_inlinable_function_bodies_;
+
   // The directory where macro expansions are redirected, if specified.
   std::string macro_expansion_dir_;
 
@@ -332,6 +345,9 @@ class SwiftRunner {
   }
   const std::string& GetMacroExpansionDir() const {
     return macro_expansion_dir_;
+  }
+  bool GetDisableSkipNonInlinableFunctionBodies() const {
+    return disable_skip_non_inlinable_function_bodies_;
   }
   // Recursively scans the macro expansion directory (if one was specified) and
   // normalizes absolute working directory paths in `// original-source-range:`
