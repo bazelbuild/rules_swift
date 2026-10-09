@@ -736,6 +736,13 @@ bool SwiftRunner::ProcessArgument(
                   ? index_store_path_
                   : global_index_store_import_path_;
     changed = true;
+  } else if (arg == "-output-file-map") {
+    // Entries for source directories (tree artifacts) can only be expanded to
+    // the files they contain now, at execution time.
+    consumer("-output-file-map");
+    ++itr;
+    new_arg = OutputFileMap::ExpandedPath(*itr);
+    changed = new_arg != *itr;
   } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
     // WMO is invalid for -dump-ast,
     // so omit the argument that enables WMO

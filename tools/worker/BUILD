@@ -215,6 +215,22 @@ cc_test(
     }),
 )
 
+cc_test(
+    name = "output_file_map_test",
+    size = "small",
+    srcs = [
+        "output_file_map.cc",
+        "output_file_map.h",
+        "output_file_map_test.cc",
+    ],
+    copts = select({
+        "//tools:clang-cl": ["/std:c++17"],
+        "//tools:msvc": ["/std:c++17"],
+        "//conditions:default": ["-std=c++17"],
+    }),
+    deps = ["@nlohmann_json//:json"],
+)
+
 transition_test(
     name = "json_worker_protocol_test",
     size = "small",

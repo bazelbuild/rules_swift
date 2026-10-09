@@ -62,6 +62,12 @@ class OutputFileMap {
   // Writes the output file map as JSON to the file at the given path.
   void WriteToPath(const std::string& path);
 
+  // Returns the path of an output file map that can be passed to swiftc as-is.
+  // This is `path` itself, unless the map has entries for source directories
+  // (see `ExpandSourceDirectories`), in which case the expanded map is written
+  // next to it and its path is returned.
+  static std::string ExpandedPath(const std::string& path);
+
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.

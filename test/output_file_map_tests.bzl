@@ -108,6 +108,21 @@ def output_file_map_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
+    # A directory (tree artifact) in `srcs` has output directories, which the
+    # worker expands for each Swift file in it at execution time.
+    output_file_map_test(
+        name = "{}_tree_artifact".format(name),
+        expected_mapping = {
+            "ast-dump": "test/fixtures/tree_artifact/tree_artifact_objs/generated.swift_ast",
+            "const-values": "test/fixtures/tree_artifact/tree_artifact_objs/generated.swift_swiftconstvalues",
+            "object": "test/fixtures/tree_artifact/tree_artifact_objs/generated.swift_o",
+        },
+        file_entry = "test/fixtures/tree_artifact/generated.swift",
+        output_file_map = "test/fixtures/tree_artifact/tree_artifact.output_file_map.json",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifact",
+    )
+
     # In Xcode13, the bitcode file needs to be in the output file map
     # (https://github.com/bazelbuild/rules_swift/issues/682).
     output_file_map_embed_bitcode_test(

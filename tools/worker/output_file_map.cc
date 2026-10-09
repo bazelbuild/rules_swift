@@ -14,11 +14,13 @@
 
 #include "tools/worker/output_file_map.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -50,6 +52,85 @@ static std::string MakeIncrementalOutputPath(std::string path,
   return path;
 }
 
+// Returns the extension of the per-file output of the given kind, matching the
+// names that `_declare_per_source_output_file` declares for regular sources.
+static std::string ExtensionForKind(const std::string& kind,
+                                    const nlohmann::json& outputs) {
+  if (kind == "object") return "o";
+  if (kind == "llvm-bc") return "bc";
+  if (kind == "ast-dump") return "ast";
+  if (kind == "const-values") return "swiftconstvalues";
+  if (kind == "swift-dependencies") return "swiftdeps";
+  if (kind == "index-unit-output-path") {
+    return outputs.contains("llvm-bc") ? "bc" : "o";
+  }
+  return "";
+}
+
+// Replaces entries whose key is a directory (a tree artifact in `srcs`) with
+// one entry per Swift file under it. The analysis phase can't see the files in
+// a tree artifact, so the values of a directory's entry name output directories
+// instead of files; each Swift file's outputs go to the same relative path
+// inside them. Returns true if any entry was expanded.
+static bool ExpandSourceDirectories(nlohmann::json& json) {
+  nlohmann::json expanded = nlohmann::json::object();
+  bool changed = false;
+
+  for (auto& element : json.items()) {
+    const std::string& src = element.key();
+    const nlohmann::json& outputs = element.value();
+    std::error_code ec;
+    if (src.empty() || !std::filesystem::is_directory(src, ec)) {
+      expanded[src] = outputs;
+      continue;
+    }
+    changed = true;
+
+    std::vector<std::string> relative_paths;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(
+             src, std::filesystem::directory_options::follow_directory_symlink,
+             ec)) {
+      if (entry.is_regular_file() && entry.path().extension() == ".swift") {
+        // Sources in a tree artifact may be symlinks, so the path must not be
+        // resolved.
+        relative_paths.push_back(
+            entry.path().lexically_relative(src).generic_string());
+      }
+    }
+    std::sort(relative_paths.begin(), relative_paths.end());
+
+    for (const auto& relative_path : relative_paths) {
+      nlohmann::json file_outputs;
+      for (auto& output : outputs.items()) {
+        auto kind = output.key();
+        auto directory = output.value().get<std::string>();
+        auto extension = ExtensionForKind(kind, outputs);
+        if (extension.empty()) {
+          file_outputs[kind] = directory;
+          continue;
+        }
+        auto path = (std::filesystem::path(directory) /
+                     (relative_path + "." + extension));
+        // Bazel creates the declared output directories, but not the
+        // subdirectories that mirror the source directory's layout. Swift
+        // dependencies are rewritten into the incremental storage area, which
+        // creates its own directories.
+        if (kind != "swift-dependencies") {
+          std::filesystem::create_directories(path.parent_path(), ec);
+        }
+        file_outputs[kind] = path.generic_string();
+      }
+      // Keys must match the paths Bazel passes on the command line.
+      expanded[src + "/" + relative_path] = file_outputs;
+    }
+  }
+
+  if (changed) {
+    json = expanded;
+  }
+  return changed;
+}
+
 };  // end namespace
 
 void OutputFileMap::ReadFromPath(const std::string& path,
@@ -57,12 +138,29 @@ void OutputFileMap::ReadFromPath(const std::string& path,
                                  const std::string& emit_objc_header_path) {
   std::ifstream stream(path);
   stream >> json_;
+  ExpandSourceDirectories(json_);
   UpdateForIncremental(path, emit_module_path, emit_objc_header_path);
 }
 
 void OutputFileMap::WriteToPath(const std::string& path) {
   std::ofstream stream(path);
   stream << json_;
+}
+
+std::string OutputFileMap::ExpandedPath(const std::string& path) {
+  nlohmann::json json;
+  {
+    std::ifstream stream(path);
+    stream >> json;
+  }
+  if (!ExpandSourceDirectories(json)) {
+    return path;
+  }
+  std::string new_path =
+      std::filesystem::path(path).replace_extension(".expanded.json").string();
+  std::ofstream stream(new_path);
+  stream << json;
+  return new_path;
 }
 
 void OutputFileMap::UpdateForIncremental(

@@ -581,7 +581,9 @@ def compile(
     c_srcs = []
     c_private_hdrs = []
     for src in srcs:
-        if src.extension == "swift":
+        # A directory (tree artifact) is treated as a directory of Swift
+        # sources, since generated code can't be named at analysis time.
+        if src.extension == "swift" or src.is_directory:
             swift_srcs.append(src)
         elif src.extension in C_HEADER_EXTENSIONS:
             c_private_hdrs.append(src)
@@ -2062,6 +2064,38 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
+def _declare_per_source_outputs(actions, extension, target_name, src):
+    """Declares the output of the given kind for a source in the output map.
+
+    For a source file, this is the file declared by
+    `_declare_per_source_output_file`. A directory (tree artifact) holds files
+    only known at execution time, so this declares a directory instead; the
+    worker expands the directory's entry in the output file map so that each
+    Swift file in it gets an output at the same relative path inside it.
+
+    Args:
+        actions: The context's actions object.
+        extension: The output file's extension, without a leading dot.
+        target_name: The name of the target being built.
+        src: A `File` representing the source file or directory being compiled.
+
+    Returns:
+        The declared `File`.
+    """
+    if not src.is_directory:
+        return _declare_per_source_output_file(
+            actions = actions,
+            extension = extension,
+            target_name = target_name,
+            src = src,
+        )
+    owner_rel_path = owner_relative_path(src).replace(" ", "_")
+    return actions.declare_directory(paths.join(
+        "{}_objs".format(target_name),
+        paths.dirname(owner_rel_path),
+        "{}_{}".format(paths.basename(owner_rel_path), extension),
+    ))
+
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
         extract_const_values,
@@ -2135,7 +2169,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
     for src in srcs:
         file_outputs = {}
 
-        ast = _declare_per_source_output_file(
+        ast = _declare_per_source_outputs(
             actions = actions,
             extension = "ast",
             target_name = target_name,
@@ -2146,7 +2180,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         if emits_bc:
             # Declare the llvm bc file (there is one per source file).
-            obj = _declare_per_source_output_file(
+            obj = _declare_per_source_outputs(
                 actions = actions,
                 extension = "bc",
                 target_name = target_name,
@@ -2156,7 +2190,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             file_outputs["llvm-bc"] = obj.path
         else:
             # Declare the object file (there is one per source file).
-            obj = _declare_per_source_output_file(
+            obj = _declare_per_source_outputs(
                 actions = actions,
                 extension = "o",
                 target_name = target_name,
@@ -2169,7 +2203,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             file_outputs["index-unit-output-path"] = obj.path
 
         if extract_const_values and not is_wmo:
-            const_values_file = _declare_per_source_output_file(
+            const_values_file = _declare_per_source_outputs(
                 actions = actions,
                 extension = "swiftconstvalues",
                 target_name = target_name,
@@ -2182,7 +2216,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         if split_derived_file_generation and not is_wmo:
             derived_files_output_map[src.path] = {
-                "swift-dependencies": paths.replace_extension(obj.path, ".swiftdeps"),
+                "swift-dependencies": obj.path if src.is_directory else paths.replace_extension(obj.path, ".swiftdeps"),
             }
 
     if whole_module_map:

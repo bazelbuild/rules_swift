@@ -2618,7 +2618,10 @@ def _constant_value_extraction_configurator(
     if not prerequisites.const_gather_protocols_file:
         return None
 
-    args.add("-emit-const-values-path", prerequisites.const_values_files[0])
+    # This flag enables extraction; with an output file map, the per-source
+    # paths come from the map. A directory holds the outputs of a source
+    # directory (tree artifact), which `Args.add` won't take as a `File`.
+    args.add("-emit-const-values-path", prerequisites.const_values_files[0].path)
     if use_driver_flag:
         args.add(
             "-const-gather-protocols-list",

@@ -70,6 +70,15 @@ def _output_file_map_test_impl(ctx):
 
     content = json.decode(action.content)
     file_entry = ctx.attr.file_entry
+
+    # Generated sources are keyed by their full path, which includes the
+    # configuration's output directory.
+    if file_entry not in content:
+        file_entry = ([
+            key
+            for key in content.keys()
+            if key.endswith("/" + file_entry)
+        ] + [file_entry])[0]
     if file_entry not in content:
         unittest.fail(
             env,
