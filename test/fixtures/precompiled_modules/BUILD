@@ -1,3 +1,4 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//mixed_language:mixed_language_library.bzl", "mixed_language_library")
 load("//swift:swift_binary.bzl", "swift_binary")
@@ -25,6 +26,57 @@ swift_binary(
     name = "hello",
     srcs = ["main.swift"],
     tags = FIXTURE_TAGS,
+)
+
+# Model a textual SDK header (such as Clang's stddef.h) shared by a workspace
+# module and a system module. Macro expansions force both copies' source
+# locations to be read, exposing inconsistent embedding of the shared header.
+cc_library(
+    name = "embedded_textual_header",
+    hdrs = ["embedded_textual_header.h"],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+    textual_hdrs = ["shared_textual_header.h"],
+)
+
+cc_library(
+    name = "system_textual_header",
+    hdrs = ["system_textual_header.h"],
+    aspect_hints = ["//swift:auto_module"],
+    features = ["swift.system_module"],
+    tags = FIXTURE_TAGS,
+    textual_hdrs = ["shared_textual_header.h"],
+)
+
+cc_library(
+    name = "mixed_embedding",
+    hdrs = ["mixed_embedding.h"],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [
+        ":embedded_textual_header",
+        ":system_textual_header",
+    ],
+)
+
+swift_library(
+    name = "mixed_embedding_import",
+    srcs = ["mixed_embedding_import.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":mixed_embedding"],
+)
+
+transition_binary(
+    name = "mixed_embedding_import_transitioned",
+    tags = FIXTURE_TAGS,
+    target = ":mixed_embedding_import",
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "-swift.add_default_precompiled_modules",
+    ],
 )
 
 swift_binary(

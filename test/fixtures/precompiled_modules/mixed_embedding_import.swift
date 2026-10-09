@@ -1,0 +1,1 @@
+import test_fixtures_precompiled_modules_mixed_embedding

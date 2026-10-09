@@ -178,6 +178,13 @@ def precompiled_modules_test_suite(name, tags = []):
     )
 
     build_test(
+        name = "{}_mixed_embedding_build_test".format(name),
+        targets = ["//test/fixtures/precompiled_modules:mixed_embedding_import_transitioned"],
+        tags = all_tags + ["latest-xcode"],
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
         name = "{}_build_test".format(name),
         targets = [
             "//test/fixtures/precompiled_modules:application_extension_unavailable_transitioned",
