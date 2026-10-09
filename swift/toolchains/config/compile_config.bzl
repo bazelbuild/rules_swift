@@ -194,9 +194,7 @@ def compile_action_configs(
             ],
         ),
 
-        # Emit precompiled Clang modules, and embed all files that were read
-        # during compilation into the PCM (unless it is a system module and the
-        # toolchain does not embed system module files).
+        # Emit precompiled Clang modules.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [
@@ -205,10 +203,15 @@ def compile_action_configs(
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
-            configurators = [
-                add_arg("-Xcc", "-Xclang"),
-                add_arg("-Xcc", "-fmodules-embed-all-files"),
-            ],
+            # Keep SDK headers disk-backed even when non-system modules include
+            # them textually. Embedded copies override the system PCMs' headers
+            # and can fail validation when indexing loads those PCMs.
+            configurators = (
+                [
+                    add_arg("-Xcc", "-Xclang"),
+                    add_arg("-Xcc", "-fmodules-embed-all-files"),
+                ] if embed_system_module_files else [_embed_declared_module_files_configurator]
+            ),
             not_features = (
                 None if embed_system_module_files else [SWIFT_FEATURE_SYSTEM_MODULE]
             ),
@@ -1690,6 +1693,42 @@ def _output_ast_path_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.output_file_map,
         outputs = prerequisites.ast_files,
         args = args,
+    )
+
+def _embed_declared_module_file_args(file):
+    return ["-Xclang", "-fmodules-embed-file=" + file.path]
+
+def _embed_declared_module_files_configurator(prerequisites, args):
+    # Bazel-declared headers and module maps may be absent from a consumer's
+    # sandbox. SDK headers are paths rather than Files and remain in Xcode.
+    modules = [module for module in prerequisites.transitive_modules if module.clang]
+    module_inputs = _collect_clang_module_inputs(
+        always_include_headers = getattr(prerequisites, "always_include_headers", False),
+        explicit_module_compilation_context = prerequisites.cc_compilation_context,
+        modules = modules,
+        prefer_precompiled_modules = True,
+        unchecked_include_headers = getattr(prerequisites, "unchecked_include_headers", None),
+    )
+    precompiled_modules = {
+        module.clang.precompiled_module: True
+        for module in modules
+        if module.clang.precompiled_module
+    }
+
+    # Use the same pruned inputs as the action: Clang rejects embedding flags
+    # for transitive headers that are no longer staged in the sandbox.
+    files = depset(
+        direct = prerequisites.source_files + [
+            file
+            for file in module_inputs.inputs
+            if file not in precompiled_modules
+        ],
+        transitive = module_inputs.transitive_inputs,
+    )
+    args.add_all(
+        files,
+        before_each = "-Xcc",
+        map_each = _embed_declared_module_file_args,
     )
 
 def _output_pcm_file_configurator(prerequisites, args):

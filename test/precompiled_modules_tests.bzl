@@ -200,6 +200,14 @@ def precompiled_modules_test_suite(name, tags = []):
         tags = all_tags,
     )
 
+    # Indexing a non-system PCM must not override disk-backed SDK headers.
+    build_test(
+        name = "{}_sdk_header_embedding_build_test".format(name),
+        targets = ["//test/fixtures/sdk_header_embedding:consumer_explicit"],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,
