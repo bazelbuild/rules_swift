@@ -17,7 +17,9 @@
 visibility("private")
 
 def _generate_swift_tree_artifact_impl(ctx):
-    output_dir = ctx.actions.declare_directory(ctx.label.name + ".swift")
+    output_dir = ctx.actions.declare_directory(
+        ctx.attr.directory_name or ctx.label.name + ".swift",
+    )
 
     # Simple shell command to write two dummy Swift files into the directory
     ctx.actions.run_shell(
@@ -35,5 +37,10 @@ def _generate_swift_tree_artifact_impl(ctx):
 
 generate_swift_tree_artifact = rule(
     implementation = _generate_swift_tree_artifact_impl,
+    attrs = {
+        "directory_name": attr.string(
+            doc = "The output directory name; defaults to the target name plus .swift.",
+        ),
+    },
     doc = "Generates a tree artifact containing dummy Swift source files.",
 )

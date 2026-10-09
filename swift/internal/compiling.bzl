@@ -581,7 +581,8 @@ def compile(
     c_srcs = []
     c_private_hdrs = []
     for src in srcs:
-        if src.extension == "swift":
+        # Treat tree artifacts as generated Swift sources regardless of their name.
+        if src.extension == "swift" or src.is_directory:
             swift_srcs.append(src)
         elif src.extension in C_HEADER_EXTENSIONS:
             c_private_hdrs.append(src)

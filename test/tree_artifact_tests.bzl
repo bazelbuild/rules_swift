@@ -51,6 +51,12 @@ def tree_artifact_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/tree_artifacts:with_tree_artifact",
     )
 
+    actions_created_test(
+        name = "{}_tree_artifact_without_extension".format(name),
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifacts:with_tree_artifact_without_extension",
+    )
+
     # Verify that a target with both static files and a tree artifact in srcs
     # registers a Swift compilation action successfully.
     actions_created_test(
@@ -80,6 +86,7 @@ def tree_artifact_test_suite(name, tags = []):
         name = "{}_build_test".format(name),
         targets = [
             "//test/fixtures/tree_artifacts:with_tree_artifact",
+            "//test/fixtures/tree_artifacts:with_tree_artifact_without_extension",
             "//test/fixtures/tree_artifacts:with_tree_artifact_and_static",
             "//test/fixtures/tree_artifacts:with_tree_artifact_wmo",
         ],
