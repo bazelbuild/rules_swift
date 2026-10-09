@@ -13,7 +13,7 @@ if ! grep -Eq '^[[:space:]]*NEEDED[[:space:]]+libswiftCore\.so$' <<<"$dynamic_se
 fi
 
 runpath="$(sed -n 's/^[[:space:]]*\(RUNPATH\|RPATH\)[[:space:]]*//p' <<<"$dynamic_section")"
-if [[ "$runpath" != *'$ORIGIN/../../_solib_'* ]] ||
+if [[ "$runpath" != *"\$ORIGIN/../../_solib_"* ]] ||
     [[ "$runpath" != *'swift_Utoolchain_Uubuntu22.04'* ]] ||
     [[ "$runpath" != *'usr_Slib_Sswift_Slinux'* ]]; then
   echo "error: '$library' does not have the expected Swift runtime search path:" >&2
