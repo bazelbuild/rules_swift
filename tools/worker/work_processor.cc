@@ -195,19 +195,16 @@ void WorkProcessor::ProcessWorkRequest(
   if (is_incremental) {
     std::set<std::string> dir_paths;
 
-    for (const auto& expected_object_pair :
+    for (const auto& [declared_path, incremental_path] :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
       const std::string dir_path =
-          std::filesystem::path(expected_object_pair.second)
-              .parent_path()
-              .string();
+          std::filesystem::path(incremental_path).parent_path().string();
       dir_paths.insert(dir_path);
-      dir_paths.insert(std::filesystem::path(expected_object_pair.first)
-                           .parent_path()
-                           .string());
+      dir_paths.insert(
+          std::filesystem::path(declared_path).parent_path().string());
     }
 
     for (const auto& output : output_file_map.incremental_dependencies()) {
@@ -294,18 +291,17 @@ void WorkProcessor::ProcessWorkRequest(
   if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (const auto& expected_object_pair :
+    for (const auto& [declared_path, incremental_path] :
          output_file_map.incremental_outputs()) {
-      if (optional_outputs.count(expected_object_pair.first) &&
-          !std::filesystem::exists(LongPath(expected_object_pair.second))) {
+      if (optional_outputs.count(declared_path) &&
+          !std::filesystem::exists(LongPath(incremental_path))) {
         continue;
       }
       std::error_code ec;
-      copy_file(expected_object_pair.second, expected_object_pair.first, ec);
+      copy_file(incremental_path, declared_path, ec);
       if (ec) {
-        stderr_stream << "swift_worker: Could not copy "
-                      << expected_object_pair.second << " to "
-                      << expected_object_pair.first << " (" << ec.message()
+        stderr_stream << "swift_worker: Could not copy " << incremental_path
+                      << " to " << declared_path << " (" << ec.message()
                       << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
