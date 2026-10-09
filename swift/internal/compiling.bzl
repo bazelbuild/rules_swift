@@ -2215,8 +2215,13 @@ def _declare_multiple_outputs_and_write_output_file_map(
         output_map[src.path] = file_outputs
 
         if split_derived_file_generation and not is_wmo:
+            # For a directory, the worker adds each file's name and extension.
+            if src.is_directory:
+                swiftdeps_path = obj.path
+            else:
+                swiftdeps_path = paths.replace_extension(obj.path, ".swiftdeps")
             derived_files_output_map[src.path] = {
-                "swift-dependencies": obj.path if src.is_directory else paths.replace_extension(obj.path, ".swiftdeps"),
+                "swift-dependencies": swiftdeps_path,
             }
 
     if whole_module_map:

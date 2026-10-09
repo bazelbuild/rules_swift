@@ -75,12 +75,18 @@ def _maybe_parse_as_library_copts(srcs):
     as if it has top level code. In the case this is the wrong assumption,
     compilation or linking will fail.
 
+    The files in a directory (tree artifact) aren't known at analysis time, so
+    no flag is added when `srcs` contains one; targets whose entry point is an
+    `@main` type in a directory pass `-parse-as-library` in `copts`.
+
     Args:
         srcs: A list of source files to check for the presence of `main.swift`.
 
     Returns:
         A list of compiler flags to add to `copts`
     """
+    if any([src.is_directory for src in srcs]):
+        return []
     swift_srcs = [src for src in srcs if src.extension == "swift"]
     use_parse_as_library = len(swift_srcs) == 1 and \
                            swift_srcs[0].basename != "main.swift"

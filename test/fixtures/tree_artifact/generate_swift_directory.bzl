@@ -2,18 +2,37 @@
 
 def _generate_swift_directory_impl(ctx):
     directory = ctx.actions.declare_directory(ctx.attr.name + ".swift")
+    args = ctx.actions.args()
+    args.add(directory.path)
+    inputs = []
+    for path, content in ctx.attr.srcs.items():
+        src = ctx.actions.declare_file("{}_srcs/{}".format(ctx.attr.name, path))
+        ctx.actions.write(output = src, content = content + "\n")
+        inputs.append(src)
+        args.add_all([path, src])
     ctx.actions.run_shell(
-        outputs = [directory],
-        arguments = [directory.path],
+        arguments = [args],
         command = """\
 set -eu
-mkdir -p "$1/Nested"
-echo 'public struct Generated { public init() {} }' > "$1/Generated.swift"
-echo 'public let nestedValue = 41' > "$1/Nested/Nested.swift"
+directory="$1"
+shift
+while [ "$#" -gt 0 ]; do
+  mkdir -p "$directory/$(dirname "$1")"
+  cp "$2" "$directory/$1"
+  shift 2
+done
 """,
+        inputs = inputs,
+        outputs = [directory],
     )
     return [DefaultInfo(files = depset([directory]))]
 
 generate_swift_directory = rule(
+    attrs = {
+        "srcs": attr.string_dict(
+            doc = "The contents of the generated files, keyed by their path in the directory.",
+            mandatory = True,
+        ),
+    },
     implementation = _generate_swift_directory_impl,
 )

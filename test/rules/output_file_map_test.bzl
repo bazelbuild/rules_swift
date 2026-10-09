@@ -74,11 +74,10 @@ def _output_file_map_test_impl(ctx):
     # Generated sources are keyed by their full path, which includes the
     # configuration's output directory.
     if file_entry not in content:
-        file_entry = ([
-            key
-            for key in content.keys()
-            if key.endswith("/" + file_entry)
-        ] + [file_entry])[0]
+        for key in content.keys():
+            if key.endswith("/" + file_entry):
+                file_entry = key
+                break
     if file_entry not in content:
         unittest.fail(
             env,

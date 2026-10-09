@@ -83,6 +83,7 @@ void WorkProcessor::ProcessWorkRequest(
   auto params_file = TempFile::Create("swiftc_params.XXXXXX");
   std::ofstream params_file_stream(params_file->GetPath());
 
+  std::ostringstream stderr_stream;
   OutputFileMap output_file_map;
   std::string output_file_map_path;
   std::string emit_module_path;
@@ -90,6 +91,7 @@ void WorkProcessor::ProcessWorkRequest(
   bool is_wmo = false;
   bool is_dump_ast = false;
   bool enable_incremental_file_hashing = false;
+  bool expand_output_file_map = false;
 
   std::string prev_arg;
   for (std::string arg : request.arguments) {
@@ -114,6 +116,9 @@ void WorkProcessor::ProcessWorkRequest(
       emit_objc_header_path = arg;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
+    } else if (arg == "-Xwrapped-swift=-expand-output-file-map") {
+      // Kept for `SwiftRunner`, which expands the map in non-incremental mode.
+      expand_output_file_map = true;
     } else if (arg == "-Xwrapped-swift=-enable-incremental-file-hashing") {
       enable_incremental_file_hashing = true;
       arg.clear();
@@ -130,8 +135,13 @@ void WorkProcessor::ProcessWorkRequest(
 
   if (!output_file_map_path.empty()) {
     if (is_incremental) {
-      output_file_map.ReadFromPath(output_file_map_path, emit_module_path,
-                                   emit_objc_header_path);
+      if (!output_file_map.ReadFromPath(output_file_map_path, emit_module_path,
+                                        emit_objc_header_path,
+                                        expand_output_file_map)) {
+        stderr_stream << "swift_worker: " << output_file_map.error() << "\n";
+        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        return;
+      }
 
       // Rewrite the output file map to use the incremental storage area and
       // pass the compiler the path to the rewritten file.
@@ -160,8 +170,6 @@ void WorkProcessor::ProcessWorkRequest(
 
   processed_args.push_back("@" + params_file->GetPath());
   params_file_stream.close();
-
-  std::ostringstream stderr_stream;
 
   if (is_incremental) {
     std::set<std::string> dir_paths;

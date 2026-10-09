@@ -322,11 +322,16 @@ void PrintVerboseInvocation(const std::vector<std::string>& args,
 // compilation outputs that Bazel declared. Create those outputs after a
 // successful invocation so this works with every execution strategy.
 bool CreateVerifyOutputs(const std::string& output_file_map_path,
+                         bool expand_output_file_map,
                          const std::string& emit_module_path,
                          std::ostream* stderr_stream) {
   if (!output_file_map_path.empty()) {
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path, "", "");
+    if (!output_file_map.ReadFromPath(output_file_map_path, "", "",
+                                      expand_output_file_map)) {
+      (*stderr_stream) << "swift_worker: " << output_file_map.error() << "\n";
+      return false;
+    }
     for (const auto& expected_output_pair :
          output_file_map.incremental_outputs()) {
       if (!TouchFile(expected_output_pair.first, stderr_stream)) {
@@ -490,6 +495,7 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       force_response_file_(force_response_file),
       is_dump_ast_(false),
       is_verify_(false),
+      expand_output_file_map_(false),
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
@@ -499,6 +505,12 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
 
 int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
   int exit_code = 0;
+
+  if (!expand_output_file_map_error_.empty()) {
+    (*stderr_stream) << "swift_worker: " << expand_output_file_map_error_
+                     << "\n";
+    return EXIT_FAILURE;
+  }
 
   // Do the layering check before compilation. This gives a better error
   // message if a Swift module imports a module that depends on a Clang module
@@ -530,8 +542,9 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     return exit_code;
   }
 
-  if (is_verify_ && !CreateVerifyOutputs(output_file_map_path_,
-                                         emit_module_path_, stderr_stream)) {
+  if (is_verify_ &&
+      !CreateVerifyOutputs(output_file_map_path_, expand_output_file_map_,
+                           emit_module_path_, stderr_stream)) {
     return EXIT_FAILURE;
   }
 
@@ -551,7 +564,11 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     }
 
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_, "", "");
+    if (!output_file_map.ReadFromPath(output_file_map_path_, "", "",
+                                      expand_output_file_map_)) {
+      (*stderr_stream) << "swift_worker: " << output_file_map.error() << "\n";
+      return EXIT_FAILURE;
+    }
 
     auto outputs = output_file_map.incremental_outputs();
     std::map<std::string, std::string>::iterator it;
@@ -736,13 +753,25 @@ bool SwiftRunner::ProcessArgument(
                   ? index_store_path_
                   : global_index_store_import_path_;
     changed = true;
-  } else if (arg == "-output-file-map") {
+  } else if (arg == "-output-file-map" && expand_output_file_map_) {
     // Entries for source directories (tree artifacts) can only be expanded to
-    // the files they contain now, at execution time.
+    // the files they contain now, at execution time. The expanded map is a
+    // temporary file because other actions (e.g., the AST dump) read the same
+    // map; swiftc resolves its paths against the working directory.
     consumer("-output-file-map");
     ++itr;
-    new_arg = OutputFileMap::ExpandedPath(*itr);
-    changed = new_arg != *itr;
+    auto expanded_map = TempFile::Create("output_file_map.XXXXXX");
+    if (OutputFileMap::WriteExpanded(
+            *itr, expanded_map->GetPath(),
+            is_dump_ast_ ? OutputFileMap::ActionOutputs::kDumpAst
+                         : OutputFileMap::ActionOutputs::kCompile,
+            &expand_output_file_map_error_)) {
+      new_arg = expanded_map->GetPath();
+    } else {
+      new_arg = *itr;
+    }
+    temp_files_.push_back(std::move(expanded_map));
+    changed = true;
   } else if (is_dump_ast_ && ArgumentEnablesWMO(arg)) {
     // WMO is invalid for -dump-ast,
     // so omit the argument that enables WMO
@@ -791,6 +820,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         deps_modules_path_ = std::string(value);
       } else if (value == "-hermetic-pcm") {
         hermetic_pcm_ = true;
+      } else if (value == "-expand-output-file-map") {
+        expand_output_file_map_ = true;
       } else if (absl::ConsumePrefix(
                      &value, "-explicit-compile-module-from-interface=")) {
         module_or_interface_path_ = std::string(value);

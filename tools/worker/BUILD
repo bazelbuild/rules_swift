@@ -25,6 +25,7 @@ cc_library(
         ],
     }),
     deps = [
+        ":output_file_map",
         ":swift_runner",
         ":worker_protocol",
         "//tools/common:file_system",
@@ -94,12 +95,27 @@ cc_library(
 )
 
 cc_library(
+    name = "output_file_map",
+    srcs = ["output_file_map.cc"],
+    hdrs = ["output_file_map.h"],
+    copts = select({
+        "//tools:clang-cl": [
+            "-Xclang=-fno-split-cold-code",
+            "/std:c++17",
+        ],
+        "//tools:msvc": [
+            "/std:c++17",
+        ],
+        "//conditions:default": [
+            "-std=c++17",
+        ],
+    }),
+    deps = ["@nlohmann_json//:json"],
+)
+
+cc_library(
     name = "swift_runner",
-    srcs = [
-        "output_file_map.cc",
-        "output_file_map.h",
-        "swift_runner.cc",
-    ],
+    srcs = ["swift_runner.cc"],
     hdrs = ["swift_runner.h"],
     copts = select({
         "//tools:clang-cl": [
@@ -122,6 +138,7 @@ cc_library(
     }),
     deps = [
         ":hermetic_symlink",
+        ":output_file_map",
         ":pcm_hermetic_runner",
         "//tools/common:bazel_substitutions",
         "//tools/common:color",
@@ -218,17 +235,16 @@ cc_test(
 cc_test(
     name = "output_file_map_test",
     size = "small",
-    srcs = [
-        "output_file_map.cc",
-        "output_file_map.h",
-        "output_file_map_test.cc",
-    ],
+    srcs = ["output_file_map_test.cc"],
     copts = select({
         "//tools:clang-cl": ["/std:c++17"],
         "//tools:msvc": ["/std:c++17"],
         "//conditions:default": ["-std=c++17"],
     }),
-    deps = ["@nlohmann_json//:json"],
+    deps = [
+        ":output_file_map",
+        "@nlohmann_json//:json",
+    ],
 )
 
 transition_test(

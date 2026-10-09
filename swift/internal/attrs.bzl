@@ -186,7 +186,11 @@ and must be parsable as C/Objective-C like any other header imported by Swift.
 A directory (tree artifact), such as the output of a code generator whose file
 names are only known at execution time, is compiled as a directory of Swift
 sources: every `.swift` file in it, at any depth, gets its own object file, as
-if it were listed individually. It must contain only Swift sources.
+if it were listed individually. It must contain only Swift sources; any other
+file in it is an error. Since its files aren't known at analysis time, it is
+not considered when deciding whether to pass `-parse-as-library`: a
+`main.swift` in it isn't detected in a library, and a binary or test whose
+`@main` entry point is in it must pass `-parse-as-library` in `copts`.
 
 Except in very rare circumstances, a Swift source file should only appear in a
 single `swift_*` target. Adding the same source file to multiple `swift_*`

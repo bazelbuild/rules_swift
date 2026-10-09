@@ -18,6 +18,7 @@
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 // Supports loading and rewriting a `swiftc` output file map to support
 // incremental compilation.
@@ -53,20 +54,40 @@ class OutputFileMap {
     return incremental_cleanup_outputs_;
   }
 
+  // The outputs of the action that an output file map is used for, which
+  // determine the directories created when expanding source directories.
+  enum class ActionOutputs {
+    // Object files (or LLVM bitcode) and constant values.
+    kCompile,
+    // AST dumps.
+    kDumpAst,
+  };
+
   // Reads the output file map from the JSON file at the given path, and updates
-  // it to support incremental builds.
-  void ReadFromPath(const std::string& path,
+  // it to support incremental builds. If `expand_source_directories` is true,
+  // the entries of source directories (tree artifacts) are first expanded into
+  // entries for the files in them, as for `WriteExpanded`. Returns false on
+  // failure, with the reason in `error()`.
+  bool ReadFromPath(const std::string& path,
                     const std::string& emit_module_path,
-                    const std::string& emit_objc_header_path);
+                    const std::string& emit_objc_header_path,
+                    bool expand_source_directories = false);
+
+  // The reason the last `ReadFromPath` failed.
+  const std::string& error() const { return error_; }
 
   // Writes the output file map as JSON to the file at the given path.
   void WriteToPath(const std::string& path);
 
-  // Returns the path of an output file map that can be passed to swiftc as-is.
-  // This is `path` itself, unless the map has entries for source directories
-  // (see `ExpandSourceDirectories`), in which case the expanded map is written
-  // next to it and its path is returned.
-  static std::string ExpandedPath(const std::string& path);
+  // Reads the output file map at `path`, expands the entries of source
+  // directories (tree artifacts), and writes the result to `expanded_path`.
+  // The files in a tree artifact are only known at execution time, so analysis
+  // records one entry per directory whose outputs are directories too; each
+  // Swift file in it gets outputs at the same relative path inside them.
+  // Returns false and sets `error` on failure.
+  static bool WriteExpanded(const std::string& path,
+                            const std::string& expanded_path,
+                            ActionOutputs action_outputs, std::string* error);
 
  private:
   // Modifies the output file map's JSON structure in-place to replace file
@@ -79,6 +100,7 @@ class OutputFileMap {
   std::map<std::string, std::string> incremental_outputs_;
   std::map<std::string, std::string> incremental_inputs_;
   std::vector<std::string> incremental_cleanup_outputs_;
+  std::string error_;
 };
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_OUTPUT_FILE_MAP_H_

@@ -64,13 +64,6 @@ int main() {
   WriteFile("out/bin/gen.swift/README.md", "");
   WriteFile("Regular.swift", "");
 
-  // A map with no directory entries is used as-is.
-  WriteFile("out/bin/plain.output_file_map.json",
-            R"({"Regular.swift": {"object": "out/bin/Regular.swift.o"}})");
-  Check(OutputFileMap::ExpandedPath("out/bin/plain.output_file_map.json") ==
-            "out/bin/plain.output_file_map.json",
-        "map without directories should not be rewritten");
-
   WriteFile("out/bin/lib.output_file_map.json", R"({
     "": {"const-values": "out/bin/lib.swiftconstvalues"},
     "Regular.swift": {"object": "out/bin/lib_objs/Regular.swift.o"},
@@ -80,12 +73,13 @@ int main() {
       "index-unit-output-path": "out/bin/lib_objs/gen.swift_o"
     }
   })");
-  auto expanded_path =
-      OutputFileMap::ExpandedPath("out/bin/lib.output_file_map.json");
-  Check(expanded_path == "out/bin/lib.output_file_map.expanded.json",
-        "unexpected expanded path: " + expanded_path);
+  std::string error;
+  Check(OutputFileMap::WriteExpanded(
+            "out/bin/lib.output_file_map.json", "expanded.json",
+            OutputFileMap::ActionOutputs::kCompile, &error),
+        "expansion failed: " + error);
 
-  auto json = ReadJson(expanded_path);
+  auto json = ReadJson("expanded.json");
   Check(json.size() == 4, "expected 4 entries, got: " + json.dump());
   Check(!json.contains("out/bin/gen.swift"),
         "directory entry was not replaced");
@@ -107,19 +101,66 @@ int main() {
   auto& b = json["out/bin/gen.swift/sub/B.swift"];
   Check(b["object"] == "out/bin/lib_objs/gen.swift_o/sub/B.swift.o",
         "sub/B.swift object: " + b.dump());
+
+  // Only the directories of the outputs the action writes are created; the AST
+  // directory belongs to the AST dump action.
   Check(std::filesystem::is_directory("out/bin/lib_objs/gen.swift_o/sub"),
-        "output subdirectory was not created");
+        "object subdirectory was not created");
+  Check(!std::filesystem::exists("out/bin/lib_objs/gen.swift_ast"),
+        "AST directory created by the compile action");
+  Check(OutputFileMap::WriteExpanded(
+            "out/bin/lib.output_file_map.json", "expanded_ast.json",
+            OutputFileMap::ActionOutputs::kDumpAst, &error),
+        "AST expansion failed: " + error);
+  Check(std::filesystem::is_directory("out/bin/lib_objs/gen.swift_ast/sub"),
+        "AST subdirectory was not created");
 
   // Incremental mode expands directories before moving outputs to the
   // incremental storage area, so each file gets its own outputs there.
   OutputFileMap output_file_map;
-  output_file_map.ReadFromPath("out/bin/lib.output_file_map.json", "", "");
+  Check(output_file_map.ReadFromPath("out/bin/lib.output_file_map.json", "", "",
+                                     /*expand_source_directories=*/true),
+        "reading failed: " + output_file_map.error());
   auto outputs = output_file_map.incremental_outputs();
   Check(outputs.count("out/bin/lib_objs/gen.swift_o/sub/B.swift.o") == 1,
         "incremental outputs missing sub/B.swift.o");
   Check(outputs["out/bin/lib_objs/gen.swift_o/sub/B.swift.o"] ==
             "out/bin/_swift_incremental/lib_objs/gen.swift_o/sub/B.swift.o",
         "unexpected incremental path for sub/B.swift.o");
+
+  // Without expansion, the map is read as-is.
+  OutputFileMap unexpanded;
+  Check(unexpanded.ReadFromPath("out/bin/lib.output_file_map.json", "", ""),
+        "reading without expansion failed");
+  Check(unexpanded.json().contains("out/bin/gen.swift"),
+        "map expanded although expansion was not requested");
+
+  // Errors are reported rather than ignored.
+  WriteFile("out/bin/unknown.output_file_map.json",
+            R"({"out/bin/gen.swift": {"new-kind": "out/bin/x"}})");
+  Check(!OutputFileMap::WriteExpanded(
+            "out/bin/unknown.output_file_map.json", "unknown.json",
+            OutputFileMap::ActionOutputs::kCompile, &error) &&
+            error.find("new-kind") != std::string::npos,
+        "unknown kind not reported: " + error);
+
+  WriteFile("out/bin/malformed.output_file_map.json", "{");
+  Check(!OutputFileMap::WriteExpanded(
+            "out/bin/malformed.output_file_map.json", "malformed.json",
+            OutputFileMap::ActionOutputs::kCompile, &error),
+        "malformed map not reported");
+
+  WriteFile("out/bin/unreadable.swift/C.swift", "");
+  std::filesystem::permissions("out/bin/unreadable.swift",
+                               std::filesystem::perms::none);
+  WriteFile("out/bin/unreadable.output_file_map.json",
+            R"({"out/bin/unreadable.swift": {"object": "out/bin/x"}})");
+  bool unreadable_ok = OutputFileMap::WriteExpanded(
+      "out/bin/unreadable.output_file_map.json", "unreadable.json",
+      OutputFileMap::ActionOutputs::kCompile, &error);
+  std::filesystem::permissions("out/bin/unreadable.swift",
+                               std::filesystem::perms::owner_all);
+  Check(!unreadable_ok, "unreadable source directory not reported");
 
   return 0;
 }

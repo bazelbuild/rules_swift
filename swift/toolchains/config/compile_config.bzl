@@ -1650,10 +1650,18 @@ def command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     clang_copts = cpp_fragment.objccopts + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
 
-def _output_or_file_map(output_file_map, outputs, args):
+def _output_or_file_map(output_file_map, outputs, args, source_files = []):
     """Adds the output file map or single object file to the command line."""
     if output_file_map:
         args.add("-output-file-map", output_file_map)
+
+        # The entries of source directories (tree artifacts) are expanded by the
+        # worker into entries for the files in them.
+        if any([
+            not types.is_string(source_file) and source_file.is_directory
+            for source_file in source_files
+        ]):
+            args.add("-Xwrapped-swift=-expand-output-file-map")
         return ConfigResultInfo(
             inputs = [output_file_map],
         )
@@ -1674,6 +1682,7 @@ def _output_object_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.output_file_map,
         outputs = prerequisites.object_files,
         args = args,
+        source_files = prerequisites.source_files,
     )
 
 def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
@@ -1682,6 +1691,7 @@ def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.derived_files_output_file_map,
         outputs = [prerequisites.swiftmodule_file],
         args = args,
+        source_files = prerequisites.source_files,
     )
 
 def _output_ast_path_or_file_map_configurator(prerequisites, args):
@@ -1690,6 +1700,7 @@ def _output_ast_path_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.output_file_map,
         outputs = prerequisites.ast_files,
         args = args,
+        source_files = prerequisites.source_files,
     )
 
 def _output_pcm_file_configurator(prerequisites, args):

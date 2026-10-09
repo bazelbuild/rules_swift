@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Checks that a binary using sources from a tree artifact runs.
+# Checks that binaries using sources from tree artifacts run.
 
 set -euo pipefail
 
-output="$("$1")"
-if [[ "$output" != "Generated 42" ]]; then
-  echo "Expected 'Generated 42', got '$output'" >&2
-  exit 1
-fi
+for binary in "$@"; do
+  output="$("$binary")"
+  if [[ "$output" != "Generated 42" ]]; then
+    echo "Expected 'Generated 42' from $binary, got '$output'" >&2
+    exit 1
+  fi
+done

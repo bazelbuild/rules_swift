@@ -179,6 +179,13 @@ class SwiftRunner {
   // Whether this is a frontend diagnostic verification invocation.
   bool is_verify_;
 
+  // Whether the output file map has entries for source directories (tree
+  // artifacts) that must be expanded before it is passed to the compiler.
+  bool expand_output_file_map_;
+
+  // The reason expanding the output file map failed, if it did.
+  std::string expand_output_file_map_error_;
+
   // Whether `-file-prefix-map PWD=.` is set.
   bool file_prefix_pwd_is_dot_;
 
