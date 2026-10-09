@@ -2167,7 +2167,7 @@ def _format_output_file_map_entry(entry, directory_expander = None):
 
     # The whole module map entry has an empty string as its key.
     if entry.src == "":
-        return '  "{}": {}'.format(entry.src, json.encode(entry.outputs))
+        return "  {}: {}".format(json.encode(entry.src), json.encode(entry.outputs))
 
     if entry.src.is_directory:
         if not directory_expander:
@@ -2186,11 +2186,11 @@ def _format_output_file_map_entry(entry, directory_expander = None):
                 else:
                     file_outputs[k] = paths.join(v, rel_path)
             results.append(
-                '  "{}": {}'.format(f.path, json.encode(file_outputs)),
+                "  {}: {}".format(json.encode(f.path), json.encode(file_outputs)),
             )
         return results
 
-    return '  "{}": {}'.format(entry.src.path, json.encode(entry.outputs))
+    return "  {}: {}".format(json.encode(entry.src.path), json.encode(entry.outputs))
 
 def _write_output_file_map(actions, map_entries, output_map_file, srcs):
     """Writes an output file map, deferring JSON generation to execution time."""

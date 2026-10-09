@@ -17,6 +17,12 @@ generate_swift_tree_artifact(
     name = "dynamic_sources",
 )
 
+swift_library(
+    name = "with_quoted_source",
+    srcs = ["Quoted\"Source.swift"],
+    tags = FIXTURE_TAGS,
+)
+
 generate_swift_tree_artifact(
     name = "sources_without_extension",
     directory_name = "GeneratedSources",
