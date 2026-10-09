@@ -29,6 +29,7 @@ cc_library(
         ":worker_protocol",
         "//tools/common:file_system",
         "//tools/common:temp_file",
+        "@nlohmann_json//:json",
     ],
 )
 

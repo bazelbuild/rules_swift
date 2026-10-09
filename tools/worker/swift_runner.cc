@@ -326,10 +326,10 @@ bool CreateVerifyOutputs(const std::string& output_file_map_path,
                          std::ostream* stderr_stream) {
   if (!output_file_map_path.empty()) {
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path, "", "");
-    for (const auto& expected_output_pair :
+    output_file_map.ReadFromPath(output_file_map_path);
+    for (const auto& [declared_path, incremental_path] :
          output_file_map.incremental_outputs()) {
-      if (!TouchFile(expected_output_pair.first, stderr_stream)) {
+      if (!TouchFile(declared_path, stderr_stream)) {
         return false;
       }
     }
@@ -551,10 +551,7 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
     }
 
     OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path_, "", "");
-
-    auto outputs = output_file_map.incremental_outputs();
-    std::map<std::string, std::string>::iterator it;
+    output_file_map.ReadFromPath(output_file_map_path_);
 
     std::vector<std::string> ii_args;
     ii_args.push_back(index_import_path_);
@@ -564,9 +561,9 @@ int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
       ii_args.push_back(std::filesystem::current_path().string() + "=.");
     }
 
-    for (it = outputs.begin(); it != outputs.end(); it++) {
+    for (const auto& [output_path, incremental_path] :
+         output_file_map.incremental_outputs()) {
       // Need the actual output paths of the compiler - not bazel
-      auto output_path = it->first;
       auto file_type = output_path.substr(output_path.find_last_of(".") + 1);
       if (file_type == "o") {
         ii_args.push_back("-import-output-file");
