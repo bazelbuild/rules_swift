@@ -102,8 +102,8 @@ def output_file_map_test_suite(name, tags = []):
         expected_mapping = {
             "object": "test/fixtures/tree_artifacts/with_quoted_source_objs/Quoted\"Source.swift.o",
         },
-        file_entry = "test/fixtures/tree_artifacts/Quoted\"Source.swift",
         output_file_map = "test/fixtures/tree_artifacts/with_quoted_source.output_file_map.json",
+        source_file = "//test/fixtures/tree_artifacts:quoted_source",
         tags = all_tags,
         target_under_test = "//test/fixtures/tree_artifacts:with_quoted_source",
     )

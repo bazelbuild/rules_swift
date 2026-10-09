@@ -69,7 +69,7 @@ def _output_file_map_test_impl(ctx):
     )
 
     content = json.decode(action.content)
-    file_entry = ctx.attr.file_entry
+    file_entry = ctx.file.source_file.path if ctx.file.source_file else ctx.attr.file_entry
     if file_entry not in content:
         unittest.fail(
             env,
@@ -130,10 +130,13 @@ for the given file entry.
 """,
             ),
             "file_entry": attr.string(
-                mandatory = True,
                 doc = """\
 The file entry in the output file map that will be inspected.
 """,
+            ),
+            "source_file": attr.label(
+                allow_single_file = True,
+                doc = "A source file whose path selects the map entry, overriding file_entry. Supports generated files.",
             ),
             "output_file_map": attr.string(
                 mandatory = True,

@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load(
     "//swift:swift_library.bzl",
     "swift_library",
@@ -17,9 +18,16 @@ generate_swift_tree_artifact(
     name = "dynamic_sources",
 )
 
+write_file(
+    name = "quoted_source",
+    out = "Quoted\"Source.swift",
+    content = ["public struct QuotedSource {}"],
+    tags = FIXTURE_TAGS,
+)
+
 swift_library(
     name = "with_quoted_source",
-    srcs = ["Quoted\"Source.swift"],
+    srcs = [":quoted_source"],
     tags = FIXTURE_TAGS,
 )
 
