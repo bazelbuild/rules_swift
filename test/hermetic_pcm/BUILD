@@ -1,16 +1,76 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//swift:swift.bzl", "system_swiftinterface")
+load("//swift:swift_binary.bzl", "swift_binary")
 load("//swift:swift_compiler_plugin.bzl", "swift_compiler_plugin")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
-load("//test:transitions.bzl", "transition_binary")
+load("//test:transitions.bzl", "transition_binary", "transition_test")
 load(":extract_pcm.bzl", "extract_pcm")
 load(":extract_swiftmodule.bzl", "extract_swiftmodule")
 
 config_setting(
     name = "supports_hermetic_swiftmodule",
     flag_values = {"//test:xcode_at_least_26_4": "True"},
+)
+
+swift_interop_hint(
+    name = "umbrella_hint",
+    module_map = "umbrella/module.modulemap",
+    module_name = "HermeticUmbrella",
+)
+
+cc_library(
+    name = "umbrella",
+    hdrs = [
+        "umbrella/Umbrella.h",
+        "umbrella/Value.h",
+    ],
+    aspect_hints = [":umbrella_hint"],
+    target_compatible_with = select({
+        "@apple_support//configs:apple": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+)
+
+swift_binary(
+    name = "umbrella_consumer",
+    testonly = True,
+    srcs = ["umbrella_main.swift"],
+    deps = [":umbrella"],
+)
+
+transition_test(
+    name = "umbrella_module_test",
+    compilation_mode = "dbg",
+    target = ":umbrella_consumer",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.use_explicit_swift_module_map",
+        "-swift.add_default_precompiled_modules",
+    ],
+)
+
+extract_pcm(
+    name = "umbrella_pcm",
+    target = ":umbrella",
+)
+
+sh_test(
+    name = "hermetic_umbrella_pcm_test",
+    srcs = ["check_hermetic_pcm.sh"],
+    args = ["$(rootpath :umbrella_pcm)"],
+    data = [":umbrella_pcm"],
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 transition_binary(
