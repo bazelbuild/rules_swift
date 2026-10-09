@@ -76,7 +76,7 @@ _test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
     testonly_targets = True,
 )
 
-def _maybe_parse_as_library_copts(srcs):
+def _maybe_parse_as_library_copts(srcs, srcs_dirs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
 
     Now that the `@main` attribute exists and is becoming more common, in the
@@ -85,17 +85,18 @@ def _maybe_parse_as_library_copts(srcs):
     as if it has top level code. In the case this is the wrong assumption,
     compilation or linking will fail.
 
-    The files in a directory (tree artifact) aren't known at analysis time, so
-    no flag is added when `srcs` contains one; targets whose entry point is an
-    `@main` type in a directory pass `-parse-as-library` in `copts`.
+    The files in a directory aren't known at analysis time, so no flag is added
+    when `srcs` contains one or `srcs_dirs` isn't empty; targets whose entry
+    point is an `@main` type in a directory pass `-parse-as-library` in `copts`.
 
     Args:
         srcs: A list of source files to check for the presence of `main.swift`.
+        srcs_dirs: A list of directories of source files.
 
     Returns:
         A list of compiler flags to add to `copts`
     """
-    if any([src.is_directory for src in srcs]):
+    if srcs_dirs or any([src.is_directory for src in srcs]):
         return []
     swift_srcs = [src for src in srcs if src.extension == "swift"]
     use_parse_as_library = len(swift_srcs) == 1 and \
@@ -236,6 +237,7 @@ def _do_compile(
         package_name,
         plugins = [],
         srcs,
+        srcs_dirs = [],
         swift_infos,
         toolchains,
         workspace_name):
@@ -258,6 +260,7 @@ def _do_compile(
         plugins: A list of `SwiftCompilerPluginInfo` providers that need to be
             loaded when compiling this module.
         srcs: The sources to compile.
+        srcs_dirs: The directories of sources to compile.
         swift_infos: A list of `SwiftInfo` providers that should be used to
             determine the module inputs for the action.
         toolchains: The struct containing the Swift and C++ toolchain providers,
@@ -290,6 +293,7 @@ def _do_compile(
         package_name = package_name,
         plugins = plugins,
         srcs = srcs,
+        srcs_dirs = srcs_dirs,
         swift_infos = swift_infos,
         toolchains = toolchains,
         target_name = name,
@@ -360,6 +364,7 @@ def _swift_test_impl(ctx):
     test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)
 
     srcs = ctx.files.srcs
+    srcs_dirs = ctx.files.srcs_dirs
     owner_symbol_graph_dir = None
 
     module_name = ctx.attr.module_name
@@ -371,7 +376,7 @@ def _swift_test_impl(ctx):
     module_contexts = []
     all_supplemental_outputs = []
 
-    if srcs:
+    if srcs or srcs_dirs:
         # If the `swift_test` target had sources, compile those first and then
         # extract a symbol graph from it.
         compile_result = _do_compile(
@@ -385,7 +390,7 @@ def _swift_test_impl(ctx):
             additional_copts = [
                 "-parse-as-library",
                 "-enable-testing",
-            ] if discover_tests else _maybe_parse_as_library_copts(srcs),
+            ] if discover_tests else _maybe_parse_as_library_copts(srcs, srcs_dirs),
             cc_infos = deps_cc_infos,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
@@ -394,6 +399,7 @@ def _swift_test_impl(ctx):
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             name = ctx.label.name,
             srcs = srcs,
+            srcs_dirs = srcs_dirs,
             swift_infos = deps_swift_infos,
             toolchains = toolchains,
             workspace_name = ctx.workspace_name,
@@ -581,7 +587,7 @@ def _swift_test_impl(ctx):
             ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
-            source_attributes = ["srcs"],
+            source_attributes = ["srcs", "srcs_dirs"],
         ),
         SwiftInfo(
             modules = [

@@ -66,7 +66,7 @@ load(
     "create_swift_module_context",
 )
 
-def _maybe_parse_as_library_copts(srcs):
+def _maybe_parse_as_library_copts(srcs, srcs_dirs):
     """Returns a list of compiler flags depending on `main.swift`'s presence.
 
     Now that the `@main` attribute exists and is becoming more common, in the
@@ -75,17 +75,18 @@ def _maybe_parse_as_library_copts(srcs):
     as if it has top level code. In the case this is the wrong assumption,
     compilation or linking will fail.
 
-    The files in a directory (tree artifact) aren't known at analysis time, so
-    no flag is added when `srcs` contains one; targets whose entry point is an
-    `@main` type in a directory pass `-parse-as-library` in `copts`.
+    The files in a directory aren't known at analysis time, so no flag is added
+    when `srcs` contains one or `srcs_dirs` isn't empty; targets whose entry
+    point is an `@main` type in a directory pass `-parse-as-library` in `copts`.
 
     Args:
         srcs: A list of source files to check for the presence of `main.swift`.
+        srcs_dirs: A list of directories of source files.
 
     Returns:
         A list of compiler flags to add to `copts`
     """
-    if any([src.is_directory for src in srcs]):
+    if srcs_dirs or any([src.is_directory for src in srcs]):
         return []
     swift_srcs = [src for src in srcs if src.extension == "swift"]
     use_parse_as_library = len(swift_srcs) == 1 and \
@@ -121,13 +122,14 @@ def _swift_binary_impl(ctx):
     )
 
     srcs = ctx.files.srcs
+    srcs_dirs = ctx.files.srcs_dirs
     output_groups = {}
     module_contexts = []
     additional_linking_contexts = []
 
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
-    if srcs:
+    if srcs or srcs_dirs:
         c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
         c_copts = expand_make_variables(ctx, c_copts, "c_copts")
         module_name = ctx.attr.module_name
@@ -159,7 +161,7 @@ def _swift_binary_impl(ctx):
                 ctx,
                 ctx.attr.copts,
                 ctx.attr.swiftc_inputs,
-            ) + _maybe_parse_as_library_copts(srcs) + entry_point_copts,
+            ) + _maybe_parse_as_library_copts(srcs, srcs_dirs) + entry_point_copts,
             c_copts = c_copts,
             defines = ctx.attr.defines,
             local_defines = ctx.attr.local_defines,
@@ -169,6 +171,7 @@ def _swift_binary_impl(ctx):
             package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             srcs = srcs,
+            srcs_dirs = srcs_dirs,
             swift_infos = get_providers(ctx.attr.deps, SwiftInfo),
             toolchains = toolchains,
             target_name = ctx.label.name,
@@ -291,7 +294,7 @@ def _swift_binary_impl(ctx):
             ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
-            source_attributes = ["srcs"],
+            source_attributes = ["srcs", "srcs_dirs"],
         ),
         OutputGroupInfo(**output_groups),
         SwiftInfo(

@@ -101,23 +101,9 @@ static bool ExpandSourceDirectories(nlohmann::json& json,
     }
 
     std::vector<std::string> relative_paths;
-    std::filesystem::recursive_directory_iterator it(
-        src, std::filesystem::directory_options::follow_directory_symlink, ec);
-    for (; !ec && it != std::filesystem::recursive_directory_iterator();
-         it.increment(ec)) {
-      if (it->is_regular_file() && it->path().extension() == ".swift") {
-        // Sources in a tree artifact may be symlinks, so the path must not be
-        // resolved.
-        relative_paths.push_back(
-            it->path().lexically_relative(src).generic_string());
-      }
-    }
-    if (ec) {
-      *error =
-          "Could not list source directory " + src + " (" + ec.message() + ")";
+    if (!OutputFileMap::ListSourceDirectory(src, &relative_paths, error)) {
       return false;
     }
-    std::sort(relative_paths.begin(), relative_paths.end());
 
     for (const auto& relative_path : relative_paths) {
       nlohmann::json file_outputs;
@@ -153,6 +139,31 @@ static bool ExpandSourceDirectories(nlohmann::json& json,
 }
 
 };  // end namespace
+
+bool OutputFileMap::ListSourceDirectory(
+    const std::string& directory, std::vector<std::string>* relative_paths,
+    std::string* error) {
+  std::error_code ec;
+  std::filesystem::recursive_directory_iterator it(
+      directory, std::filesystem::directory_options::follow_directory_symlink,
+      ec);
+  for (; !ec && it != std::filesystem::recursive_directory_iterator();
+       it.increment(ec)) {
+    if (it->is_regular_file() && it->path().extension() == ".swift") {
+      // Sources in a directory may be symlinks, so the path must not be
+      // resolved.
+      relative_paths->push_back(
+          it->path().lexically_relative(directory).generic_string());
+    }
+  }
+  if (ec) {
+    *error = "Could not list source directory " + directory + " (" +
+             ec.message() + ")";
+    return false;
+  }
+  std::sort(relative_paths->begin(), relative_paths->end());
+  return true;
+}
 
 bool OutputFileMap::ReadFromPath(const std::string& path,
                                  const std::string& emit_module_path,

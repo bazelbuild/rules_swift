@@ -70,8 +70,11 @@ def _swift_compiler_plugin_impl(ctx):
     srcs = ctx.files.srcs
     module_contexts = []
 
-    if not srcs:
-        fail("A compiler plugin must have at least one file in 'srcs'.")
+    if not srcs and not ctx.files.srcs_dirs:
+        fail(
+            "A compiler plugin must have at least one file in 'srcs' or " +
+            "directory in 'srcs_dirs'.",
+        )
 
     c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
     c_copts = expand_make_variables(ctx, c_copts, "c_copts")
@@ -110,6 +113,7 @@ def _swift_compiler_plugin_impl(ctx):
         package_name = ctx.attr.package_name,
         plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
         srcs = srcs,
+        srcs_dirs = ctx.files.srcs_dirs,
         swift_infos = get_providers(deps, SwiftInfo),
         toolchains = toolchains,
         target_name = ctx.label.name,
@@ -211,7 +215,7 @@ def _swift_compiler_plugin_impl(ctx):
             ctx,
             dependency_attributes = ["deps"],
             extensions = ["swift"],
-            source_attributes = ["srcs"],
+            source_attributes = ["srcs", "srcs_dirs"],
         ),
         SwiftBinaryInfo(
             cc_info = CcInfo(

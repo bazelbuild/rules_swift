@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "tools/common/bazel_substitutions.h"
 #include "tools/common/temp_file.h"
 
@@ -183,8 +184,14 @@ class SwiftRunner {
   // artifacts) that must be expanded before it is passed to the compiler.
   bool expand_output_file_map_;
 
-  // The reason expanding the output file map failed, if it did.
-  std::string expand_output_file_map_error_;
+  // Source directories passed to the compiler, which are replaced by the
+  // Swift files in them. Unlike tree artifacts, Bazel passes source
+  // directories on the command line as a single path.
+  absl::flat_hash_set<std::string> source_directories_;
+
+  // The reason processing the arguments failed (e.g., expanding the output file
+  // map or a source directory), if it did.
+  std::string argument_error_;
 
   // Whether `-file-prefix-map PWD=.` is set.
   bool file_prefix_pwd_is_dot_;

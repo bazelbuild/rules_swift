@@ -1,0 +1,3 @@
+import SourceDirectory
+
+print(greeting())

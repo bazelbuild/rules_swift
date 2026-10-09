@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for directories (tree artifacts) in `srcs`."""
+"""Tests for directories (tree artifacts) in `srcs`, and for `srcs_dirs`."""
 
 load(
     "//test/rules:action_command_line_test.bzl",
     "action_command_line_test",
 )
 load("//test/rules:action_inputs_test.bzl", "action_inputs_test")
+load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
 load(
     "//test/rules:output_file_map_test.bzl",
     "make_output_file_map_test_rule",
@@ -131,6 +132,47 @@ def tree_artifact_test_suite(name, tags = []):
         mnemonic = "CppLink",
         tags = all_tags,
         target_under_test = "//test/fixtures/tree_artifact:tree_artifact_binary",
+    )
+
+    # A checked-in directory in `srcs_dirs` is passed as a single path, which
+    # the worker replaces with the Swift files in it.
+    output_file_map_test(
+        name = "{}_source_directory_output_file_map".format(name),
+        expected_mapping = {
+            "ast-dump": "test/fixtures/source_directory/source_directory_objs/Sources_ast",
+            "object": "test/fixtures/source_directory/source_directory_objs/Sources_o",
+        },
+        file_entry = "test/fixtures/source_directory/Sources",
+        output_file_map = "test/fixtures/source_directory/source_directory.output_file_map.json",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/source_directory",
+    )
+
+    action_command_line_test(
+        name = "{}_source_directory_expanded".format(name),
+        expected_argv = [
+            "-Xwrapped-swift=-expand-source-directory=test/fixtures/source_directory/Sources",
+            _EXPAND_FLAG,
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/source_directory",
+    )
+
+    # Bazel already expands tree artifacts on the command line.
+    action_command_line_test(
+        name = "{}_tree_artifact_not_expanded_by_worker".format(name),
+        not_expected_argv = ["-Xwrapped-swift=-expand-source-directory"],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifact",
+    )
+
+    analysis_failure_test(
+        name = "{}_file_in_srcs_dirs".format(name),
+        expected_message = "in srcs_dirs is not a directory",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/source_directory:file_in_srcs_dirs",
     )
 
     native.test_suite(

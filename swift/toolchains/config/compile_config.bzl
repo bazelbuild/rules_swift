@@ -1650,17 +1650,14 @@ def command_line_objc_copts(compilation_mode, cpp_fragment, objc_fragment):
     clang_copts = cpp_fragment.objccopts + legacy_copts
     return [copt for copt in clang_copts if copt != "-g"]
 
-def _output_or_file_map(output_file_map, outputs, args, source_files = []):
+def _output_or_file_map(output_file_map, outputs, args, directories = []):
     """Adds the output file map or single object file to the command line."""
     if output_file_map:
         args.add("-output-file-map", output_file_map)
 
-        # The entries of source directories (tree artifacts) are expanded by the
-        # worker into entries for the files in them.
-        if any([
-            not types.is_string(source_file) and source_file.is_directory
-            for source_file in source_files
-        ]):
+        # The entries of source directories are expanded by the worker into
+        # entries for the files in them.
+        if directories:
             args.add("-Xwrapped-swift=-expand-output-file-map")
         return ConfigResultInfo(
             inputs = [output_file_map],
@@ -1682,7 +1679,7 @@ def _output_object_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.output_file_map,
         outputs = prerequisites.object_files,
         args = args,
-        source_files = prerequisites.source_files,
+        directories = getattr(prerequisites, "directory_source_files", []),
     )
 
 def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
@@ -1691,7 +1688,7 @@ def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.derived_files_output_file_map,
         outputs = [prerequisites.swiftmodule_file],
         args = args,
-        source_files = prerequisites.source_files,
+        directories = getattr(prerequisites, "directory_source_files", []),
     )
 
 def _output_ast_path_or_file_map_configurator(prerequisites, args):
@@ -1700,7 +1697,7 @@ def _output_ast_path_or_file_map_configurator(prerequisites, args):
         output_file_map = prerequisites.output_file_map,
         outputs = prerequisites.ast_files,
         args = args,
-        source_files = prerequisites.source_files,
+        directories = getattr(prerequisites, "directory_source_files", []),
     )
 
 def _output_pcm_file_configurator(prerequisites, args):
@@ -2504,6 +2501,17 @@ def _global_index_store_configurator(prerequisites, args):
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""
     args.add_all(prerequisites.source_files)
+
+    # Bazel expands tree artifacts on the command line, but passes a checked-in
+    # directory as a single path; the worker replaces it with its Swift files.
+    args.add_all(
+        [
+            directory.path
+            for directory in getattr(prerequisites, "directory_source_files", [])
+            if directory.is_source
+        ],
+        format_each = "-Xwrapped-swift=-expand-source-directory=%s",
+    )
     return _source_files_as_action_inputs_only_configurator(prerequisites, args)
 
 def _source_files_as_action_inputs_only_configurator(prerequisites, _args):

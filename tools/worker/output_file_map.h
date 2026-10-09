@@ -89,6 +89,13 @@ class OutputFileMap {
                             const std::string& expanded_path,
                             ActionOutputs action_outputs, std::string* error);
 
+  // Lists the Swift files under `directory`, at any depth, as sorted paths
+  // relative to it using `/` as the separator. Returns false and sets `error`
+  // on failure.
+  static bool ListSourceDirectory(const std::string& directory,
+                                  std::vector<std::string>* relative_paths,
+                                  std::string* error);
+
  private:
   // Modifies the output file map's JSON structure in-place to replace file
   // paths with equivalents in the incremental storage area.

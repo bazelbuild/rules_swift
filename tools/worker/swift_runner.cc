@@ -506,9 +506,8 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
 int SwiftRunner::Run(std::ostream* stderr_stream, bool stdout_to_stderr) {
   int exit_code = 0;
 
-  if (!expand_output_file_map_error_.empty()) {
-    (*stderr_stream) << "swift_worker: " << expand_output_file_map_error_
-                     << "\n";
+  if (!argument_error_.empty()) {
+    (*stderr_stream) << "swift_worker: " << argument_error_ << "\n";
     return EXIT_FAILURE;
   }
 
@@ -740,6 +739,17 @@ bool SwiftRunner::ProcessArgument(
     return true;
   }
 
+  if (source_directories_.contains(arg)) {
+    std::vector<std::string> relative_paths;
+    if (OutputFileMap::ListSourceDirectory(arg, &relative_paths,
+                                           &argument_error_)) {
+      for (const auto& relative_path : relative_paths) {
+        consumer(arg + "/" + relative_path);
+      }
+    }
+    return true;
+  }
+
   std::string new_arg = arg;
   bool changed = false;
   if (arg == "-index-store-path") {
@@ -765,7 +775,7 @@ bool SwiftRunner::ProcessArgument(
             *itr, expanded_map->GetPath(),
             is_dump_ast_ ? OutputFileMap::ActionOutputs::kDumpAst
                          : OutputFileMap::ActionOutputs::kCompile,
-            &expand_output_file_map_error_)) {
+            &argument_error_)) {
       new_arg = expanded_map->GetPath();
     } else {
       new_arg = *itr;
@@ -822,6 +832,8 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
         hermetic_pcm_ = true;
       } else if (value == "-expand-output-file-map") {
         expand_output_file_map_ = true;
+      } else if (absl::ConsumePrefix(&value, "-expand-source-directory=")) {
+        source_directories_.insert(std::string(value));
       } else if (absl::ConsumePrefix(
                      &value, "-explicit-compile-module-from-interface=")) {
         module_or_interface_path_ = std::string(value);

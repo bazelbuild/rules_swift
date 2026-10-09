@@ -438,6 +438,7 @@ def compile(
         private_cc_infos = [],
         private_swift_infos = [],
         srcs,
+        srcs_dirs = [],
         swift_infos,
         swift_toolchain = None,
         target_name,
@@ -503,7 +504,12 @@ def compile(
         srcs: The source files to compile. Typically this contains only Swift
             sources, but a mixed language module may contain C/Objective-C
             sources and private headers as well, and those will be compiled by
-            the underlying C toolchain.
+            the underlying C toolchain. A directory (tree artifact) is compiled
+            as a directory of Swift sources.
+        srcs_dirs: A list of directories whose Swift files are compiled, in
+            addition to `srcs`. These may be checked-in directories, which
+            Bazel doesn't mark as directories at analysis time, or tree
+            artifacts.
         swift_infos: A list of `SwiftInfo` providers from non-private
             dependencies of the target being compiled. The modules defined by
             these providers are used as dependencies of both the Swift module
@@ -577,18 +583,28 @@ def compile(
         toolchains = toolchains,
     )
 
+    for directory in srcs_dirs:
+        if not directory.is_source and not directory.is_directory:
+            fail("'{}' in srcs_dirs is not a directory.".format(
+                directory.short_path,
+            ))
+
+    # Directories are compiled as directories of Swift sources, whose files are
+    # only known at execution time. A tree artifact is marked as a directory;
+    # a checked-in directory isn't, so those come separately in `srcs_dirs`.
+    directory_srcs = [src for src in srcs if src.is_directory] + srcs_dirs
+
     swift_srcs = []
     c_srcs = []
     c_private_hdrs = []
     for src in srcs:
-        # A directory (tree artifact) is treated as a directory of Swift
-        # sources, since generated code can't be named at analysis time.
         if src.extension == "swift" or src.is_directory:
             swift_srcs.append(src)
         elif src.extension in C_HEADER_EXTENSIONS:
             c_private_hdrs.append(src)
         else:
             c_srcs.append(src)
+    swift_srcs.extend(srcs_dirs)
 
     if not swift_srcs:
         fail("A Swift module must have at least one Swift source file.")
@@ -659,6 +675,7 @@ def compile(
     const_gather_protocols_file = toolchains.swift.const_protocols_to_gather
 
     compile_outputs = _declare_compile_outputs(
+        directory_srcs = directory_srcs,
         srcs = swift_srcs,
         actions = actions,
         extract_const_values = bool(const_gather_protocols_file),
@@ -921,6 +938,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         original_module_name = original_module_name,
         package_name = package_name,
         plugins = collections.uniq(used_plugins),
+        directory_source_files = directory_srcs,
         source_files = swift_srcs,
         target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
@@ -1775,6 +1793,7 @@ def _cross_imported_overlays(
 def _declare_compile_outputs(
         *,
         actions,
+        directory_srcs,
         extract_const_values,
         feature_configuration,
         generated_header_name,
@@ -1786,6 +1805,7 @@ def _declare_compile_outputs(
 
     Args:
         actions: The object used to register actions.
+        directory_srcs: The sources in `srcs` that are directories.
         extract_const_values: A Boolean value indicating whether constant values
             should be extracted during this compilation.
         feature_configuration: A feature configuration obtained from
@@ -1993,6 +2013,7 @@ def _declare_compile_outputs(
         # object files so that we can pass them all to the archive action.
         output_info = _declare_multiple_outputs_and_write_output_file_map(
             actions = actions,
+            directory_srcs = directory_srcs,
             extract_const_values = extract_const_values,
             is_wmo = output_nature.is_wmo,
             emits_bc = emits_bc,
@@ -2064,25 +2085,31 @@ def _declare_per_source_output_file(actions, extension, target_name, src):
         paths.join(dirname, "{}.{}".format(basename, extension)),
     )
 
-def _declare_per_source_outputs(actions, extension, target_name, src):
+def _declare_per_source_outputs(
+        actions,
+        extension,
+        is_directory,
+        target_name,
+        src):
     """Declares the output of the given kind for a source in the output map.
 
     For a source file, this is the file declared by
-    `_declare_per_source_output_file`. A directory (tree artifact) holds files
-    only known at execution time, so this declares a directory instead; the
-    worker expands the directory's entry in the output file map so that each
-    Swift file in it gets an output at the same relative path inside it.
+    `_declare_per_source_output_file`. A directory holds files only known at
+    execution time, so this declares a directory instead; the worker expands
+    the directory's entry in the output file map so that each Swift file in it
+    gets an output at the same relative path inside it.
 
     Args:
         actions: The context's actions object.
         extension: The output file's extension, without a leading dot.
+        is_directory: Whether `src` is a directory.
         target_name: The name of the target being built.
         src: A `File` representing the source file or directory being compiled.
 
     Returns:
         The declared `File`.
     """
-    if not src.is_directory:
+    if not is_directory:
         return _declare_per_source_output_file(
             actions = actions,
             extension = extension,
@@ -2098,6 +2125,7 @@ def _declare_per_source_outputs(actions, extension, target_name, src):
 
 def _declare_multiple_outputs_and_write_output_file_map(
         actions,
+        directory_srcs,
         extract_const_values,
         is_wmo,
         emits_bc,
@@ -2109,6 +2137,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
     Args:
         actions: The object used to register actions.
+        directory_srcs: The sources in `srcs` that are directories.
         extract_const_values: A Boolean value indicating whether constant values
             should be extracted during this compilation.
         is_wmo: A Boolean value indicating whether whole-module-optimization was
@@ -2166,12 +2195,15 @@ def _declare_multiple_outputs_and_write_output_file_map(
         const_values_files.append(const_values_file)
         whole_module_map["const-values"] = const_values_file.path
 
+    directories = {src: None for src in directory_srcs}
     for src in srcs:
         file_outputs = {}
+        is_directory = src in directories
 
         ast = _declare_per_source_outputs(
             actions = actions,
             extension = "ast",
+            is_directory = is_directory,
             target_name = target_name,
             src = src,
         )
@@ -2183,6 +2215,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             obj = _declare_per_source_outputs(
                 actions = actions,
                 extension = "bc",
+                is_directory = is_directory,
                 target_name = target_name,
                 src = src,
             )
@@ -2193,6 +2226,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             obj = _declare_per_source_outputs(
                 actions = actions,
                 extension = "o",
+                is_directory = is_directory,
                 target_name = target_name,
                 src = src,
             )
@@ -2206,6 +2240,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
             const_values_file = _declare_per_source_outputs(
                 actions = actions,
                 extension = "swiftconstvalues",
+                is_directory = is_directory,
                 target_name = target_name,
                 src = src,
             )
@@ -2216,7 +2251,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
 
         if split_derived_file_generation and not is_wmo:
             # For a directory, the worker adds each file's name and extension.
-            if src.is_directory:
+            if is_directory:
                 swiftdeps_path = obj.path
             else:
                 swiftdeps_path = paths.replace_extension(obj.path, ".swiftdeps")

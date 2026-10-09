@@ -200,6 +200,7 @@ def _swift_library_impl(ctx):
         private_cc_infos = get_providers(ctx.attr.private_deps, CcInfo),
         private_swift_infos = private_swift_infos,
         srcs = srcs,
+        srcs_dirs = ctx.files.srcs_dirs,
         swift_infos = swift_infos,
         toolchains = toolchains,
         target_name = ctx.label.name,
@@ -282,7 +283,7 @@ def _swift_library_impl(ctx):
             ctx,
             dependency_attributes = ["deps", "private_deps"],
             extensions = ["swift"],
-            source_attributes = ["srcs"],
+            source_attributes = ["srcs", "srcs_dirs"],
         ),
         compile_result.swift_info,
         OutputGroupInfo(

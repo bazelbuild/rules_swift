@@ -20,6 +20,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -143,6 +144,17 @@ int main() {
             OutputFileMap::ActionOutputs::kCompile, &error) &&
             error.find("new-kind") != std::string::npos,
         "unknown kind not reported: " + error);
+
+  // Source directories passed on the command line are listed the same way.
+  std::vector<std::string> relative_paths;
+  Check(OutputFileMap::ListSourceDirectory("out/bin/gen.swift", &relative_paths,
+                                           &error),
+        "listing failed: " + error);
+  Check(relative_paths == std::vector<std::string>{"A.swift", "sub/B.swift"},
+        "unexpected listing");
+  Check(!OutputFileMap::ListSourceDirectory("Regular.swift", &relative_paths,
+                                            &error),
+        "listing a file did not fail");
 
   WriteFile("out/bin/malformed.output_file_map.json", "{");
   Check(!OutputFileMap::WriteExpanded(
