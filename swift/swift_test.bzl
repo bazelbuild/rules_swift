@@ -200,12 +200,13 @@ def _swift_test_impl(ctx):
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
     else:
+        compile_result = None
         compilation_outputs = cc_common.create_compilation_outputs()
 
     discovery_env = {}
     if discover_tests:
         if srcs:
-            discovery_modules = [module_name]
+            discovery_modules = [compile_result.module_context.name]
         else:
             discovery_modules = [
                 module.name

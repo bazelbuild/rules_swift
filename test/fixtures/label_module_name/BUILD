@@ -2,6 +2,10 @@ load(
     "//swift:swift_library.bzl",
     "swift_library",
 )
+load(
+    "//swift:swift_test.bzl",
+    "swift_test",
+)
 
 package(
     default_visibility = [
@@ -24,4 +28,13 @@ swift_library(
     features = ["swift.label_as_module_name"],
     tags = ["manual"],
     deps = [":child"],
+)
+
+swift_test(
+    name = "test_with_srcs",
+    srcs = ["test.swift"],
+    features = ["swift.label_as_module_name"],
+    deps = [
+        ":child",
+    ],
 )

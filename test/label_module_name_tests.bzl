@@ -155,7 +155,29 @@ def label_module_name_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name",
     )
 
+    # Verify that `swift_test` with `srcs` and `swift.label_as_module_name`
+    # passes the physical module name in `SWIFT_TEST_DISCOVERY_MODULES`.
+    provider_test(
+        name = "{}_test_with_srcs_discovery_modules_env".format(name),
+        expected_values = [
+            "SWIFT_TEST_DISCOVERY_MODULES=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_test_with_srcs",
+            "*",
+        ],
+        field = "environment",
+        provider = "RunEnvironmentInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name:test_with_srcs",
+    )
+
+    native.test_suite(
+        name = "{}_analysis_tests".format(name),
+        tags = all_tags,
+    )
+
     native.test_suite(
         name = name,
-        tags = all_tags,
+        tests = [
+            ":{}_analysis_tests".format(name),
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:test_with_srcs",
+        ],
     )
