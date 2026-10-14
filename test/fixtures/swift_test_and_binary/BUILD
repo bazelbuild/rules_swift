@@ -21,11 +21,20 @@ licenses(["notice"])
 # Fixtures for testing `swift_test` discovery modes.
 
 swift_library(
+    name = "base_test_support",
+    testonly = True,
+    srcs = ["BaseTestSupport.swift"],
+    module_name = "BaseTestSupport",
+)
+
+swift_library(
     name = "testonly_lib",
     testonly = True,
-    srcs = ["Empty.swift"],
+    srcs = ["TestOnlyLibTests.swift"],
     module_name = "TestOnlyLib",
-    tags = FIXTURE_TAGS,
+    deps = [
+        ":base_test_support",
+    ],
 )
 
 swift_library(
@@ -38,14 +47,15 @@ swift_library(
 
 swift_test(
     name = "test_with_srcs",
-    srcs = ["Empty.swift"],
+    srcs = ["TestWithSrcsTests.swift"],
     module_name = "TestWithSrcs",
-    tags = FIXTURE_TAGS,
+    deps = [
+        ":base_test_support",
+    ],
 )
 
 swift_test(
     name = "test_without_srcs_with_testonly_dep",
-    tags = FIXTURE_TAGS,
     deps = [":testonly_lib"],
 )
 
@@ -54,13 +64,6 @@ swift_test(
     srcs = ["Empty.swift"],
     discover_tests = False,
     module_name = "TestNoDiscovery",
-    tags = FIXTURE_TAGS,
-)
-
-swift_test(
-    name = "test_without_srcs_no_test_modules",
-    tags = FIXTURE_TAGS,
-    deps = [":non_testonly_lib"],
 )
 
 ###############################################################################

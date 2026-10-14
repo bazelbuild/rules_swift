@@ -21,12 +21,11 @@ load(
 )
 load(
     "@build_bazel_rules_swift//test/rules:actions_created_test.bzl",
-    "make_actions_created_test_rule",
+    "actions_created_test",
 )
 load(
     "@build_bazel_rules_swift//test/rules:analysis_failure_test.bzl",
     "analysis_failure_test",
-    "make_analysis_failure_test_rule",
 )
 load(
     "@build_bazel_rules_swift//test/rules:provider_test.bzl",
@@ -35,34 +34,9 @@ load(
 
 visibility("private")
 
-_LINUX_CONFIG_SETTINGS = {
-    "//command_line_option:platforms": "//buildenv/platforms/linux:x86_64",
-}
-
-_MAC_OPT_CONFIG_SETTINGS = {
-    "//command_line_option:compilation_mode": "opt",
-    "//command_line_option:platforms": "//buildenv/platforms/apple:darwin_arm64",
-}
-
 _OPT_CONFIG_SETTINGS = {
     "//command_line_option:compilation_mode": "opt",
 }
-
-linux_action_command_line_test = make_action_command_line_test_rule(
-    config_settings = _LINUX_CONFIG_SETTINGS,
-)
-
-linux_actions_created_test = make_actions_created_test_rule(
-    config_settings = _LINUX_CONFIG_SETTINGS,
-)
-
-linux_analysis_failure_test = make_analysis_failure_test_rule(
-    config_settings = _LINUX_CONFIG_SETTINGS,
-)
-
-mac_opt_action_command_line_test = make_action_command_line_test_rule(
-    config_settings = _MAC_OPT_CONFIG_SETTINGS,
-)
 
 opt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = _OPT_CONFIG_SETTINGS,
@@ -83,60 +57,58 @@ def swift_test_and_binary_test_suite(name, tags = []):
 
     # Mode 1: `srcs` present with `discover_tests = True` (default) compiles with
     # `-parse-as-library` and `-enable-testing` even in `opt` mode (where
-    # `swift.enable_testing` is not enabled by default). Tested on macOS where
-    # ObjC test discovery produces a single `SwiftCompile` action.
-    mac_opt_action_command_line_test(
+    # `swift.enable_testing` is not enabled by default).
+    opt_action_command_line_test(
         name = "{}_test_with_srcs_compile_flags".format(name),
         expected_argv = [
             "-parse-as-library",
             "-enable-testing",
         ],
-        mnemonic = "SwiftCompile",
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_srcs",
     )
 
-    # On non-ObjC-discovery platforms (Linux), `srcs` present with
-    # `discover_tests = True` extracts symbol graphs and generates a test
-    # discovery main runner.
-    linux_actions_created_test(
-        name = "{}_test_with_srcs_discovery_actions".format(name),
-        mnemonics = [
-            "SwiftSymbolGraphExtract",
-            "SwiftTestDiscovery",
+    # Mode 1 sets `SWIFT_TEST_DISCOVERY_MODULES` to the test target's own module
+    # name.
+    provider_test(
+        name = "{}_test_with_srcs_discovery_modules_env".format(name),
+        expected_values = [
+            "SWIFT_TEST_DISCOVERY_MODULES=TestWithSrcs",
+            "*",
         ],
+        field = "environment",
+        provider = "RunEnvironmentInfo",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_srcs",
     )
 
-    # Mode 2: Empty `srcs` with `discover_tests = True` scans `testonly` `deps`
-    # via the symbol graph aspect and creates `SwiftTestDiscovery` without
-    # running `SwiftSymbolGraphExtract` directly on the `swift_test` target.
-    linux_actions_created_test(
-        name = "{}_test_without_srcs_with_testonly_dep_discovery_actions".format(name),
+    # Mode 2: Empty `srcs` with `discover_tests = True` links directly against
+    # `deps` without creating `SwiftCompile` or `SwiftCompileModule` actions on
+    # the `swift_test` target.
+    actions_created_test(
+        name = "{}_test_without_srcs_with_testonly_dep_no_compile_actions".format(name),
         mnemonics = [
-            "SwiftTestDiscovery",
-            "-SwiftSymbolGraphExtract",
+            "-SwiftCompile",
+            "-SwiftCompileModule",
         ],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_without_srcs_with_testonly_dep",
     )
 
-    # In Mode 2 on Linux, the single `SwiftCompileModule` action on the
-    # `swift_test` target compiles the generated test discovery sources with
-    # `-parse-as-library` and links against the `testonly` dependency module.
-    linux_action_command_line_test(
-        name = "{}_test_without_srcs_with_testonly_dep_runner_compile".format(name),
-        expected_argv = [
-            "-parse-as-library",
-        ],
-        expected_inputs = [
-            "TestOnlyLib.swiftmodule",
-            "test_without_srcs_with_testonly_dep_test_discovery_srcs/TestOnlyLib.entries.swift",
-            "test_without_srcs_with_testonly_dep_test_discovery_srcs/main.swift",
+    # Mode 2 sets `SWIFT_TEST_DISCOVERY_MODULES` to the direct dependencies'
+    # Swift module names.
+    provider_test(
+        name = "{}_test_without_srcs_with_testonly_dep_discovery_modules_env".format(name),
+        expected_values = [
+            "SWIFT_TEST_DISCOVERY_MODULES=TestOnlyLib",
             "*",
         ],
-        mnemonic = "SwiftCompileModule",
+        field = "environment",
+        provider = "RunEnvironmentInfo",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_without_srcs_with_testonly_dep",
     )
@@ -156,25 +128,6 @@ def swift_test_and_binary_test_suite(name, tags = []):
         }),
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_discover_tests_false",
-    )
-
-    # Mode 3 on Linux skips `SwiftTestDiscovery` (the generated test runner).
-    linux_actions_created_test(
-        name = "{}_test_with_discover_tests_false_no_discovery_actions".format(name),
-        mnemonics = [
-            "-SwiftTestDiscovery",
-        ],
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_discover_tests_false",
-    )
-
-    # Failure when `srcs` is empty, `discover_tests = True`, and no `testonly`
-    # modules are found in `deps` on symbol-graph test discovery platforms.
-    linux_analysis_failure_test(
-        name = "{}_test_without_srcs_no_test_modules_fails".format(name),
-        expected_message = "Failed to find any modules to inspect for tests.",
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_without_srcs_no_test_modules",
     )
 
     # -------------------------------------------------------------------------
@@ -284,6 +237,16 @@ def swift_test_and_binary_test_suite(name, tags = []):
     )
 
     native.test_suite(
-        name = name,
+        name = "{}_analysis_tests".format(name),
         tags = all_tags,
+    )
+
+    native.test_suite(
+        name = name,
+        tests = [
+            ":{}_analysis_tests".format(name),
+            "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_discover_tests_false",
+            "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_with_srcs",
+            "@build_bazel_rules_swift//test/fixtures/swift_test_and_binary:test_without_srcs_with_testonly_dep",
+        ],
     )

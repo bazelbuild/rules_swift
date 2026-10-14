@@ -307,12 +307,9 @@ struct TestRunnerTests {
       #expect(entriesByClass["SampleGenericTestCase"] == nil)
       #expect(entriesByClass["SampleNonTestCase"] == nil)
 
-      for entry in entries {
-        for (name, testClosure) in entry.allTests {
-          try testClosure(entry.testCaseClass.init(name: name, testClosure: testClosure))
-        }
-      }
-
+      // Verify that `XCTestRunner.run()` in `TestRunnerMain` actually executed all discovered
+      // sync, throwing, async, extension, inherited, and overridden test methods before
+      // `SwiftTestingRunner.run()`.
       let executed = SampleDiscoveredTestCase.executedMethods.value
       #expect(
         executed == [

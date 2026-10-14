@@ -137,10 +137,7 @@
     }
 
     public static func run() throws {
-      try run(discoverTests())
-    }
-
-    public static func run(_ testCaseEntries: [XCTestCaseEntry]) throws {
+      let testCaseEntries = try discoverTests()
       guard !testCaseEntries.isEmpty else {
         return
       }

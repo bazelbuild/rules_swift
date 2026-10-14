@@ -41,15 +41,6 @@ load(
     "SwiftCompilerPluginInfo",
 )
 load(
-    "@build_bazel_rules_swift//swift/internal:swift_symbol_graph_aspect.bzl",
-    "SwiftTestDiscoverySymbolGraphInfo",
-    "make_swift_symbol_graph_aspect",
-)
-load(
-    "@build_bazel_rules_swift//swift/internal:symbol_graph_extracting.bzl",
-    "extract_symbol_graph",
-)
-load(
     "@build_bazel_rules_swift//swift/internal:toolchain_utils.bzl",
     "find_all_toolchains",
     "use_all_toolchains",
@@ -57,7 +48,6 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
     "expand_locations",
-    "get_compilation_contexts",
     "get_providers",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -66,125 +56,6 @@ load(":module_name.bzl", "derive_swift_module_name")
 load(":providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 
 visibility("public")
-
-# Name of the execution group used for `SwiftTestDiscovery` actions.
-_DISCOVER_TESTS_EXEC_GROUP = "discover_tests"
-
-_test_discovery_symbol_graph_aspect = make_swift_symbol_graph_aspect(
-    default_minimum_access_level = "internal",
-    testonly_targets = True,
-)
-
-def _generate_test_discovery_srcs(
-        *,
-        actions,
-        deps,
-        name,
-        owner_module_name,
-        owner_symbol_graph_dir = None,
-        test_discoverer):
-    """Generate Swift sources to run discovered XCTest-style tests.
-
-    The `owner_module_name` and `owner_symbol_graph_dir` arguments are used to
-    support discovery of tests from the sources of the `swift_test` target
-    itself. If they are provided, then that symbol graph is used *instead of*
-    the symbol graphs of the direct dependencies.
-
-    Args:
-        actions: The context's actions object.
-        deps: The list of direct dependencies of the test target.
-        name: The name of the target being built, which will be used to derive
-            the basename of the directory containing the generated files.
-        owner_module_name: The name of the owner module (the target being
-            built).
-        owner_symbol_graph_dir: A directory-type `File` containing the extracted
-            symbol graph for the owner target.
-        test_discoverer: The executable `File` representing the test discoverer
-            tool that will be spawned to generate the test runner sources.
-
-    Returns:
-        A list of `File`s representing generated `.swift` source files that
-        should be compiled as part of the test target.
-    """
-    inputs = []
-    outputs = []
-    modules_to_scan = []
-    args = actions.args()
-
-    if owner_symbol_graph_dir:
-        inputs.append(owner_symbol_graph_dir)
-        modules_to_scan.append(owner_module_name)
-
-    for dep in deps:
-        if SwiftTestDiscoverySymbolGraphInfo not in dep:
-            continue
-
-        symbol_graph_info = (
-            dep[SwiftTestDiscoverySymbolGraphInfo].symbol_graph_info
-        )
-
-        # Only include the direct symbol graphs if the owner didn't have any
-        # sources.
-        if not owner_symbol_graph_dir:
-            modules_to_scan.extend([
-                symbol_graph.module_name
-                for symbol_graph in symbol_graph_info.direct_symbol_graphs
-            ])
-
-        # Always include the transitive symbol graphs; if a library depends
-        # on a support class that inherits from `XCTestCase`, we need to be
-        # able to detect that.
-        for symbol_graph in (
-            symbol_graph_info.transitive_symbol_graphs.to_list()
-        ):
-            inputs.append(symbol_graph.symbol_graph_dir)
-
-    if not modules_to_scan:
-        fail("Failed to find any modules to inspect for tests.")
-
-    # For each direct dependency/module that we have a symbol graph for
-    # (i.e., every testonly dependency), declare a `.swift` source file
-    # where the discovery tool will generate an extension that lists the
-    # test entries for the classes/methods found in that module.
-    for module_name in modules_to_scan:
-        output_file = actions.declare_file(
-            "{target}_test_discovery_srcs/{module}.entries.swift".format(
-                module = module_name,
-                target = name,
-            ),
-        )
-        outputs.append(output_file)
-        args.add(
-            "--module-output",
-            "{module}={path}".format(
-                module = module_name,
-                path = output_file.path,
-            ),
-        )
-
-    # Also declare a single `main.swift` file where the discovery tool will
-    # generate the main runner.
-    main_file = actions.declare_file(
-        "{target}_test_discovery_srcs/main.swift".format(target = name),
-    )
-    outputs.append(main_file)
-    args.add("--main-output", main_file)
-
-    # The discovery tool expects symbol graph directories as its inputs (it
-    # iterates over their contents), so we must not expand directories here.
-    args.add_all(inputs, expand_directories = False, uniquify = True)
-
-    actions.run(
-        arguments = [args],
-        executable = test_discoverer,
-        exec_group = _DISCOVER_TESTS_EXEC_GROUP,
-        inputs = inputs,
-        mnemonic = "SwiftTestDiscovery",
-        outputs = outputs,
-        progress_message = "Discovering tests for %{label}",
-    )
-
-    return outputs
 
 def _do_compile(
         *,
@@ -243,31 +114,28 @@ def _do_compile(
 def _swift_test_impl(ctx):
     toolchains = find_all_toolchains(ctx)
 
-    extra_requested_features = [] if ctx.attr.discover_tests else [
-        # The `SwiftCompileModule` action may not run if the module output of
-        # the test binary is never used. Perform layering checks on the first
-        # codegen action instead.
-        SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN,
-    ]
     feature_configuration = configure_features_for_binary(
         ctx = ctx,
-        requested_features = ctx.features + extra_requested_features,
+        requested_features = ctx.features + [
+            # The `SwiftCompileModule` action may not run if the module output of
+            # the test binary is never used. Perform layering checks on the first
+            # codegen action instead.
+            SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN,
+        ],
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
 
     discover_tests = ctx.attr.discover_tests
-    objc_test_discovery = toolchains.swift.test_configuration.objc_test_discovery
     srcs = ctx.files.srcs
-    owner_symbol_graph_dir = None
 
     deps = list(ctx.attr.deps)
     test_runner_deps = list(ctx.attr._test_runner_deps)
 
-    # In test discovery mode (whether manual or by the Obj-C runtime), inject
-    # the test observer that prints the xUnit-style output for Bazel. Otherwise
-    # don't link this, because we don't want it to pull in link time
-    # dependencies on XCTest, which the test binary may not be using.
+    # In test discovery mode, inject the test runner that discovers and runs
+    # tests and prints the xUnit-style output for Bazel. Otherwise don't link
+    # this, because we don't want it to pull in link time dependencies on
+    # XCTest, which the test binary may not be using.
     if discover_tests:
         additional_link_deps = test_runner_deps
     else:
@@ -296,11 +164,6 @@ def _swift_test_impl(ctx):
             )
     additional_linking_contexts.append(malloc_linking_context(ctx))
 
-    test_runner_deps_compilation_contexts = get_compilation_contexts(
-        test_runner_deps,
-    )
-    test_runner_deps_swift_infos = get_providers(test_runner_deps, SwiftInfo)
-
     module_name = ctx.attr.module_name
     if not module_name:
         module_name = derive_swift_module_name(
@@ -312,16 +175,13 @@ def _swift_test_impl(ctx):
     all_supplemental_outputs = []
 
     if srcs:
-        # If the `swift_test` target had sources, compile those first and then
-        # extract a symbol graph from it.
         compile_result = _do_compile(
             ctx = ctx,
-            # In test discovery mode (whether manual or by the Obj-C runtime),
-            # compile the code with `-parse-as-library` to avoid the case where
-            # a single file with no top-level code still produces an empty
-            # `main`. Also compile with `-enable-testing`, because the generated
-            # sources will `@testable import` this module, and this allows that
-            # to work even when building in `-c opt` mode.
+            # In test discovery mode, compile the code with `-parse-as-library`
+            # to avoid the case where a single file with no top-level code still
+            # produces an empty `main`. Also compile with `-enable-testing`, so
+            # internal declarations remain accessible to tests even when building
+            # in `-c opt` mode.
             additional_copts = [
                 "-parse-as-library",
                 "-enable-testing",
@@ -339,63 +199,22 @@ def _swift_test_impl(ctx):
         module_contexts.append(compile_result.module_context)
         compilation_outputs = compile_result.compilation_outputs
         all_supplemental_outputs.append(compile_result.supplemental_outputs)
-
-        swift_infos_including_owner = [compile_result.swift_info]
-
-        # If we're going to do symbol-graph-based test discovery below, extract
-        # the symbol graph of the module that we just compiled so that we can
-        # discover any tests in the `srcs` of this target (instead of just in
-        # the direct `deps`).
-        if not objc_test_discovery:
-            owner_symbol_graph_dir = ctx.actions.declare_directory(
-                "{}.symbolgraphs".format(ctx.label.name),
-            )
-            extract_symbol_graph(
-                actions = ctx.actions,
-                compilation_contexts = deps_compilation_contexts,
-                feature_configuration = feature_configuration,
-                minimum_access_level = "internal",
-                module_name = module_name,
-                output_dir = owner_symbol_graph_dir,
-                swift_infos = swift_infos_including_owner,
-                toolchains = toolchains,
-            )
     else:
         compilation_outputs = cc_common.create_compilation_outputs()
-        swift_infos_including_owner = deps_swift_infos
 
-    # If requested, discover tests and generate a runner for them.
-    if discover_tests and not objc_test_discovery:
-        discovery_srcs = _generate_test_discovery_srcs(
-            actions = ctx.actions,
-            deps = ctx.attr.deps,
-            name = ctx.label.name,
-            owner_module_name = module_name,
-            owner_symbol_graph_dir = owner_symbol_graph_dir,
-            test_discoverer = ctx.executable._test_discoverer,
-        )
-        discovery_compile_result = _do_compile(
-            ctx = ctx,
-            additional_copts = ["-parse-as-library"],
-            compilation_contexts = test_runner_deps_compilation_contexts,
-            feature_configuration = feature_configuration,
-            module_name = module_name + "__GeneratedTestDiscoveryRunner",
-            name = ctx.label.name + "__GeneratedTestDiscoveryRunner",
-            srcs = discovery_srcs,
-            swift_infos = (
-                swift_infos_including_owner + test_runner_deps_swift_infos
-            ),
-            toolchains = toolchains,
-        )
-        module_contexts.append(discovery_compile_result.module_context)
-        compilation_outputs = cc_common.merge_compilation_outputs(
-            compilation_outputs = [
-                compilation_outputs,
-                discovery_compile_result.compilation_outputs,
-            ],
-        )
-        all_supplemental_outputs.append(
-            discovery_compile_result.supplemental_outputs,
+    discovery_env = {}
+    if discover_tests:
+        if srcs:
+            discovery_modules = [module_name]
+        else:
+            discovery_modules = [
+                module.name
+                for swift_info in deps_swift_infos
+                for module in swift_info.direct_modules
+                if not module.is_system and module.swift
+            ]
+        discovery_env["SWIFT_TEST_DISCOVERY_MODULES"] = ",".join(
+            discovery_modules,
         )
 
     # Apply the optional debugging outputs extension if the toolchain defines
@@ -438,6 +257,7 @@ def _swift_test_impl(ctx):
     test_environment = (
         ctx.attr.env |
         toolchains.swift.test_configuration.env |
+        discovery_env |
         {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path}
     )
 
@@ -477,7 +297,6 @@ def _swift_test_impl(ctx):
 
 swift_test = rule(
     attrs = binary_rule_attrs(
-        additional_deps_aspects = [_test_discovery_symbol_graph_aspect],
         additional_deps_providers = [[SwiftCompilerPluginInfo]],
         stamp_default = 0,
     ) | {
@@ -489,9 +308,9 @@ default value is `True`.
 
 Tests are discovered in a platform-specific manner. On Apple platforms, they are
 found using the XCTest framework's `XCTestSuite.default` accessor, which uses
-the Objective-C runtime to dynamically discover tests. On non-Apple platforms,
-discovery uses symbol graphs generated from dependencies to find classes and
-methods written in XCTest's style.
+the Objective-C runtime to dynamically discover tests. On Linux platforms,
+discovery inspects the binary's Swift type metadata and ELF symbol table at
+runtime to find classes and methods written in XCTest's style.
 
 If tests are discovered, then you should not provide your own `main` entry point
 in the `swift_test` binary; the test runtime provides the entry point for you.
@@ -507,13 +326,6 @@ a zero exit code for success or a non-zero exit code for failure.
 Specifies additional environment variables to inherit from the external
 environment when the test is executed by `bazel test`.
 """,
-        ),
-        "_test_discoverer": attr.label(
-            cfg = config.exec(_DISCOVER_TESTS_EXEC_GROUP),
-            default = Label(
-                "@build_bazel_rules_swift//tools/test_discoverer",
-            ),
-            executable = True,
         ),
         "_test_runner_deps": attr.label_list(
             default = [
@@ -532,9 +344,9 @@ providing their own `main` entry point.
 
 On Apple platforms, `XCTest`-style tests are automatically discovered and
 executed using the Objective-C runtime. To provide the same behavior on Linux,
-the `swift_test` rule performs its own scan for `XCTest`-style tests. In other
-words, you can write a single `swift_test` target that executes the same tests
-on either Linux or Apple platforms.
+the `swift_test` test runner performs its own runtime scan for `XCTest`-style
+tests. In other words, you can write a single `swift_test` target that executes
+the same tests on either Linux or Apple platforms.
 
 There are two approaches that one can take to write a `swift_test` that supports
 test discovery:
@@ -585,11 +397,6 @@ For example,
         "swift_plugins": exec_group(
             toolchains = use_all_toolchains(),
         ),
-        # Define an execution group for `SwiftTestDiscovery` actions that does
-        # not have constraints, so that test discovery using the already
-        # generated symbol graphs can be routed to any platform that supports it
-        # (even one with a different toolchain).
-        _DISCOVER_TESTS_EXEC_GROUP: exec_group(),
     },
     executable = True,
     fragments = ["cpp"],
