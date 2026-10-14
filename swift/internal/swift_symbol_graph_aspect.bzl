@@ -12,15 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Implementation of the `swift_symbol_graph_aspect` aspect.
-
-The Swift build rules contain two subtly different symbol graph extraction
-aspects; the public one (`swift_symbol_graph_extract`) meant for general usage,
-and a private one used by `swift_test` for XCTest discovery. This file contains
-the core implementation and a factory function used to create the concrete
-aspects; the public aspect is exported by the `swift_symbol_graph_aspect.bzl`
-file in the parent directory.
-"""
+"""Implementation of the `swift_symbol_graph_aspect` aspect."""
 
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
@@ -168,44 +160,10 @@ def _make_swift_symbol_graph_aspect_impl(
 
     return _impl
 
-SwiftTestDiscoverySymbolGraphInfo = provider(
-    doc = "Wraps the symbol graph info for test discovery.",
-    fields = {
-        "symbol_graph_info": """\
-The underlying `SwiftSymbolGraphInfo` provider for the target.
-""",
-    },
-)
-
-# Used only by `_testonly_symbol_graph_aspect_impl` below.
-_test_discovery_swift_symbol_graph_aspect_impl = _make_swift_symbol_graph_aspect_impl(
-    output_distinguisher = "test_discovery",
-    wrapper_provider = SwiftTestDiscoverySymbolGraphInfo,
-)
-
-def _testonly_symbol_graph_aspect_impl(target, aspect_ctx):
-    ignored = not getattr(aspect_ctx.rule.attr, "testonly", False)
-
-    if ignored:
-        # It's safe to return early (and not propagate transitive info) because
-        # a non-`testonly` target can't depend on a `testonly` target, so there
-        # is no possibility of losing anything we'd want to keep.
-        return [
-            SwiftTestDiscoverySymbolGraphInfo(
-                symbol_graph_info = SwiftSymbolGraphInfo(
-                    direct_symbol_graphs = [],
-                    transitive_symbol_graphs = depset(),
-                ),
-            ),
-        ]
-
-    return _test_discovery_swift_symbol_graph_aspect_impl(target, aspect_ctx)
-
 def make_swift_symbol_graph_aspect(
         *,
         default_minimum_access_level,
         doc = "",
-        testonly_targets,
         output_distinguisher = None,
         wrapper_provider = None):
     """Creates an aspect that extracts Swift symbol graphs from dependencies.
@@ -220,8 +178,6 @@ def make_swift_symbol_graph_aspect(
             output directory name for each target. This allows multiple
             instances of the aspect to be used on the same target without their
             outputs colliding.
-        testonly_targets: If True, symbol graphs will only be extracted from
-            targets that have the `testonly` attribute set.
         wrapper_provider: If set, the provider to use to wrap the symbol graph
             provider. If not set, the symbol graph provider will be used
             directly. If set, the provider must have a single field named
@@ -231,18 +187,14 @@ def make_swift_symbol_graph_aspect(
     Returns:
         An `aspect` that can be applied to a rule's dependencies.
     """
-    if testonly_targets:
-        aspect_impl = _testonly_symbol_graph_aspect_impl
-        provides = [SwiftTestDiscoverySymbolGraphInfo]
+    aspect_impl = _make_swift_symbol_graph_aspect_impl(
+        output_distinguisher = output_distinguisher,
+        wrapper_provider = wrapper_provider,
+    )
+    if wrapper_provider:
+        provides = [wrapper_provider]
     else:
-        aspect_impl = _make_swift_symbol_graph_aspect_impl(
-            output_distinguisher = output_distinguisher,
-            wrapper_provider = wrapper_provider,
-        )
-        if wrapper_provider:
-            provides = [wrapper_provider]
-        else:
-            provides = [SwiftSymbolGraphInfo]
+        provides = [SwiftSymbolGraphInfo]
 
     return aspect(
         attr_aspects = ["deps"],

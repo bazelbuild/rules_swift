@@ -35,5 +35,4 @@ symbol graphs by invoking the `swift-symbolgraph-extract` tool.
 For an example of how to apply this to a custom rule, refer to the
 implementation of `swift_extract_symbol_graph`.
     """,
-    testonly_targets = False,
 )

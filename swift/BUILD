@@ -284,8 +284,6 @@ bzl_library(
         "//swift/internal:linking",
         "//swift/internal:output_groups",
         "//swift/internal:providers",
-        "//swift/internal:swift_symbol_graph_aspect",
-        "//swift/internal:symbol_graph_extracting",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",
         "@rules_cc//cc/common",
