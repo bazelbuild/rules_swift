@@ -14,7 +14,87 @@
 
 import Foundation
 import Testing
+import XCTest
 import tools_test_runner_test_runner
+
+#if os(Linux)
+  class SampleBaseTestCase: XCTestCase {
+    func testInheritedFromBase() {
+      SampleDiscoveredTestCase.executedMethods.withLock {
+        _ = $0.insert("\(type(of: self)).testInheritedFromBase")
+      }
+    }
+
+    func testOverriddenBySubclass() {
+      SampleDiscoveredTestCase.executedMethods.withLock {
+        _ = $0.insert("\(type(of: self)).testOverriddenBySubclass:Base")
+      }
+    }
+  }
+
+  final class SampleDiscoveredTestCase: SampleBaseTestCase {
+    static let executedMethods = Locked<Set<String>>([])
+
+    func testSyncMethod() {
+      Self.executedMethods.withLock { _ = $0.insert("testSyncMethod") }
+    }
+
+    func testSyncThrowsMethod() throws {
+      Self.executedMethods.withLock { _ = $0.insert("testSyncThrowsMethod") }
+    }
+
+    func testAsyncMethod() async {
+      Self.executedMethods.withLock { _ = $0.insert("testAsyncMethod") }
+    }
+
+    func testAsyncThrowsMethod() async throws {
+      Self.executedMethods.withLock { _ = $0.insert("testAsyncThrowsMethod") }
+    }
+
+    override func testOverriddenBySubclass() {
+      Self.executedMethods.withLock {
+        _ = $0.insert("\(type(of: self)).testOverriddenBySubclass:Derived")
+      }
+    }
+
+    func testWithParameter(_ value: Int) {
+      XCTFail("Method with parameter should not be discovered: \(value)")
+    }
+
+    func testWithReturnValue() -> Int {
+      XCTFail("Method with return value should not be discovered")
+      return 0
+    }
+
+    private func testPrivateMethod() {
+      XCTFail("Private method should not be discovered")
+    }
+
+    func helperNotATest() {
+      XCTFail("Non-test method should not be discovered")
+    }
+  }
+
+  extension SampleDiscoveredTestCase {
+    func testExtensionMethod() {
+      Self.executedMethods.withLock { _ = $0.insert("testExtensionMethod") }
+    }
+
+    func testExtensionAsyncMethod() async {
+      Self.executedMethods.withLock { _ = $0.insert("testExtensionAsyncMethod") }
+    }
+  }
+
+  class SampleGenericTestCase<T>: XCTestCase {
+    func testGenericMethod() {
+      XCTFail("Generic XCTestCase subclass should not be discovered")
+    }
+  }
+
+  class SampleNonTestCase {
+    func testNotAnXCTestCase() {}
+  }
+#endif
 
 private struct DummyTestItem: Testable, Equatable {
   var testIdentifier: String
@@ -193,4 +273,66 @@ struct TestRunnerTests {
       )
     )
   }
+
+  #if os(Linux)
+    @MainActor
+    @Test func `LinuxXCTestRunner discovers and executes expected XCTest classes and methods`()
+      throws
+    {
+      let entries = try LinuxXCTestRunner.discoverTests(environment: [:])
+      let entriesByClass = Dictionary(
+        uniqueKeysWithValues: entries.map {
+          (String(describing: $0.testCaseClass), $0.allTests.map(\.0))
+        }
+      )
+
+      #expect(
+        entriesByClass["SampleBaseTestCase"] == [
+          "testInheritedFromBase",
+          "testOverriddenBySubclass",
+        ]
+      )
+      #expect(
+        entriesByClass["SampleDiscoveredTestCase"] == [
+          "testAsyncMethod",
+          "testAsyncThrowsMethod",
+          "testExtensionAsyncMethod",
+          "testExtensionMethod",
+          "testInheritedFromBase",
+          "testOverriddenBySubclass",
+          "testSyncMethod",
+          "testSyncThrowsMethod",
+        ]
+      )
+      #expect(entriesByClass["SampleGenericTestCase"] == nil)
+      #expect(entriesByClass["SampleNonTestCase"] == nil)
+
+      for entry in entries {
+        for (name, testClosure) in entry.allTests {
+          try testClosure(entry.testCaseClass.init(name: name, testClosure: testClosure))
+        }
+      }
+
+      let executed = SampleDiscoveredTestCase.executedMethods.value
+      #expect(
+        executed == [
+          "SampleBaseTestCase.testInheritedFromBase",
+          "SampleBaseTestCase.testOverriddenBySubclass:Base",
+          "SampleDiscoveredTestCase.testInheritedFromBase",
+          "SampleDiscoveredTestCase.testOverriddenBySubclass:Derived",
+          "testSyncMethod",
+          "testSyncThrowsMethod",
+          "testAsyncMethod",
+          "testAsyncThrowsMethod",
+          "testExtensionMethod",
+          "testExtensionAsyncMethod",
+        ]
+      )
+
+      let filteredOut = try LinuxXCTestRunner.discoverTests(
+        environment: ["SWIFT_TEST_DISCOVERY_MODULES": "NonExistentModule"]
+      )
+      #expect(filteredOut.isEmpty)
+    }
+  #endif
 }
