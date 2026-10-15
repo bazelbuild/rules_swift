@@ -67,10 +67,15 @@ def _physical_swift_module_name_unit_test_impl(ctx):
     for input_name, expected in [
         ("ValidIdentifier_123", "ValidIdentifier_123"),
         ("`//foo/bar:baz`", "foo_bar_baz"),
-        # TODO(b/383316205): Fix physical names for module names that look like shorthand labels.
-        ("`//foo/bar`", "foo_bar"),
+        ("`//foo/bar:baz%swift`", "foo_bar_baz_swift"),
+        ("`//foo/bar`", "foo_bar_bar"),
+        ("`//foo/bar%swift`", "foo_bar_bar_swift"),
         ("`//123/bar:baz`", "_123_bar_baz"),
+        ("`//123/bar`", "_123_bar_bar"),
         ("//foo/bar:baz", "foo_bar_baz"),
+        ("//foo/bar:baz%swift", "foo_bar_baz_swift"),
+        ("//foo/bar", "foo_bar_bar"),
+        ("//foo/bar%swift", "foo_bar_bar_swift"),
     ]:
         asserts.equals(env, expected, physical_swift_module_name(input_name))
 
@@ -137,14 +142,25 @@ def label_module_name_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name",
     )
 
+    provider_test(
+        name = "{}_short_label_physical_name".format(name),
+        expected_values = [
+            "third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
+        ],
+        field = "direct_modules.name",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name",
+    )
+
     # Verify that the compile command line passes `-module-name` with the
     # physical name and `-module-alias` flags mapping both the target's own
     # label and its dependencies' labels to their physical module names.
     action_command_line_test(
         name = "{}_compile_flags".format(name),
         expected_argv = [
-            "-module-name third_party_bazel_rules_rules_swift_test_fixtures_label_module_name",
-            "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name",
+            "-module-name third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
+            "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
             "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name:child=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child",
         ],
         mnemonic = select({

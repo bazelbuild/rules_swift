@@ -121,6 +121,7 @@ def physical_swift_module_name(module_name):
     if _is_valid_non_raw_identifier(module_name):
         return module_name
 
+    module_name = module_name.strip("`")
     if module_name.startswith("//"):
         # If the module name looks like a Bazel label, we need to transform it
         # a bit to maintain compatibility with legacy module names (because we
@@ -128,9 +129,10 @@ def physical_swift_module_name(module_name):
         # means turning the short form (`//foo/bar`) back into the long form
         # (`//foo/bar:bar`) so that the physical name becomes `foo_bar_bar`
         # rather than `foo_bar`.
-        if ":" not in module_name:
-            module_name += ":{}".format(module_name.rsplit("/", 1))
-        module_name = _module_name_safe(module_name.lstrip("//"))
+        base_name, sep, suffix = module_name.partition("%")
+        if ":" not in base_name:
+            base_name += ":{}".format(base_name.rsplit("/", 1)[-1])
+        module_name = _module_name_safe((base_name + sep + suffix).lstrip("//"))
     else:
         # If the user has provided a module name that doesn't look like a Bazel
         # label but still needs to be made identifier-safe, do that here without
