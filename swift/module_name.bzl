@@ -128,11 +128,15 @@ def physical_swift_module_name(module_name):
         # don't want the physical names to change for existing targets). This
         # means turning the short form (`//foo/bar`) back into the long form
         # (`//foo/bar:bar`) so that the physical name becomes `foo_bar_bar`
-        # rather than `foo_bar`.
+        # rather than `foo_bar`. Also, if there is an aspect suffix separated by
+        # `%`, join it with two underscores (`__`) to reduce the likelihood of
+        # collisions.
         base_name, sep, suffix = module_name.partition("%")
         if ":" not in base_name:
             base_name += ":{}".format(base_name.rsplit("/", 1)[-1])
-        module_name = _module_name_safe((base_name + sep + suffix).lstrip("//"))
+        module_name = _module_name_safe(base_name.lstrip("//"))
+        if sep:
+            module_name += "__{}".format(_module_name_safe(suffix))
     else:
         # If the user has provided a module name that doesn't look like a Bazel
         # label but still needs to be made identifier-safe, do that here without

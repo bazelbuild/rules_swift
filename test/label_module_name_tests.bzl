@@ -67,15 +67,15 @@ def _physical_swift_module_name_unit_test_impl(ctx):
     for input_name, expected in [
         ("ValidIdentifier_123", "ValidIdentifier_123"),
         ("`//foo/bar:baz`", "foo_bar_baz"),
-        ("`//foo/bar:baz%swift`", "foo_bar_baz_swift"),
+        ("`//foo/bar:baz%swift`", "foo_bar_baz__swift"),
         ("`//foo/bar`", "foo_bar_bar"),
-        ("`//foo/bar%swift`", "foo_bar_bar_swift"),
+        ("`//foo/bar%swift`", "foo_bar_bar__swift"),
         ("`//123/bar:baz`", "_123_bar_baz"),
         ("`//123/bar`", "_123_bar_bar"),
         ("//foo/bar:baz", "foo_bar_baz"),
-        ("//foo/bar:baz%swift", "foo_bar_baz_swift"),
+        ("//foo/bar:baz%swift", "foo_bar_baz__swift"),
         ("//foo/bar", "foo_bar_bar"),
-        ("//foo/bar%swift", "foo_bar_bar_swift"),
+        ("//foo/bar%swift", "foo_bar_bar__swift"),
     ]:
         asserts.equals(env, expected, physical_swift_module_name(input_name))
 
