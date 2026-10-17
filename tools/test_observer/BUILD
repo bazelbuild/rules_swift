@@ -2,6 +2,10 @@ load(
     "//swift:swift_library.bzl",
     "swift_library",
 )
+load(
+    "//swift:swift_test.bzl",
+    "swift_test",
+)
 
 swift_library(
     name = "test_observer",
@@ -20,4 +24,14 @@ swift_library(
     ],
     module_name = "BazelTestObservation",
     visibility = ["//visibility:public"],
+)
+
+swift_test(
+    name = "swift_testing_runner_test",
+    srcs = ["SwiftTestingRunnerTests.swift"],
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
+    deps = [":test_observer"],
 )
