@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Test
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 120
     concurrency:
       group: macos-latest-xcode-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          sudo xcode-select -s /Applications/Xcode_26.4.app
+          sudo xcode-select -s /Applications/Xcode_27.0.app
           xcode-select -p
           xcodebuild -version
 
