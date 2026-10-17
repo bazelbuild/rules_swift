@@ -29,5 +29,9 @@ swift_library(
 swift_test(
     name = "swift_testing_runner_test",
     srcs = ["SwiftTestingRunnerTests.swift"],
+    target_compatible_with = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
     deps = [":test_observer"],
 )
