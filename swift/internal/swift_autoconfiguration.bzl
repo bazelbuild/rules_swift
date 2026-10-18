@@ -384,6 +384,8 @@ swift_toolchain(
 def _swift_autoconfiguration_impl(repository_ctx):
     platform = repository_ctx.os.name
     if platform == "mac os x":
+        repository_ctx.getenv("DEVELOPER_DIR")
+        repository_ctx.getenv("TOOLCHAINS")
         content = _export_toolchain_tools(repository_ctx, root = None, platform = platform)
     elif platform.lower().startswith("windows"):
         content = _create_windows_toolchain(repository_ctx = repository_ctx)
@@ -408,7 +410,7 @@ package(default_visibility = ["//visibility:public"])
     )
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "DEVELOPER_DIR", "PATH", "ProgramData", "Path", "TOOLCHAINS"],
+    environ = ["CC", "PATH", "ProgramData", "Path"],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
