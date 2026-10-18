@@ -14,9 +14,9 @@
 
 """Definitions for autoconfiguring Swift toolchains.
 
-At this time, only the Linux toolchain uses this capability. The Xcode toolchain
-determines which
-features are supported using Xcode version checks in xcode_toolchain.bzl.
+Linux and Windows use this capability to configure toolchains. On macOS, only
+executables are exported; the Xcode toolchain determines supported features using
+Xcode version checks in xcode_swift_toolchain.bzl.
 """
 
 load(
@@ -206,7 +206,7 @@ def _resolve_toolchain_root(repository_ctx, swiftc_path):
     return repository_ctx.path(runtime_resource_path).dirname.dirname
 
 def _export_toolchain_tools(repository_ctx, root, platform):
-    """Exports installed toolchain executables for repository-time consumers."""
+    """Exports installed tools, using xcrun on macOS and root elsewhere."""
     suffix = ".exe" if platform.lower().startswith("windows") else ""
     exported_files = []
 
@@ -223,7 +223,13 @@ def _export_toolchain_tools(repository_ctx, root, platform):
         "swiftc",
     ]:
         executable = tool + suffix
-        path = root.get_child("bin").get_child(executable)
+        if platform == "mac os x":
+            result = repository_ctx.execute(["/usr/bin/xcrun", "--find", executable])
+            if result.return_code != 0:
+                continue
+            path = repository_ctx.path(result.stdout.strip())
+        else:
+            path = root.get_child("bin").get_child(executable)
 
         if path.exists:
             repository_ctx.symlink(path, executable)
@@ -376,6 +382,16 @@ swift_toolchain(
     )
 
 def _swift_autoconfiguration_impl(repository_ctx):
+    platform = repository_ctx.os.name
+    if platform == "mac os x":
+        content = _export_toolchain_tools(repository_ctx, root = None, platform = platform)
+    elif platform.lower().startswith("windows"):
+        content = _create_windows_toolchain(repository_ctx = repository_ctx)
+    elif platform == "linux":
+        content = _create_linux_toolchain(repository_ctx = repository_ctx)
+    else:
+        content = ""
+
     repository_ctx.file(
         "BUILD",
         "\n".join([
@@ -387,8 +403,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 """,
-            _create_windows_toolchain(repository_ctx = repository_ctx),
-            _create_linux_toolchain(repository_ctx = repository_ctx),
+            content,
         ]),
     )
 
