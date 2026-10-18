@@ -205,6 +205,32 @@ def _resolve_toolchain_root(repository_ctx, swiftc_path):
     runtime_resource_path = json.decode(result.stdout)["paths"]["runtimeResourcePath"]
     return repository_ctx.path(runtime_resource_path).dirname.dirname
 
+def _export_toolchain_tools(repository_ctx, root, platform):
+    """Exports installed toolchain executables for repository-time consumers."""
+    suffix = ".exe" if platform.lower().startswith("windows") else ""
+    exported_files = []
+
+    # We should keep this list aligned with exports_files in extensions/toolchain.BUILD.
+    for tool in [
+        "clang",
+        "llvm-ar",
+        "llvm-objcopy",
+        "llvm-objdump",
+        "llvm-strip",
+        "swift",
+        "swift-autolink-extract",
+        "swift-symbolgraph-extract",
+        "swiftc",
+    ]:
+        executable = tool + suffix
+        path = root.get_child("bin").get_child(executable)
+
+        if path.exists:
+            repository_ctx.symlink(path, executable)
+            exported_files.append(executable)
+
+    return "exports_files({})\n".format(repr(exported_files))
+
 def _create_linux_toolchain(*, repository_ctx):
     """Creates BUILD targets for the Swift toolchain on Linux.
 
@@ -229,7 +255,7 @@ toolchain.
     feature_values.append(SWIFT_FEATURE_USE_AUTOLINK_EXTRACT)
     feature_values.append(SWIFT_FEATURE_USE_MODULE_WRAP)
 
-    return """\
+    return _export_toolchain_tools(repository_ctx, root, platform = repository_ctx.os.name) + """\
 swift_toolchain(
     name = "linux-toolchain",
     arch = "{cpu}",
@@ -324,7 +350,7 @@ Swift toolchain.
         "ProgramData": repository_ctx.os.environ.get("ProgramData", "C:\\ProgramData"),
     }
 
-    return """\
+    return _export_toolchain_tools(repository_ctx, root, platform = repository_ctx.os.name) + """\
 swift_toolchain(
   name = "windows-toolchain",
   arch = "{arch}",
@@ -367,7 +393,7 @@ package(default_visibility = ["//visibility:public"])
     )
 
 swift_autoconfiguration = repository_rule(
-    environ = ["CC", "PATH", "ProgramData", "Path"],
+    environ = ["CC", "DEVELOPER_DIR", "PATH", "ProgramData", "Path", "TOOLCHAINS"],
     implementation = _swift_autoconfiguration_impl,
     local = True,
 )
