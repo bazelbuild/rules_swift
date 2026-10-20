@@ -66,6 +66,49 @@ bool RemoveFile(const std::filesystem::path& path,
   return true;
 }
 
+bool IsModuleFile(const std::string& path) {
+  const std::string extension =
+      std::filesystem::path(path).extension().string();
+  return extension == ".swiftmodule" || extension == ".swiftdoc" ||
+         extension == ".swiftsourceinfo" || extension == ".swiftinterface";
+}
+
+// Returns whether any changed module digest was ignored. Swift checks modules
+// newer than the previous build's start; .priors is written afterward, making
+// its mtime a conservative cutoff. Include .swiftdoc and .swiftsourceinfo,
+// which can change alongside the module without affecting compilation.
+bool IgnoreNewerModuleDigests(nlohmann::json& previous,
+                              const nlohmann::json& current,
+                              const std::filesystem::path& priors_path) {
+  if (!previous.is_object() || !previous.contains("inputs") ||
+      !previous["inputs"].is_object()) {
+    return false;
+  }
+  std::error_code ec;
+  auto priors_time =
+      std::filesystem::last_write_time(LongPath(priors_path), ec);
+  if (ec) {
+    return false;
+  }
+  auto& previous_inputs = previous["inputs"];
+  bool ignored = false;
+  for (const auto& [path, digest] : current.items()) {
+    auto old_digest = previous_inputs.find(path);
+    if (old_digest == previous_inputs.end() || *old_digest == digest ||
+        !IsModuleFile(path)) {
+      continue;
+    }
+    std::error_code input_ec;
+    auto input_time =
+        std::filesystem::last_write_time(LongPath(path), input_ec);
+    if (!input_ec && input_time > priors_time) {
+      *old_digest = digest;
+      ignored = true;
+    }
+  }
+  return ignored;
+}
+
 static void FinalizeWorkRequest(
     const bazel_rules_swift::worker_protocol::WorkRequest& request,
     bazel_rules_swift::worker_protocol::WorkResponse& response, int exit_code,
@@ -245,24 +288,33 @@ void WorkProcessor::ProcessWorkRequest(
                                              .get<std::string>();
     incremental_inputs_path = build_record;
     incremental_inputs_path.replace_extension(".inputs.json");
+    // Older drivers use the module swiftdeps file as the build record;
+    // newer drivers replace its extension with .priors.
+    build_record.replace_extension(".priors");
     bool can_reuse = false;
+    bool ignored_digests = false;
     {
       std::ifstream previous_inputs(LongPath(incremental_inputs_path));
       if (previous_inputs) {
         auto previous = nlohmann::json::parse(previous_inputs, nullptr, false);
+        ignored_digests = IgnoreNewerModuleDigests(previous, dependency_digests,
+                                                   build_record);
         can_reuse = have_digests && previous == incremental_inputs;
       }
     }
-    if (!can_reuse) {
+    if (!can_reuse || ignored_digests) {
       // Once the inputs change, a failed compilation can leave state from
       // different input sets. Remove the old record before changing any state,
       // and only record the new inputs after compilation and output copying
       // succeed. With matching inputs, keep the record even on failure: Swift
       // tracks unfinished source jobs and can recover incrementally.
+      // Ignored module digests still count as changed inputs for this record.
       if (!RemoveFile(incremental_inputs_path, stderr_stream)) {
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
+    }
+    if (!can_reuse) {
       for (const auto& dependency :
            output_file_map.incremental_dependencies()) {
         if (!RemoveFile(dependency, stderr_stream)) {
@@ -270,9 +322,6 @@ void WorkProcessor::ProcessWorkRequest(
           return;
         }
       }
-      // Older drivers use the module swiftdeps file as the build record;
-      // newer drivers replace its extension with .priors.
-      build_record.replace_extension(".priors");
       if (!RemoveFile(build_record, stderr_stream)) {
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;

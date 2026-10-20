@@ -14,6 +14,8 @@ load(":worker_test.bzl", "worker_test")
         "module_outputs_survive_failure",
         "changed_dependency_digest",
         "changed_dependency_digest_without_hashing",
+        "changed_dependency_newer_mtime",
+        "changed_dependency_newer_mtime_then_failure",
         "changed_arguments",
         "changed_universal_arguments",
         "missing_digest",
