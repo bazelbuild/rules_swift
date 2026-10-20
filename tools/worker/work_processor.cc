@@ -73,14 +73,10 @@ bool IsModuleFile(const std::string& path) {
          extension == ".swiftsourceinfo" || extension == ".swiftinterface";
 }
 
-// Ignores changed digests of modules that are newer than the .priors file.
-// Swift's driver treats a module older than the previous build's start as
-// unchanged even if its contents differ (e.g. restored from cache), but always
-// checks a newer one. The .priors file is written at the end of that build, so
-// comparing against it is stricter than the driver's own check. A newer module
-// can therefore be left to the driver. Returns whether any digest was ignored.
-// .swiftdoc and .swiftsourceinfo do not affect compilation but change with
-// every edit to an upstream module, so they are covered as well.
+// Returns whether any changed module digest was ignored. Swift checks modules
+// newer than the previous build's start; .priors is written afterward, making
+// its mtime a conservative cutoff. Include .swiftdoc and .swiftsourceinfo,
+// which can change alongside the module without affecting compilation.
 bool IgnoreNewerModuleDigests(nlohmann::json& previous,
                               const nlohmann::json& current,
                               const std::filesystem::path& priors_path) {
@@ -294,16 +290,15 @@ void WorkProcessor::ProcessWorkRequest(
     incremental_inputs_path.replace_extension(".inputs.json");
     // Older drivers use the module swiftdeps file as the build record;
     // newer drivers replace its extension with .priors.
-    std::filesystem::path priors_path = build_record;
-    priors_path.replace_extension(".priors");
+    build_record.replace_extension(".priors");
     bool can_reuse = false;
     bool ignored_digests = false;
     {
       std::ifstream previous_inputs(LongPath(incremental_inputs_path));
       if (previous_inputs) {
         auto previous = nlohmann::json::parse(previous_inputs, nullptr, false);
-        ignored_digests =
-            IgnoreNewerModuleDigests(previous, dependency_digests, priors_path);
+        ignored_digests = IgnoreNewerModuleDigests(previous, dependency_digests,
+                                                   build_record);
         can_reuse = have_digests && previous == incremental_inputs;
       }
     }
@@ -312,9 +307,8 @@ void WorkProcessor::ProcessWorkRequest(
       // different input sets. Remove the old record before changing any state,
       // and only record the new inputs after compilation and output copying
       // succeed. With matching inputs, keep the record even on failure: Swift
-      // tracks unfinished source jobs and can recover incrementally. The
-      // exception is a record that only matches because newer module digests
-      // were ignored: it no longer describes the inputs Swift will see.
+      // tracks unfinished source jobs and can recover incrementally.
+      // Ignored module digests still count as changed inputs for this record.
       if (!RemoveFile(incremental_inputs_path, stderr_stream)) {
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
@@ -328,7 +322,7 @@ void WorkProcessor::ProcessWorkRequest(
           return;
         }
       }
-      if (!RemoveFile(priors_path, stderr_stream)) {
+      if (!RemoveFile(build_record, stderr_stream)) {
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }

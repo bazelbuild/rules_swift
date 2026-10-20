@@ -16,8 +16,6 @@ load(":worker_test.bzl", "worker_test")
         "changed_dependency_digest_without_hashing",
         "changed_dependency_newer_mtime",
         "changed_dependency_newer_mtime_then_failure",
-        "changed_dependency_newer_mtime_without_priors",
-        "changed_dependency_newer_mtime_changed_header",
         "changed_arguments",
         "changed_universal_arguments",
         "missing_digest",

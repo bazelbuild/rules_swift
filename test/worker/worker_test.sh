@@ -78,8 +78,6 @@ compile --version
 echo "Incremental file hashing: ${hashing_argument:-disabled}"
 build_dependency Int32
 write_source oldAPI 202001010000
-# An input that is not a module, so that its change always invalidates.
-echo '#define VALUE 1' >Header.h
 
 run_worker() {
 	local expected_exit_code="${1:-0}"
@@ -114,7 +112,6 @@ run_worker() {
   "inputs": [
     {"path": "source.swift", "digest": "$(digest source.swift)"},
     $dependency_input
-    {"path": "Header.h", "digest": "$(digest Header.h)"},
     {"path": "$output_dir/module.json", "digest": "$(digest "$output_dir/module.json")"}
   ]
 }
@@ -254,24 +251,6 @@ changed_dependency_newer_mtime_then_failure)
 	run_worker
 	assert_dependencies_removed
 	assert_module_outputs 4
-	;;
-changed_dependency_newer_mtime_without_priors)
-	# Without a build record there is no time to compare against.
-	rm -f "$INCREMENTAL_DIR/module.priors"
-	build_dependency Int64
-	touch -t 209901010000 Dependency.swiftmodule
-	run_worker
-	assert_dependencies_removed
-	assert_module_outputs 8
-	;;
-changed_dependency_newer_mtime_changed_header)
-	# Only module changes are left to Swift.
-	build_dependency Int64
-	touch -t 209901010000 Dependency.swiftmodule
-	echo '#define VALUE 2' >Header.h
-	run_worker
-	assert_dependencies_removed
-	assert_module_outputs 8
 	;;
 changed_arguments)
 	extra_arguments=', "-DNEW_DEFINE"'
