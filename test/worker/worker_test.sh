@@ -78,6 +78,8 @@ compile --version
 echo "Incremental file hashing: ${hashing_argument:-disabled}"
 build_dependency Int32
 write_source oldAPI 202001010000
+# An input that is not a module, so that its change always invalidates.
+echo '#define VALUE 1' >Header.h
 
 run_worker() {
 	local expected_exit_code="${1:-0}"
@@ -112,6 +114,7 @@ run_worker() {
   "inputs": [
     {"path": "source.swift", "digest": "$(digest source.swift)"},
     $dependency_input
+    {"path": "Header.h", "digest": "$(digest Header.h)"},
     {"path": "$output_dir/module.json", "digest": "$(digest "$output_dir/module.json")"}
   ]
 }
@@ -224,6 +227,50 @@ changed_dependency_digest | changed_dependency_digest_without_hashing)
 	assert_dependencies_removed
 	run_worker
 	assert_dependencies_kept
+	assert_module_outputs 8
+	;;
+changed_dependency_newer_mtime)
+	# A changed module newer than the dependency records is left to Swift, which
+	# rebuilds only what depends on the changed declarations.
+	build_dependency Int64
+	touch -t 209901010000 Dependency.swiftmodule
+	run_worker
+	assert_dependencies_kept
+	assert_module_outputs 8
+	;;
+changed_dependency_newer_mtime_then_failure)
+	# The record must not keep the old digests while Swift's state has moved on:
+	# after a failed build, restoring the old module with an old timestamp must
+	# not be mistaken for the previous inputs.
+	cp Dependency.swiftmodule original.swiftmodule
+	build_dependency Int64
+	touch -t 209901010000 Dependency.swiftmodule
+	fail_output_copy=true
+	run_worker 1
+	assert_dependencies_kept
+	cp original.swiftmodule Dependency.swiftmodule
+	touch -t 200001010000 Dependency.swiftmodule
+	fail_output_copy=false
+	run_worker
+	assert_dependencies_removed
+	assert_module_outputs 4
+	;;
+changed_dependency_newer_mtime_without_priors)
+	# Without a build record there is no time to compare against.
+	rm -f "$INCREMENTAL_DIR/module.priors"
+	build_dependency Int64
+	touch -t 209901010000 Dependency.swiftmodule
+	run_worker
+	assert_dependencies_removed
+	assert_module_outputs 8
+	;;
+changed_dependency_newer_mtime_changed_header)
+	# Only module changes are left to Swift.
+	build_dependency Int64
+	touch -t 209901010000 Dependency.swiftmodule
+	echo '#define VALUE 2' >Header.h
+	run_worker
+	assert_dependencies_removed
 	assert_module_outputs 8
 	;;
 changed_arguments)
