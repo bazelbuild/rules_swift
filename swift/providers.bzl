@@ -567,7 +567,9 @@ def create_clang_module_inputs(
 def create_swift_module_inputs(
         *,
         defines = [],
+        package_swiftinterface = None,
         plugins = [],
+        private_swiftinterface = None,
         swiftdoc,
         swiftinterface = None,
         swiftmodule,
@@ -577,9 +579,15 @@ def create_swift_module_inputs(
     Args:
         defines: A list of defines that will be provided as `copts` to targets
             that depend on this module. If omitted, the empty list will be used.
+        package_swiftinterface: The `.package.swiftinterface` file emitted by
+            the compiler for this module. May be `None` if no package module
+            interface file was emitted.
         plugins: A list of `SwiftCompilerPluginInfo` providers representing
             compiler plugins that are required by this module and should be
             loaded by the compiler when this module is directly depended on.
+        private_swiftinterface: The `.private.swiftinterface` file emitted by
+            the compiler for this module. May be `None` if no private module
+            interface file was emitted.
         swiftdoc: The `.swiftdoc` file emitted by the compiler for this module.
         swiftinterface: The `.swiftinterface` file emitted by the compiler for
             this module. May be `None` if no module interface file was emitted.
@@ -593,7 +601,9 @@ def create_swift_module_inputs(
     """
     return struct(
         defines = defines,
+        package_swiftinterface = package_swiftinterface,
         plugins = plugins,
+        private_swiftinterface = private_swiftinterface,
         swiftdoc = swiftdoc,
         swiftinterface = swiftinterface,
         swiftmodule = swiftmodule,

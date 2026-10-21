@@ -48,12 +48,15 @@ def module_interface_test_suite(name, tags = []):
         tags = all_tags,
     )
 
-    # Verify that `.swiftinterface` file is emitted when the `library_evolution`
+    # Verify that `.swiftinterface`, `.private.swiftinterface`, and
+    # `.package.swiftinterface` files are emitted when the `library_evolution`
     # attribute is true.
     provider_test(
         name = "{}_swift_library_with_evolution_emits_swiftinterface".format(name),
         expected_files = [
             "test/fixtures/module_interface/library/ToyModule.swiftinterface",
+            "test/fixtures/module_interface/library/ToyModule.private.swiftinterface",
+            "test/fixtures/module_interface/library/ToyModule.package.swiftinterface",
             "*",
         ],
         field = "files",
@@ -62,12 +65,48 @@ def module_interface_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
     )
 
-    # Verify that `.swiftinterface` file is not emitted when the
+    provider_test(
+        name = "{}_swift_library_with_evolution_propagates_swiftinterface_in_swift_info".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModule.swiftinterface",
+        ],
+        field = "direct_modules.swift!.swiftinterface",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    provider_test(
+        name = "{}_swift_library_with_evolution_propagates_private_swiftinterface_in_swift_info".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModule.private.swiftinterface",
+        ],
+        field = "direct_modules.swift!.private_swiftinterface",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    provider_test(
+        name = "{}_swift_library_with_evolution_propagates_package_swiftinterface_in_swift_info".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModule.package.swiftinterface",
+        ],
+        field = "direct_modules.swift!.package_swiftinterface",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library",
+    )
+
+    # Verify that `.swiftinterface`, `.private.swiftinterface`, and
+    # `.package.swiftinterface` files are not emitted when the
     # `library_evolution` attribute is false.
     provider_test(
         name = "{}_swift_library_without_evolution_emits_no_swiftinterface".format(name),
         expected_files = [
             "-test/fixtures/module_interface/library/ToyModuleNoEvolution.swiftinterface",
+            "-test/fixtures/module_interface/library/ToyModuleNoEvolution.private.swiftinterface",
+            "-test/fixtures/module_interface/library/ToyModuleNoEvolution.package.swiftinterface",
             "*",
         ],
         field = "files",

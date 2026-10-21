@@ -724,7 +724,9 @@ def compile(
         source_name = original_module_name,
         swift = create_swift_module_inputs(
             defines = defines,
+            package_swiftinterface = compile_outputs.package_swiftinterface_file,
             plugins = plugins,
+            private_swiftinterface = compile_outputs.private_swiftinterface_file,
             swiftdoc = compile_outputs.swiftdoc_file,
             swiftinterface = compile_outputs.swiftinterface_file,
             swiftmodule = compile_outputs.swiftmodule_file,
@@ -851,6 +853,8 @@ def _execute_compile_plan(
         # will be predictable.
         compile_plan.module_outputs.swiftmodule_file,
         compile_plan.module_outputs.generated_header_file,
+        compile_plan.module_outputs.package_swiftinterface_file,
+        compile_plan.module_outputs.private_swiftinterface_file,
         compile_plan.module_outputs.swiftdoc_file,
         compile_plan.module_outputs.swiftinterface_file,
         compile_plan.module_outputs.swiftsourceinfo_file,
@@ -1066,6 +1070,8 @@ def _plan_legacy_swift_compilation(
         # various things (such as the filename prefix for param files generated
         # for that action). This guarantees some predictability.
         compile_outputs.swiftmodule_file,
+        compile_outputs.package_swiftinterface_file,
+        compile_outputs.private_swiftinterface_file,
         compile_outputs.swiftdoc_file,
         compile_outputs.swiftinterface_file,
         compile_outputs.swiftsourceinfo_file,
@@ -1892,8 +1898,19 @@ def _construct_compile_plan(
         swiftinterface_file = actions.declare_file(
             "{}.swiftinterface".format(module_name),
         )
+        private_swiftinterface_file = actions.declare_file(
+            "{}.private.swiftinterface".format(module_name),
+        )
+        if feature_configuration._label and feature_configuration._label.package:
+            package_swiftinterface_file = actions.declare_file(
+                "{}.package.swiftinterface".format(module_name),
+            )
+        else:
+            package_swiftinterface_file = None
     else:
         swiftinterface_file = None
+        private_swiftinterface_file = None
+        package_swiftinterface_file = None
 
     # If requested, generate the Swift header for this library so that it can be
     # included by Objective-C code that depends on it.
@@ -1964,6 +1981,8 @@ def _construct_compile_plan(
         indexstore_directory = indexstore_directory,
         object_files = object_files,
         output_file_map = output_file_map,
+        package_swiftinterface_file = package_swiftinterface_file,
+        private_swiftinterface_file = private_swiftinterface_file,
         swiftdoc_file = swiftdoc_file,
         swiftinterface_file = swiftinterface_file,
         swiftmodule_file = swiftmodule_file,
@@ -1978,6 +1997,8 @@ def _construct_compile_plan(
         ),
         module_outputs = struct(
             generated_header_file = generated_header,
+            package_swiftinterface_file = package_swiftinterface_file,
+            private_swiftinterface_file = private_swiftinterface_file,
             swiftdoc_file = swiftdoc_file,
             swiftinterface_file = swiftinterface_file,
             swiftmodule_file = swiftmodule_file,

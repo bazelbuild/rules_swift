@@ -497,10 +497,14 @@ def parallel_compilation_test_suite(name, tags = []):
         expected_argv = [
             "-emit-objc-header-path",
             "-emit-module-interface-path",
+            "-emit-private-module-interface-path",
+            "-emit-package-module-interface-path",
         ],
         expected_outputs = [
             "header_and_interface-Swift.h",
             "header_and_interface.swiftinterface",
+            "header_and_interface.private.swiftinterface",
+            "header_and_interface.package.swiftinterface",
             "header_and_interface.swiftmodule",
             "-Empty.swift.o",
             "*",
@@ -516,6 +520,8 @@ def parallel_compilation_test_suite(name, tags = []):
             "Empty.swift.o",
             "-header_and_interface-Swift.h",
             "-header_and_interface.swiftinterface",
+            "-header_and_interface.private.swiftinterface",
+            "-header_and_interface.package.swiftinterface",
             "-header_and_interface.swiftmodule",
             "*",
         ],
@@ -523,6 +529,8 @@ def parallel_compilation_test_suite(name, tags = []):
         not_expected_argv = [
             "-emit-objc-header-path",
             "-emit-module-interface-path",
+            "-emit-private-module-interface-path",
+            "-emit-package-module-interface-path",
         ],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:header_and_interface",
