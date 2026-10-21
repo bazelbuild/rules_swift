@@ -14,6 +14,7 @@
 
 """Definitions for bzlmod module extensions."""
 
+load("//swift/internal:swift_autoconfiguration.bzl", "swift_autoconfiguration")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 load(
@@ -31,6 +32,15 @@ load(
 load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
 system_sdk = _system_sdk
+
+def _local_toolchain_impl(module_ctx):
+    swift_autoconfiguration(name = "rules_swift_local_config")
+    return module_ctx.extension_metadata(reproducible = True)
+
+local_toolchain = module_extension(
+    implementation = _local_toolchain_impl,
+    doc = "Exposes locally discovered toolchain executables in @rules_swift_local_config.",
+)
 
 def _known_sdk_versions(swift_sdk_releases, sdk):
     return [

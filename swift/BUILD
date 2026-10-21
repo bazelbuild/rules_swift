@@ -21,6 +21,7 @@ bzl_library(
     name = "extensions",
     srcs = ["extensions.bzl"],
     deps = [
+        "//swift/internal:swift_autoconfiguration",
         "//swift/internal/extensions:standalone_toolchain",
         "//swift/internal/extensions:swift_sdk_releases",
         "//swift/internal/extensions:toolchains",
