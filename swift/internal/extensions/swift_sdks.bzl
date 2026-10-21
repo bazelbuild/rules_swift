@@ -133,7 +133,6 @@ target Android.
 )
 
 def _relative_metadata_path(value, field, triple):
-    """Validates a path read from SDK metadata."""
     if type(value) != "string" or not value:
         fail("Expected `{}` for `{}` in swift-sdk.json to be a non-empty string.".format(
             field,
@@ -148,18 +147,6 @@ def _relative_metadata_path(value, field, triple):
     return value
 
 def _swift_sdk_json_path(repository_ctx, bundle_dir):
-    """Locates the default `swift-sdk.json` via the bundle's `info.json`.
-
-    An artifact bundle's `info.json` lists one or more `swiftSDK` artifacts,
-    each with a variant path to a `swift-sdk.json` metadata file. Bundles that
-    also ship an Embedded Swift variant name its metadata
-    `embedded-swift-sdk.json`; the default (full-stdlib) artifact is the one
-    whose metadata file is named exactly `swift-sdk.json`.
-
-    Returns:
-        The path of the default artifact's `swift-sdk.json`, relative to the
-        repository root.
-    """
     info = json.decode(repository_ctx.read(bundle_dir + "/info.json"))
     artifacts = info.get("artifacts")
     if type(artifacts) != "dict":
@@ -181,13 +168,6 @@ def _swift_sdk_json_path(repository_ctx, bundle_dir):
     return "{}/{}".format(bundle_dir, candidates[0])
 
 def _swift_sdk_target_settings(repository_ctx, sdk_json_path):
-    """Parses a `swift-sdk.json`, returning its single triple and settings.
-
-    Returns:
-        A `(triple, settings)` tuple, where `settings` is the decoded
-        per-triple dictionary (`sdkRootPath`, `swiftStaticResourcesPath`,
-        `toolsetPaths`, ...).
-    """
     metadata = json.decode(repository_ctx.read(sdk_json_path))
     target_triples = metadata.get("targetTriples")
     if type(target_triples) != "dict":
@@ -200,23 +180,15 @@ def _swift_sdk_target_settings(repository_ctx, sdk_json_path):
     return triple, target_triples[triple]
 
 def merged_toolset_options(toolsets, context):
-    """Merges decoded `toolset.json` dictionaries into per-tool option lists.
-
-    A Swift SDK's `swift-sdk.json` may reference several toolset files via
-    `toolsetPaths`; SwiftPM applies them in order, with `extraCLIOptions`
-    accumulating. `rootPath` and per-tool executable overrides are ignored:
-    the generated toolchains always drive the paired standalone toolchain's
-    own `swiftc`/`clang`.
+    """Merges `toolset.json` dictionaries into per-tool `extraCLIOptions`.
 
     Args:
         toolsets: Decoded `toolset.json` dictionaries, in `toolsetPaths` order.
-        context: A human-readable location (bundle URL or path) for error
-            messages.
+        context: A location for error messages.
 
     Returns:
         A `struct` with `c_compiler`, `cxx_compiler`, `linker`, and
-        `swift_compiler` fields, each the merged `extraCLIOptions` list for
-        that tool.
+        `swift_compiler` option lists.
     """
     merged = {
         "cCompiler": [],
@@ -241,17 +213,11 @@ def merged_toolset_options(toolsets, context):
     )
 
 def linker_options_to_clang_args(options, context):
-    """Translates raw linker options from a toolset into clang driver args.
-
-    SwiftPM invokes the linker named by the toolset directly, so a toolset's
-    `linker.extraCLIOptions` are raw `wasm-ld`/`ld` flags. The generated
-    toolchains link through the clang driver instead, so each option is
-    forwarded with `-Wl,`.
+    """Wraps raw linker options in `-Wl,` for the clang driver.
 
     Args:
         options: The toolset's merged `linker.extraCLIOptions`.
-        context: A human-readable location (bundle URL or path) for error
-            messages.
+        context: A location for error messages.
 
     Returns:
         The options wrapped for the clang driver.
@@ -264,7 +230,6 @@ def linker_options_to_clang_args(options, context):
     return ["-Wl," + option for option in options]
 
 def _toolset_options(repository_ctx, sdk_dir_relative, target_settings, triple, context):
-    """Reads and merges the toolsets referenced by a `swift-sdk.json`."""
     toolsets = []
     for toolset_path in target_settings.get("toolsetPaths", []):
         toolsets.append(json.decode(repository_ctx.read("{}/{}".format(
@@ -274,24 +239,9 @@ def _toolset_options(repository_ctx, sdk_dir_relative, target_settings, triple, 
     return merged_toolset_options(toolsets, context)
 
 def _bzl_list_tail(flags, indent):
-    """Formats flags as list elements appended after an existing list entry.
-
-    Each flag becomes its own line (leading newline + `indent`), so the result
-    can be substituted immediately after the trailing comma of the last static
-    element of a BUILD-file list literal.
-    """
     return "".join(["\n{}\"{}\",".format(indent, flag) for flag in flags])
 
 def _wasm_toolset_substitutions(toolset, context):
-    """Returns BUILD-template substitutions carrying the SDK's toolset options.
-
-    The C compiler options apply to both C and C++ compilations (the wasm cc
-    toolchain does not distinguish them); a toolset with *different* C++
-    options is rejected rather than half-applied. For the single-threaded
-    swift.org bundle the toolset carries only `-static-stdlib` for `swiftc`;
-    the wasi-threads bundle additionally carries the atomics/pthread compile
-    flags and the shared-memory link flags.
-    """
     if toolset.cxx_compiler and toolset.cxx_compiler != toolset.c_compiler:
         fail(("The toolset metadata of {} has `cxxCompiler` options that " +
               "differ from its `cCompiler` options; this is not " +
@@ -374,8 +324,7 @@ swift_wasm_sdk_repository = repository_rule(
         "threads": attr.bool(
             default = False,
             doc = """\
-If `True`, target `wasm32-unknown-wasip1-threads` (shared memory + atomics +
-wasi-threads) instead of the single-threaded `wasm32-unknown-wasip1`.
+If `True`, target `wasm32-unknown-wasip1-threads`.
 """,
         ),
         "_build_template": attr.label(

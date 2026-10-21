@@ -203,8 +203,6 @@ swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 def _merged_toolset_options_test(ctx):
     env = unittest.begin(ctx)
 
-    # The swift.org wasm32-unknown-wasip1 bundle: a single toolset with only
-    # Swift compiler options.
     merged = merged_toolset_options(
         [
             {
@@ -222,8 +220,6 @@ def _merged_toolset_options_test(ctx):
     asserts.equals(env, [], merged.linker)
     asserts.equals(env, ["-static-stdlib"], merged.swift_compiler)
 
-    # The wasm32-unknown-wasip1-threads bundle shape, split across two
-    # toolsets to check that `extraCLIOptions` accumulate in order.
     merged = merged_toolset_options(
         [
             {

@@ -6,8 +6,6 @@ load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("@rules_swift//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("@rules_swift//swift/toolchains:swift_tools.bzl", "swift_tools")
 
-# The static resource directory and sysroot, as declared by the SDK's
-# `swift-sdk.json` (`swiftStaticResourcesPath` and `sdkRootPath`).
 _RESOURCE_DIR = "{resource_dir}"
 
 _WASI_SDK = "{sdkroot}"
