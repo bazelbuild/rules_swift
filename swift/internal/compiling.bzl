@@ -2491,7 +2491,13 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
     )
 
 def _module_mapping(module):
-    return "{}\t{}".format(module.name, getattr(module, "label", None) or "")
+    label = getattr(module, "label", None)
+    if type(label) == "Label" and not label.repo_name:
+        # Unlike Args.add_joined, formatting a Label in map_each uses its
+        # canonical spelling. Preserve the main repository's //pkg:target form
+        # in layering-check diagnostics.
+        label = "//{}:{}".format(label.package, label.name)
+    return "{}\t{}".format(module.name, label or "")
 
 def _non_system_module_mapping(module):
     if module.is_system:
