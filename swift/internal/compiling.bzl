@@ -14,7 +14,6 @@
 
 """Implementation of compilation logic for Swift."""
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -93,7 +92,7 @@ load(
 )
 load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
 
-def transitive_swift_dependency_inputs(
+def _swift_dependency_inputs(
         transitive_modules,
         include_module_metadata = False):
     """Returns Swift dependency artifacts that must be present in the sandbox.
@@ -114,6 +113,8 @@ def transitive_swift_dependency_inputs(
         if not swift_module:
             continue
 
+        # `swiftmodule` may be a Bazel `File` or a string path to a
+        # system-provided prebuilt module; only `File`s are action inputs.
         if type(swift_module.swiftmodule) == "File":
             inputs.append(swift_module.swiftmodule)
 
@@ -137,31 +138,49 @@ def _explicit_swift_module_map_info(
         actions,
         feature_configuration,
         target_name,
-        transitive_modules):
+        transitive_modules,
+        transitive_module_inputs):
     """Returns the explicit Swift module map file and matching Swift inputs."""
-    if is_feature_enabled(
+    include_all_modules = is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
-    ):
-        module_contexts = transitive_modules
+    )
+    if include_all_modules:
         filename = "{}.swift-explicit-module-map.json".format(target_name)
     elif is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_USE_C_MODULES,
     ):
+        filename = "{}.swift-system-explicit-module-map.json".format(target_name)
+    else:
+        return struct(file = None, inputs = [], transitive_inputs = [])
+
+    # The manifest writer inspects the structured module contexts and encodes
+    # them as one JSON object, so this data cannot remain a lazy depset beyond
+    # this serialization boundary.
+    module_contexts = transitive_modules.to_list()
+    if include_all_modules:
+        swift_dependency_inputs = []
+        transitive_inputs = [
+            transitive_module_inputs.swift_dependencies,
+            transitive_module_inputs.swift_module_metadata,
+        ]
+    else:
         # Keep non-system Swift deps on search paths, but include system
         # modules to make sure everything loads them with the same behavior
         module_contexts = [
             module
-            for module in transitive_modules
+            for module in module_contexts
             if module.is_system
         ]
         if not module_contexts:
-            return struct(file = None, inputs = [])
+            return struct(file = None, inputs = [], transitive_inputs = [])
 
-        filename = "{}.swift-system-explicit-module-map.json".format(target_name)
-    else:
-        return struct(file = None, inputs = [])
+        swift_dependency_inputs = _swift_dependency_inputs(
+            module_contexts,
+            include_module_metadata = True,
+        )
+        transitive_inputs = []
 
     explicit_swift_module_map_file = actions.declare_file(filename)
     write_explicit_swift_module_map_file(
@@ -171,10 +190,8 @@ def _explicit_swift_module_map_info(
     )
     return struct(
         file = explicit_swift_module_map_file,
-        inputs = transitive_swift_dependency_inputs(
-            module_contexts,
-            include_module_metadata = True,
-        ),
+        inputs = swift_dependency_inputs,
+        transitive_inputs = transitive_inputs,
     )
 
 def create_compilation_context(defines, srcs, transitive_modules):
@@ -318,33 +335,29 @@ def compile_module_interface(
             for cc_info in implicit_cc_infos
         ],
     )
-    merged_swift_info = SwiftInfo(
-        swift_infos = swift_infos + implicit_swift_infos,
-    )
-
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally. This should not lead to poor performance because the
-    # flattening happens only once as the action is being registered, rather
-    # than the same `depset` being flattened and re-merged multiple times up
-    # the build graph.
-    transitive_modules = merged_swift_info.transitive_modules.to_list()
-    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
-        transitive_modules,
-    )
-
+    direct_modules = []
     if clang_module:
-        transitive_modules.append(create_swift_module_context(
+        direct_modules.append(create_swift_module_context(
             name = module_name,
             clang = clang_module,
             label = feature_configuration._label,
         ))
+    merged_swift_info = SwiftInfo(
+        modules = direct_modules,
+        swift_infos = swift_infos + implicit_swift_infos,
+    )
+
+    transitive_modules = merged_swift_info.transitive_modules
+    transitive_swift_dependency_inputs = (
+        merged_swift_info.transitive_module_inputs.swift_dependencies
+    )
 
     explicit_swift_module_map_info = _explicit_swift_module_map_info(
         actions = actions,
         feature_configuration = feature_configuration,
         target_name = target_name,
         transitive_modules = transitive_modules,
+        transitive_module_inputs = merged_swift_info.transitive_module_inputs,
     )
 
     if is_feature_enabled(
@@ -364,6 +377,9 @@ def compile_module_interface(
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_transitive_inputs = (
+            explicit_swift_module_map_info.transitive_inputs
+        ),
         genfiles_dir = feature_configuration._genfiles_dir,
         indexstore_directory = indexstore_directory,
         is_swift = True,
@@ -372,8 +388,9 @@ def compile_module_interface(
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
         target_label = feature_configuration._label,
-        transitive_modules = transitive_modules,
-        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_clang_module_inputs = merged_swift_info.transitive_module_inputs,
+        transitive_modules = merged_swift_info.transitive_modules,
+        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs,
         user_compile_flags = copts,
     )
 
@@ -644,16 +661,11 @@ def compile(
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
     )
     merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
-
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally. This should not lead to poor performance because the
-    # flattening happens only once as the action is being registered, rather
-    # than the same `depset` being flattened and re-merged multiple times up
-    # the build graph.
-    transitive_modules = merged_swift_info.transitive_modules.to_list()
-    for info in extra_swift_infos:
-        transitive_modules.extend(info.transitive_modules.to_list())
+    compilation_swift_info = SwiftInfo(
+        swift_infos = [merged_swift_info] + extra_swift_infos,
+    )
+    transitive_module_inputs = compilation_swift_info.transitive_module_inputs
+    transitive_modules = compilation_swift_info.transitive_modules
 
     const_gather_protocols_file = toolchains.swift.const_protocols_to_gather
 
@@ -721,8 +733,13 @@ def compile(
                    implicit_cc_infos,
     )
 
+    # `create_compilation_context` exposes frozen sequences and derives several
+    # of them from structured module contexts. Flatten the module depset once at
+    # that compatibility boundary; action inputs continue using propagated
+    # depsets above.
+    compilation_context_modules = transitive_modules.to_list()
     defines_set = sets.make(defines)
-    for module in transitive_modules:
+    for module in compilation_context_modules:
         swift_module = module.swift
         if not swift_module:
             continue
@@ -731,15 +748,12 @@ def compile(
                 defines_set,
                 sets.make(swift_module.defines),
             )
-    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
-        transitive_modules,
-    )
-
     explicit_swift_module_map_info = _explicit_swift_module_map_info(
         actions = actions,
         feature_configuration = feature_configuration,
         target_name = target_name,
         transitive_modules = transitive_modules,
+        transitive_module_inputs = transitive_module_inputs,
     )
 
     swift_layering_check_enabled = is_feature_enabled(
@@ -788,19 +802,14 @@ def compile(
             feature_name = SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES,
         )
 
-        layering_check_transitive_modules = [
-            module_context
-            for module_context in transitive_modules
-            # If we want to validate system modules that happens below
-            if not module_context.is_system
-        ]
+        system_module_depsets = []
         if validate_system_modules:
             # Default precompiled modules are disabled, so SDK modules are no
             # longer implicit imports and should participate in layering checks.
-            for swift_info in toolchains.swift.system_modules.swift_infos:
-                layering_check_transitive_modules.extend(
-                    swift_info.transitive_modules.to_list(),
-                )
+            system_module_depsets = [
+                swift_info.transitive_modules
+                for swift_info in toolchains.swift.system_modules.swift_infos
+            ]
 
         deps_modules_file = actions.declare_file(
             "{}.deps-module-mapping".format(target_name),
@@ -809,26 +818,36 @@ def compile(
             actions = actions,
             deps_modules_file = deps_modules_file,
             direct_module_names = direct_module_names,
-            transitive_modules = layering_check_transitive_modules,
+            system_module_depsets = system_module_depsets,
+            transitive_modules = transitive_modules,
             unused_check_module_name_groups = unused_check_module_name_groups,
         )
     else:
         deps_modules_file = None
 
-    used_plugins = list(plugins)
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_LOAD_PLUGINS_FROM_DIRECT_DEPENDENCIES,
     ):
-        plugin_module_contexts = []
+        used_plugins = list(plugins)
         for swift_info in swift_infos + private_swift_infos:
-            plugin_module_contexts.extend(swift_info.direct_modules)
+            for module_context in swift_info.direct_modules:
+                if module_context.swift and module_context.swift.plugins:
+                    used_plugins.extend(module_context.swift.plugins)
+        compiler_plugins = depset(used_plugins)
+        compiler_plugin_executables = depset([
+            plugin.executable
+            for plugin in used_plugins
+        ])
     else:
-        plugin_module_contexts = transitive_modules
-
-    for module_context in plugin_module_contexts:
-        if module_context.swift and module_context.swift.plugins:
-            used_plugins.extend(module_context.swift.plugins)
+        compiler_plugins = depset(
+            direct = plugins,
+            transitive = [transitive_module_inputs.compiler_plugins],
+        )
+        compiler_plugin_executables = depset(
+            direct = [plugin.executable for plugin in plugins],
+            transitive = [transitive_module_inputs.compiler_plugin_executables],
+        )
 
     if include_dev_srch_paths != None and is_test != None:
         fail("""\
@@ -911,6 +930,9 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         experimental_features = experimental_features,
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
+        explicit_swift_module_map_transitive_inputs = (
+            explicit_swift_module_map_info.transitive_inputs
+        ),
         genfiles_dir = feature_configuration._genfiles_dir,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
@@ -919,11 +941,13 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         module_name = module_name,
         original_module_name = original_module_name,
         package_name = package_name,
-        plugins = collections.uniq(used_plugins),
+        compiler_plugin_executables = compiler_plugin_executables,
+        plugins = compiler_plugins,
         source_files = swift_srcs,
         target_label = feature_configuration._label,
+        transitive_clang_module_inputs = transitive_module_inputs,
         transitive_modules = transitive_modules,
-        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_swift_dependency_inputs = transitive_module_inputs.swift_dependencies,
         upcoming_features = upcoming_features,
         user_compile_flags = copts,
         werror_warning_groups = werror_warning_groups,
@@ -978,7 +1002,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
     compilation_context = create_compilation_context(
         defines = defines,
         srcs = swift_srcs,
-        transitive_modules = transitive_modules,
+        transitive_modules = compilation_context_modules,
     )
 
     if compile_outputs.generated_header_file:
@@ -1435,11 +1459,7 @@ def _precompile_clang_module(
         swift_infos = list(swift_infos)
         swift_infos.extend(additional_swift_infos)
 
-    if swift_infos:
-        merged_swift_info = SwiftInfo(swift_infos = swift_infos)
-        transitive_modules = merged_swift_info.transitive_modules.to_list()
-    else:
-        transitive_modules = []
+    merged_swift_info = SwiftInfo(swift_infos = swift_infos)
 
     outputs = [precompiled_module]
     if should_index and are_all_features_enabled(
@@ -1535,7 +1555,8 @@ def _precompile_clang_module(
         pcm_file = precompiled_module,
         source_files = [module_map_file],
         target_label = feature_configuration._label,
-        transitive_modules = transitive_modules,
+        transitive_clang_module_inputs = merged_swift_info.transitive_module_inputs,
+        transitive_modules = merged_swift_info.transitive_modules,
         unchecked_include_headers = unchecked_include_headers_to_stage,
         user_compile_flags = user_compile_flags,
     )
@@ -2469,10 +2490,19 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         is_wmo = is_wmo,
     )
 
+def _module_mapping(module):
+    return "{}\t{}".format(module.name, getattr(module, "label", None) or "")
+
+def _non_system_module_mapping(module):
+    if module.is_system:
+        return []
+    return _module_mapping(module)
+
 def _write_deps_modules_file(
         actions,
         deps_modules_file,
         direct_module_names,
+        system_module_depsets,
         transitive_modules,
         unused_check_module_name_groups):
     """Writes a file containing dependency module names and owning labels.
@@ -2489,7 +2519,9 @@ def _write_deps_modules_file(
             imported module names.
         direct_module_names: The list of names of modules that are the direct
             dependencies of the code being compiled.
-        transitive_modules: The list of module contexts in the target's
+        system_module_depsets: Additional depsets of system module contexts to
+            include in the transitive module mapping.
+        transitive_modules: A depset of module contexts in the target's
             transitive dependency graph.
         unused_check_module_name_groups: A list of comma-separated module name
             groups. Each group represents the direct modules provided by one
@@ -2498,14 +2530,16 @@ def _write_deps_modules_file(
     deps_mapping = actions.args()
     deps_mapping.set_param_file_format("multiline")
     deps_mapping.add_all(direct_module_names, format_each = "direct:%s")
-    for module_context in transitive_modules:
-        deps_mapping.add_joined(
-            [
-                module_context.name,
-                getattr(module_context, "label", None) or "",
-            ],
-            format_joined = "transitive:%s",
-            join_with = "\t",
+    deps_mapping.add_all(
+        transitive_modules,
+        format_each = "transitive:%s",
+        map_each = _non_system_module_mapping,
+    )
+    for system_modules in system_module_depsets:
+        deps_mapping.add_all(
+            system_modules,
+            format_each = "transitive:%s",
+            map_each = _module_mapping,
         )
     deps_mapping.add_all(unused_check_module_name_groups, format_each = "unused-check:%s")
 
