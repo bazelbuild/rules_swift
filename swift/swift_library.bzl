@@ -258,6 +258,7 @@ def _swift_library_impl(ctx):
         module_context.clang.precompiled_module,
         module_context.swift.swiftdoc,
         module_context.swift.swiftinterface,
+        module_context.swift.package_swiftinterface,
         module_context.swift.private_swiftinterface,
         module_context.swift.swiftmodule,
         module_context.swift.swiftsourceinfo,

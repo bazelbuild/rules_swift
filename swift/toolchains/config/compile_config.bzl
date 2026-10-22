@@ -1687,8 +1687,13 @@ def _emit_module_path_configurator(prerequisites, args):
     args.add("-emit-module-path", prerequisites.swiftmodule_file)
 
 def _emit_module_interface_path_configurator(prerequisites, args):
-    """Adds the `.swiftinterface` output path to the command line."""
+    """Adds the public and package `.swiftinterface` output paths."""
     args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
+    if prerequisites.package_swiftinterface_file:
+        args.add(
+            "-emit-package-module-interface-path",
+            prerequisites.package_swiftinterface_file,
+        )
 
 def _emit_private_module_interface_path_configurator(prerequisites, args):
     """Adds the `.private.swiftinterface` output path to the command line."""
