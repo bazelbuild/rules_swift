@@ -106,6 +106,8 @@ def transitive_swift_dependency_inputs(
     Returns:
         A list of `.swiftmodule` files and the preferred textual interface file
         for each Swift dependency, plus module metadata files if requested.
+        Dependencies with a package interface also include that interface and
+        the public interface needed to discover the module.
     """
     inputs = []
 
@@ -129,6 +131,14 @@ def transitive_swift_dependency_inputs(
         )
         if interface_file:
             inputs.append(interface_file)
+
+        if swift_module.package_swiftinterface:
+            inputs.append(swift_module.package_swiftinterface)
+
+            # Swift needs the public interface to discover the module before
+            # selecting its package interface.
+            if swift_module.swiftinterface and swift_module.swiftinterface != interface_file:
+                inputs.append(swift_module.swiftinterface)
 
     return inputs
 
@@ -725,10 +735,13 @@ def compile(
     )
 
     defines_set = sets.make(defines)
+    has_package_interface = False
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
+        if swift_module.package_swiftinterface:
+            has_package_interface = True
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -915,6 +928,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
+        has_package_interface = has_package_interface,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
         local_defines = local_defines,

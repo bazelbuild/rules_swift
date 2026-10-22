@@ -2459,6 +2459,9 @@ def _package_name_configurator(prerequisites, args):
     if prerequisites.package_name:
         args.add("-package-name", prerequisites.package_name)
 
+        if prerequisites.has_package_interface:
+            args.add("-experimental-package-interface-load")
+
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""
     args.add("-index-store-path", prerequisites.indexstore_directory.path)
