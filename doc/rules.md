@@ -303,6 +303,11 @@ To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
 the `.private.swiftinterface` files are required in order to build any code that
 uses the API marked with `@_spi`.
 
+To import pre-built Swift modules that use `package` access control when using
+`swiftinterface`, the `.package.swiftinterface` files are required in order to
+build any code that uses the package API. The `package_name` attribute of targets
+that use this API must match the package name used to build the pre-built module.
+
 **ATTRIBUTES**
 
 

@@ -1687,8 +1687,13 @@ def _emit_module_path_configurator(prerequisites, args):
     args.add("-emit-module-path", prerequisites.swiftmodule_file)
 
 def _emit_module_interface_path_configurator(prerequisites, args):
-    """Adds the `.swiftinterface` output path to the command line."""
+    """Adds the public and package `.swiftinterface` output paths."""
     args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
+    if prerequisites.package_swiftinterface_file:
+        args.add(
+            "-emit-package-module-interface-path",
+            prerequisites.package_swiftinterface_file,
+        )
 
 def _emit_private_module_interface_path_configurator(prerequisites, args):
     """Adds the `.private.swiftinterface` output path to the command line."""
@@ -2453,6 +2458,9 @@ def _module_name_configurator(prerequisites, args):
 def _package_name_configurator(prerequisites, args):
     if prerequisites.package_name:
         args.add("-package-name", prerequisites.package_name)
+
+        if prerequisites.has_package_interface:
+            args.add("-experimental-package-interface-load")
 
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""

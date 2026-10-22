@@ -28,6 +28,7 @@ load(":module_cache_settings_tests.bzl", "module_cache_settings_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":output_file_map_tests.bzl", "output_file_map_test_suite")
+load(":package_interface_tests.bzl", "package_interface_test_suite")
 load(":pch_output_dir_tests.bzl", "pch_output_dir_test_suite")
 load(":precompiled_modules_tests.bzl", "precompiled_modules_test_suite")
 load(":private_deps_tests.bzl", "private_deps_test_suite")
@@ -137,6 +138,8 @@ synthesize_interface_test_suite(
         "manual",
     ],
 )
+
+package_interface_test_suite(name = "package_interface")
 
 pch_output_dir_test_suite(name = "pch_output_dir_settings")
 
