@@ -14,11 +14,21 @@
 
 """Tests for `swift.label_as_module_name` and module name derivation."""
 
-load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
+load(
+    "@bazel_skylib//lib:unittest.bzl",
+    "analysistest",
+    "asserts",
+    "unittest",
+)
 load(
     "@build_bazel_rules_swift//swift:module_name.bzl",
     "derive_swift_module_name",
     "physical_swift_module_name",
+)
+load(
+    "@build_bazel_rules_swift//swift:module_names_for_aspects.bzl",
+    "required_swift_interop_aspect_hints_providers",
+    "swift_module_names_for_target",
 )
 load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
@@ -30,6 +40,45 @@ load(
 )
 
 visibility("private")
+
+_ModuleNamesTestInfo = provider(
+    doc = "Contains the module names returned by `swift_module_names_for_target`.",
+    fields = ["module_names"],
+)
+
+def _module_names_test_aspect_impl(target, ctx):
+    return [
+        _ModuleNamesTestInfo(
+            module_names = swift_module_names_for_target(
+                aspect_ctx = ctx,
+                target = target,
+            ),
+        ),
+    ]
+
+_module_names_test_aspect = aspect(
+    implementation = _module_names_test_aspect_impl,
+    required_aspect_hints_providers = required_swift_interop_aspect_hints_providers(),
+)
+
+def _module_names_for_target_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target_under_test = analysistest.target_under_test(env)
+    actual = target_under_test[_ModuleNamesTestInfo].module_names
+    asserts.equals(env, ctx.attr.expected_module_names, actual)
+    return analysistest.end(env)
+
+module_names_for_target_test = analysistest.make(
+    _module_names_for_target_test_impl,
+    attrs = {
+        "expected_module_names": attr.string_list(
+            doc = """\
+The expected module names returned by `swift_module_names_for_target`.
+""",
+        ),
+    },
+    extra_target_under_test_aspects = [_module_names_test_aspect],
+)
 
 def _derive_swift_module_name_unit_test_impl(ctx):
     env = unittest.begin(ctx)
@@ -184,6 +233,133 @@ def label_module_name_test_suite(name, tags = []):
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name:test_with_srcs",
     )
+
+    # Verify `swift_module_names_for_target` and
+    # `required_swift_interop_aspect_hints_providers` across Swift, Objective-C,
+    # and C++ targets without applying `swift_clang_module_aspect`.
+    for test_suffix, target_under_test, expected_module_names in [
+        (
+            "swift_default",
+            "@build_bazel_rules_swift//test/fixtures/interop_hints:empty_lib",
+            ["third_party_bazel_rules_rules_swift_test_fixtures_interop_hints_empty_lib"],
+        ),
+        (
+            "swift_custom_module_name",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:swift_custom_module_name",
+            ["CustomSwiftModule"],
+        ),
+        (
+            "swift_label_module_name_child",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:child",
+            ["`@build_bazel_rules_swift//test/fixtures/label_module_name:child`"],
+        ),
+        (
+            "swift_label_module_name_short",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name",
+            ["`@build_bazel_rules_swift//test/fixtures/label_module_name`"],
+        ),
+        (
+            "swift_multiple_modules",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:swift_multiple_modules",
+            [
+                "`@build_bazel_rules_swift//test/fixtures/label_module_name:child`",
+                "CustomSwiftModule",
+            ],
+        ),
+        (
+            "objc_default",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:objc_default",
+            ["third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_objc_default"],
+        ),
+        (
+            "objc_label_module_name",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:objc_label_module_name",
+            ["`@build_bazel_rules_swift//test/fixtures/label_module_name:objc_label_module_name`"],
+        ),
+        (
+            "objc_explicit_module_name",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:objc_explicit_module_name",
+            ["ExplicitObjcModule"],
+        ),
+        (
+            "objc_hint_overrides_attr",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:objc_hint_overrides_attr",
+            ["HintedObjcModule"],
+        ),
+        (
+            "objc_suppressed",
+            "@build_bazel_rules_swift//test/fixtures/interop_hints:objc_library_suppressed_lib",
+            [],
+        ),
+        (
+            "objc_no_hdrs",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:objc_no_hdrs",
+            [],
+        ),
+        (
+            "cc_no_hint",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:cc_no_hint",
+            [],
+        ),
+        (
+            "cc_auto_module",
+            "@build_bazel_rules_swift//test/fixtures/cc_library:prefix_only",
+            ["third_party_bazel_rules_rules_swift_test_fixtures_cc_library_prefix_only"],
+        ),
+        (
+            "cc_auto_module_label",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:cc_auto_module_label",
+            ["`@build_bazel_rules_swift//test/fixtures/label_module_name:cc_auto_module_label`"],
+        ),
+        (
+            "cc_no_hdrs_auto_module",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:cc_no_hdrs_auto_module",
+            [],
+        ),
+        (
+            "cc_custom_module_name_hint",
+            "@build_bazel_rules_swift//test/fixtures/interop_hints:cc_lib_custom_module_name",
+            ["ModuleName"],
+        ),
+        (
+            "cc_custom_module_map_hint",
+            "@build_bazel_rules_swift//test/fixtures/interop_hints:cc_lib_submodule",
+            ["TopModule"],
+        ),
+        (
+            "cc_with_overlay",
+            "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_overlay",
+            ["third_party_bazel_rules_rules_swift_test_fixtures_overlay_cc_with_overlay"],
+        ),
+        (
+            "cc_with_custom_module_and_overlay",
+            "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_custom_module_and_overlay",
+            ["CustomOverlayMod"],
+        ),
+        (
+            "interop_with_hdrs_and_direct_swift_infos",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:interop_with_hdrs_and_direct_swift_infos",
+            [
+                "third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_interop_with_hdrs_and_direct_swift_infos",
+                "`@build_bazel_rules_swift//test/fixtures/label_module_name:child`",
+                "CustomSwiftModule",
+            ],
+        ),
+        (
+            "interop_without_hdrs_with_direct_swift_infos",
+            "@build_bazel_rules_swift//test/fixtures/label_module_name:interop_without_hdrs_with_direct_swift_infos",
+            [
+                "`@build_bazel_rules_swift//test/fixtures/label_module_name:child`",
+                "CustomSwiftModule",
+            ],
+        ),
+    ]:
+        module_names_for_target_test(
+            name = "{}_module_names_for_target_{}".format(name, test_suffix),
+            expected_module_names = expected_module_names,
+            tags = all_tags,
+            target_under_test = target_under_test,
+        )
 
     native.test_suite(
         name = "{}_analysis_tests".format(name),

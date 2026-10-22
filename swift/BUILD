@@ -25,6 +25,19 @@ bzl_library(
 )
 
 bzl_library(
+    name = "module_names_for_aspects",
+    srcs = ["module_names_for_aspects.bzl"],
+    deps = [
+        ":module_name",
+        ":providers",
+        ":swift_interop_info",
+        "//swift/internal:providers",
+        "//swift/internal:swift_interop_info",
+        "@rules_cc//cc/common",
+    ],
+)
+
+bzl_library(
     name = "providers",
     srcs = ["providers.bzl"],
 )
@@ -53,8 +66,8 @@ bzl_library(
     srcs = ["swift_clang_module_aspect.bzl"],
     deps = [
         ":module_name",
+        ":module_names_for_aspects",
         ":providers",
-        ":swift_interop_info",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
         "//swift/internal:features",

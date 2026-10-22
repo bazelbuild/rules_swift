@@ -7,5 +7,7 @@ bzl_library(
     deps = [
         "//swift:providers",
         "//swift:swift_clang_module_aspect",
+        "//swift:swift_interop_info",
+        "@rules_cc//cc/common",
     ],
 )

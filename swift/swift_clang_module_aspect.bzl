@@ -63,9 +63,14 @@ load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     ":module_name.bzl",
-    "derive_swift_module_name",
     "physical_swift_module_name",
     "validate_swift_module_name",
+)
+load(
+    ":module_names_for_aspects.bzl",
+    "clang_module_name_for_target",
+    "find_swift_interop_info",
+    "required_swift_interop_aspect_hints_providers",
 )
 load(
     ":providers.bzl",
@@ -75,7 +80,6 @@ load(
     "create_clang_module_inputs",
     "create_swift_module_context",
 )
-load(":swift_interop_info.bzl", "create_swift_interop_info")
 
 visibility("public")
 
@@ -255,114 +259,6 @@ def _generate_module_map(
     )
     return module_map_file
 
-def _objc_library_module_info(aspect_ctx):
-    """Returns the `module_name` attribute for an `objc_library`.
-
-    Args:
-        aspect_ctx: The aspect context.
-
-    Returns:
-        The module name (a string) specified as an attribute on the
-        `objc_library`. This may be `None`.
-    """
-    attr = aspect_ctx.rule.attr
-
-    # TODO(b/195019413): Deprecate the use of these attributes and use
-    # `swift_interop_hint` to customize `objc_*` targets' module names and
-    # module maps.
-    module_name = getattr(attr, "module_name", None)
-
-    # TODO(b/195019413): Remove this when the `module_map` attribute is deleted.
-    if getattr(attr, "module_map", None):
-        fail(
-            "The `module_map` attribute on `objc_library` is no longer " +
-            "supported. Use `swift_interop_hint` instead to customize the " +
-            "module map for a target.",
-        )
-
-    return module_name
-
-def _module_info_for_target(
-        target,
-        aspect_ctx,
-        compilation_context,
-        dependent_module_names,
-        exclude_headers,
-        feature_configuration,
-        module_name):
-    """Returns the module name and module map for the target.
-
-    Args:
-        target: The target for which the module map is being generated.
-        aspect_ctx: The aspect context.
-        compilation_context: The C++ compilation context that provides the
-            headers for the module.
-        dependent_module_names: A `list` of names of Clang modules that are
-            direct dependencies of the target whose module map is being written.
-        exclude_headers: A `list` of `File`s representing header files to
-            exclude, if any, if we are generating the module map.
-        feature_configuration: A Swift feature configuration.
-        module_name: The module name to prefer (if we're generating a module map
-            from `SwiftInteropInfo`), or None to derive it from other
-            properties of the target.
-
-    Returns:
-        A `struct` containing the following fields:
-
-        *   `module_map_file` (`File`): The Clang module map file.
-        *   `physical_name` (string): The physical module name, which is the
-            name written into the actual Clang module map.
-        *   `source_name` (string): The name of the module as it would be
-            referenced in source.
-
-        The return value may be `None` if the target does not represent a
-        Swift-compatible module.
-    """
-
-    # If a target doesn't have any headers, then don't generate a module map for
-    # it. Such modules define nothing and only waste space on the compilation
-    # command line and add more work for the compiler.
-    if not compilation_context or (
-        not compilation_context.direct_headers and
-        not compilation_context.direct_textual_headers
-    ):
-        return None
-
-    if not module_name:
-        if apple_common.Objc not in target:
-            return None
-
-        if aspect_ctx.rule.kind == "objc_library":
-            module_name = _objc_library_module_info(aspect_ctx)
-
-        # If it was an `objc_library` without an explicit module name, or it
-        # was some other `Objc`-providing target, derive the module name
-        # now.
-        if not module_name:
-            module_name = derive_swift_module_name(
-                target.label,
-                feature_configuration = feature_configuration,
-            )
-
-    physical_name = physical_swift_module_name(module_name)
-
-    module_map_file = _generate_module_map(
-        actions = aspect_ctx.actions,
-        aspect_ctx = aspect_ctx,
-        compilation_context = compilation_context,
-        dependent_module_names = dependent_module_names,
-        exclude_headers = exclude_headers,
-        feature_configuration = feature_configuration,
-        module_name = physical_name,
-        target = target,
-    )
-
-    return struct(
-        module_map_file = module_map_file,
-        physical_name = physical_name,
-        source_name = module_name,
-    )
-
 def _handle_module(
         aspect_ctx,
         compilation_context,
@@ -387,8 +283,8 @@ def _handle_module(
         module_map_file: The `.modulemap` file that defines the module, or None
             if it should be inferred from other properties of the target (for
             legacy support).
-        module_name: The name of the module, or None if it should be inferred
-            from other properties of the target (for legacy support).
+        module_name: The name of the module, or None if the target does not
+            represent a Swift-compatible module.
         direct_swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
@@ -409,6 +305,18 @@ def _handle_module(
         direct_swift_infos + swift_infos +
         toolchains.swift.clang_implicit_deps_providers.swift_infos
     )
+
+    # If we didn't resolve a module name, there's nothing left to do here.
+    if not module_name:
+        if all_swift_infos:
+            return [
+                SwiftInfo(
+                    direct_swift_infos = direct_swift_infos,
+                    swift_infos = swift_infos,
+                ),
+            ]
+        else:
+            return []
 
     # Collect the names of Clang modules that the module being built directly
     # depends on.
@@ -440,34 +348,17 @@ def _handle_module(
     has_custom_module_map = bool(module_map_file)
 
     if not module_map_file:
-        # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
-        # provider), infer it and the module name based on properties of the
-        # rule to support legacy rules.
-        module_info = _module_info_for_target(
-            target = target,
+        physical_name = physical_swift_module_name(source_name)
+        module_map_file = _generate_module_map(
+            actions = aspect_ctx.actions,
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context,
             dependent_module_names = dependent_module_names,
             exclude_headers = exclude_headers,
             feature_configuration = feature_configuration,
-            module_name = module_name,
+            module_name = physical_name,
+            target = target,
         )
-        if module_info:
-            source_name = module_info.source_name
-            physical_name = module_info.physical_name
-            module_map_file = module_info.module_map_file
-
-        # If we didn't infer a module map, there's nothing left to do here.
-        if not module_map_file:
-            if all_swift_infos:
-                return [
-                    SwiftInfo(
-                        direct_swift_infos = direct_swift_infos,
-                        swift_infos = swift_infos,
-                    ),
-                ]
-            else:
-                return []
     validate_swift_module_name(
         source_name,
         feature_configuration = feature_configuration,
@@ -742,86 +633,6 @@ def _collect_swift_infos_from_deps(aspect_ctx):
 
     return swift_infos
 
-def _find_swift_interop_info(target, aspect_ctx):
-    """Finds a `SwiftInteropInfo` provider associated with the target.
-
-    This function first looks at the target itself to determine if it propagated
-    a `SwiftInteropInfo` provider directly (that is, its rule implementation
-    function called `create_swift_interop_info`). If it did not, then the
-    target's `aspect_hints` attribute is checked for a reference to a target
-    that propagates `SwiftInteropInfo` (such as `swift_interop_hint`).
-
-    It is an error if `aspect_hints` contains two or more targets that propagate
-    `SwiftInteropInfo`, or if the target directly propagates the provider and
-    there is also any target in `aspect_hints` that propagates it.
-
-    Args:
-        target: The target to which the aspect is currently being applied.
-        aspect_ctx: The aspect's context.
-
-    Returns:
-        A tuple containing two elements:
-
-        -   The `SwiftInteropInfo` associated with the target, if found;
-            otherwise, None.
-        -   A list of additional `SwiftInfo` providers that are treated as
-            direct dependencies of the target, determined by reading attributes
-            from the target if it did not provide `SwiftInteropInfo` directly.
-    """
-    if SwiftInteropInfo in target:
-        # If the target's rule implementation directly provides
-        # `SwiftInteropInfo`, then it is that rule's responsibility to collect
-        # and merge `SwiftInfo` providers from relevant dependencies.
-        interop_target = target
-        interop_from_rule = True
-        default_swift_infos = []
-    else:
-        # If the target's rule implementation does not directly provide
-        # `SwiftInteropInfo`, then we need to collect the `SwiftInfo` providers
-        # from the default dependencies and returns those. Note that if a custom
-        # rule is used as a hint and returns a `SwiftInteropInfo` that contains
-        # `SwiftInfo` providers, then we would consider the providers from the
-        # default dependencies and the providers from the hint; they are merged
-        # after the call site of this function.
-        interop_target = None
-        interop_from_rule = False
-        default_swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
-
-    # We don't break this loop early when we find a matching hint, because we
-    # want to give an error message if there are two aspect hints that provide
-    # `SwiftInteropInfo` (or if both the rule and an aspect hint do).
-    found_overlay = False
-    for hint in aspect_ctx.rule.attr.aspect_hints:
-        if SwiftOverlayCompileInfo in hint:
-            found_overlay = True
-        if SwiftInteropInfo in hint:
-            if interop_target:
-                if interop_from_rule:
-                    fail(("Conflicting Swift interop info from the target " +
-                          "'{target}' ({rule} rule) and the aspect hint " +
-                          "'{hint}'. Only one is allowed.").format(
-                        hint = str(hint.label),
-                        target = str(target.label),
-                        rule = aspect_ctx.rule.kind,
-                    ))
-                else:
-                    fail(("Conflicting Swift interop info from aspect hints " +
-                          "'{hint1}' and '{hint2}'. Only one is " +
-                          "allowed.").format(
-                        hint1 = str(interop_target.label),
-                        hint2 = str(hint.label),
-                    ))
-            interop_target = hint
-
-    if interop_target:
-        return interop_target[SwiftInteropInfo], default_swift_infos
-    if found_overlay:
-        # If no explicit interop hint was present but a `swift_overlay` was, we
-        # still want that to imply the same thing as the `auto_module` hint
-        # since it's the obvious right thing to do.
-        return create_swift_interop_info(), default_swift_infos
-    return None, default_swift_infos
-
 def _find_swift_overlay_compile_info(aspect_ctx):
     """Returns the `SwiftOverlayCompileInfo` from an aspect hint, if present.
 
@@ -871,7 +682,25 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
 
     compilation_context = None
     direct_swift_infos = []
-    interop_info, swift_infos = _find_swift_interop_info(target, aspect_ctx)
+    interop_info = find_swift_interop_info(
+        aspect_ctx = aspect_ctx,
+        target = target,
+    )
+    if SwiftInteropInfo in target:
+        # If the target's rule implementation directly provides
+        # `SwiftInteropInfo`, then it is that rule's responsibility to collect
+        # and merge `SwiftInfo` providers from relevant dependencies.
+        swift_infos = []
+    else:
+        # If the target's rule implementation does not directly provide
+        # `SwiftInteropInfo`, then we need to collect the `SwiftInfo` providers
+        # from the default dependencies and return those. Note that if a custom
+        # rule is used as a hint and returns a `SwiftInteropInfo` that contains
+        # `SwiftInfo` providers, then we would consider the providers from the
+        # default dependencies and the providers from the hint; they are merged
+        # below.
+        swift_infos = _collect_swift_infos_from_deps(aspect_ctx)
+
     if interop_info:
         # If the module should be suppressed, return immediately and propagate
         # nothing (not even transitive dependencies).
@@ -880,7 +709,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
 
         exclude_headers = interop_info.exclude_headers
         module_map_file = interop_info.module_map
-        module_name = interop_info.module_name
 
         compilation_context = interop_info.compilation_context
         direct_swift_infos.extend(interop_info.direct_swift_infos)
@@ -890,7 +718,6 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     else:
         exclude_headers = []
         module_map_file = None
-        module_name = None
 
     # If the target has a `CcInfo` and we didn't get an explicit compilation
     # context from `SwiftInteropInfo`, then we can use the `CcInfo`'s
@@ -909,11 +736,12 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
         unsupported_features = unsupported_features,
     )
 
-    if interop_info and not module_name:
-        module_name = derive_swift_module_name(
-            target.label,
-            feature_configuration = feature_configuration,
-        )
+    module_name = clang_module_name_for_target(
+        aspect_ctx = aspect_ctx,
+        feature_configuration = feature_configuration,
+        interop_info = interop_info,
+        target = target,
+    )
 
     if interop_info or apple_common.Objc in target or CcInfo in target:
         return providers + _handle_module(
@@ -1005,10 +833,7 @@ it propagates for its targets.
             [apple_common.Objc],
             [CcInfo],
         ],
-        required_aspect_hints_providers = [
-            [SwiftInteropInfo],
-            [SwiftOverlayCompileInfo],
-        ],
+        required_aspect_hints_providers = required_swift_interop_aspect_hints_providers(),
         toolchains = use_all_toolchains(
             toolchain_type = toolchain_type,
         ),
