@@ -229,10 +229,26 @@ def _swift_test_impl(ctx):
         additional_debug_outputs = []
         variables_extension = {}
 
+    test_runner_toolchain = ctx.exec_groups["test"].toolchains["@bazel_tools//tools/cpp:test_runner_toolchain_type"]
+    test_runner_info = (
+        test_runner_toolchain.cc_test_info if test_runner_toolchain else None
+    )
+    if test_runner_info and getattr(test_runner_info, "use_legacy_cc_test", False):
+        test_runner_info = None
+
     binary_name = toolchains.swift.test_configuration.binary_name.replace(
         "{name}",
         ctx.label.name,
     )
+    user_link_flags = expand_locations(
+        ctx,
+        ctx.attr.linkopts,
+        ctx.attr.swiftc_inputs,
+    ) + ctx.fragments.cpp.linkopts
+
+    if test_runner_info:
+        user_link_flags = user_link_flags + test_runner_info.linkopts
+
     linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -247,33 +263,34 @@ def _swift_test_impl(ctx):
         output_type = "executable",
         stamp = ctx.attr.stamp,
         toolchains = toolchains,
-        user_link_flags = expand_locations(
-            ctx,
-            ctx.attr.linkopts,
-            ctx.attr.swiftc_inputs,
-        ) + ctx.fragments.cpp.linkopts,
+        user_link_flags = user_link_flags,
         variables_extension = variables_extension,
     )
 
-    test_environment = (
+    test_environment = expand_locations(
+        ctx,
         ctx.attr.env |
         toolchains.swift.test_configuration.env |
         discovery_env |
-        {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path}
+        {"TEST_BINARIES_FOR_LLVM_COV": linking_outputs.executable.short_path},
+        ctx.attr.swiftc_inputs,
     )
 
-    return [
-        DefaultInfo(
-            executable = linking_outputs.executable,
-            files = depset(
-                [linking_outputs.executable] + additional_debug_outputs,
-            ),
-            runfiles = ctx.runfiles(
-                collect_data = True,
-                collect_default = True,
-                files = ctx.files.data,
-            ),
-        ),
+    files = depset(
+        [linking_outputs.executable] + additional_debug_outputs,
+    )
+
+    # Explicitly include `linking_outputs.executable` in `runfiles` so that when
+    # a test runner toolchain replaces `DefaultInfo.executable` with a wrapper
+    # script (such as the Apple simulator runner), the compiled test binary is
+    # still staged in `default_runfiles`.
+    runfiles = ctx.runfiles(
+        collect_data = True,
+        collect_default = True,
+        files = ctx.files.data + [linking_outputs.executable],
+    )
+
+    providers = [
         OutputGroupInfo(
             **supplemental_compilation_output_groups(*all_supplemental_outputs)
         ),
@@ -283,18 +300,44 @@ def _swift_test_impl(ctx):
             extensions = ["swift"],
             source_attributes = ["srcs"],
         ),
+    ]
+
+    if test_runner_info:
+        binary_info = struct(
+            executable = linking_outputs.executable,
+            files = files,
+            runfiles = runfiles,
+        )
+        runner_args = dict(test_runner_info.get_runner.args)
+        if "execution_requirements" in runner_args:
+            # Merge the Swift toolchain's test execution requirements (which
+            # include Xcode version requirements on Apple platforms) with those
+            # of the test runner toolchain.
+            runner_args["execution_requirements"] = (
+                toolchains.swift.test_configuration.execution_requirements |
+                (runner_args["execution_requirements"] or {})
+            )
+        return test_runner_info.get_runner.func(
+            ctx,
+            binary_info,
+            processed_environment = test_environment,
+            **runner_args
+        ) + providers
+
+    return [
+        DefaultInfo(
+            executable = linking_outputs.executable,
+            files = files,
+            runfiles = runfiles,
+        ),
         testing.ExecutionInfo(
             toolchains.swift.test_configuration.execution_requirements,
         ),
         RunEnvironmentInfo(
-            environment = expand_locations(
-                ctx,
-                test_environment,
-                ctx.attr.swiftc_inputs,
-            ),
+            environment = test_environment,
             inherited_environment = ctx.attr.env_inherit,
         ),
-    ]
+    ] + providers
 
 swift_test = rule(
     attrs = binary_rule_attrs(
@@ -327,6 +370,15 @@ a zero exit code for success or a non-zero exit code for failure.
 Specifies additional environment variables to inherit from the external
 environment when the test is executed by `bazel test`.
 """,
+        ),
+        "_apple_constraints": attr.label_list(
+            default = [
+                "@platforms//os:ios",
+                "@platforms//os:macos",
+                "@platforms//os:tvos",
+                "@platforms//os:visionos",
+                "@platforms//os:watchos",
+            ],
         ),
         "_test_runner_deps": attr.label_list(
             default = [
@@ -397,6 +449,14 @@ For example,
         # platforms.
         "swift_plugins": exec_group(
             toolchains = use_all_toolchains(),
+        ),
+        "test": exec_group(
+            toolchains = [
+                config_common.toolchain_type(
+                    "@bazel_tools//tools/cpp:test_runner_toolchain_type",
+                    mandatory = False,
+                ),
+            ],
         ),
     },
     executable = True,

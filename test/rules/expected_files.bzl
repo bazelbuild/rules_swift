@@ -82,6 +82,8 @@ def compare_expected_files(env, access_description, expected, actual):
         actual: The collection of files obtained from the provider.
     """
     actual = normalize_collection(actual)
+    if type(actual) == "File":
+        actual = [actual]
 
     if (
         not types.is_list(actual) or
