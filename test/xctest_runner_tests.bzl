@@ -94,6 +94,28 @@ def xctest_runner_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/xctest_runner:FailingSwiftTestingTests",
     )
 
+    swift_shell_test(
+        name = "{}_swift_testing_only_pass".format(name),
+        expected_return_code = 0,
+        expected_logs = [
+            "Test run with 1 test.* passed after",
+        ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:PassingSwiftTestingOnlyTests",
+    )
+
+    swift_shell_test(
+        name = "{}_swift_testing_only_fail".format(name),
+        expected_return_code = 1,
+        expected_logs = [
+            "Test run with 1 test.* failed after",
+        ],
+        not_expected_logs = [_NO_TESTS_DISCOVERED],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/xctest_runner:FailingSwiftTestingOnlyTests",
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,

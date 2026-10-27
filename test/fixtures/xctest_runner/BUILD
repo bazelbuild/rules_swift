@@ -101,3 +101,17 @@ swift_test(
     srcs = ["PassingSwiftTestingTests.swift"],
     tags = FIXTURE_TAGS,
 )
+
+swift_test(
+    name = "PassingSwiftTestingOnlyTests",
+    srcs = ["PassingSwiftTestingTests.swift"],
+    discover_xctests = False,
+    tags = FIXTURE_TAGS,
+)
+
+swift_test(
+    name = "FailingSwiftTestingOnlyTests",
+    srcs = ["FailingSwiftTestingTests.swift"],
+    discover_xctests = False,
+    tags = FIXTURE_TAGS,
+)

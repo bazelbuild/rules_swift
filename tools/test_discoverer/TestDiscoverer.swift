@@ -49,6 +49,12 @@ struct TestDiscoverer: ParsableCommand {
     """)
   var objcTestDiscovery: Bool = false
 
+  @Flag(help: """
+    If true, only Swift Testing tests are run. XCTest-style tests are neither discovered nor run, \
+    so no symbol graphs or module outputs may be provided.
+    """)
+  var swiftTestingOnly: Bool = false
+
   @Option(
     help: .init(
       """
@@ -60,6 +66,22 @@ struct TestDiscoverer: ParsableCommand {
   var moduleOutput: [ModuleOutput] = []
 
   func validate() throws {
+    if swiftTestingOnly {
+      guard !objcTestDiscovery else {
+        throw ValidationError(
+          "'--objc-test-discovery' cannot be provided if '--swift-testing-only' is passed.")
+      }
+      guard moduleOutput.isEmpty else {
+        throw ValidationError(
+          "'--module-output' cannot be provided if '--swift-testing-only' is passed.")
+      }
+      guard symbolGraphDirectories.isEmpty else {
+        throw ValidationError(
+          "No symbol graph directories can be provided if '--swift-testing-only' is passed.")
+      }
+      return
+    }
+
     if objcTestDiscovery {
       guard moduleOutput.isEmpty else {
         throw ValidationError(
@@ -107,6 +129,20 @@ struct TestDiscoverer: ParsableCommand {
     // from an `async main()` (it crashes in the runtime's stack allocator if it tries to run an
     // async test method), but we have to do async work to run swift-testing tests. See
     // https://forums.swift.org/t/74010 for additional context.
+    //
+    // When only Swift Testing tests are requested, the XCTest runner is left out entirely; Swift
+    // Testing discovers `@Test` functions at run time, so no symbol graphs are consulted.
+    let xctestRunner =
+      swiftTestingOnly
+      ? ""
+      : """
+          do {
+            try XCTestRunner.run(__allDiscoveredXCTests())
+          } catch {
+            print("Fatal error running XCTest tests: \\(error)")
+            exit(1)
+          }
+      """
     var contents = """
       import BazelTestObservation
       import Foundation
@@ -116,12 +152,7 @@ struct TestDiscoverer: ParsableCommand {
       @main
       struct Main {
         static func main() {
-          do {
-            try XCTestRunner.run(__allDiscoveredXCTests())
-          } catch {
-            print("Fatal error running XCTest tests: \\(error)")
-            exit(1)
-          }
+      \(xctestRunner)
           Task {
             do {
               try await SwiftTestingRunner.run()
@@ -149,7 +180,9 @@ struct TestDiscoverer: ParsableCommand {
       """
 
     let mainFileURL = URL(fileURLWithPath: mainOutput)
-    if objcTestDiscovery {
+    if swiftTestingOnly {
+      // Nothing else to generate: the runner above does not reference any discovered XCTests.
+    } else if objcTestDiscovery {
       // On Darwin platforms, tests are discovered by the Objective-C runtime, so we don't need to
       // generate anything. We use a dummy parameter to keep the call site the same on both
       // platforms.

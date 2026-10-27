@@ -105,6 +105,7 @@ def _generate_test_discovery_srcs(
         objc_test_discovery,
         owner_module_name,
         owner_symbol_graph_dir = None,
+        swift_testing_only = False,
         test_discoverer):
     """Generate Swift sources to run discovered XCTest-style tests.
 
@@ -127,6 +128,9 @@ def _generate_test_discovery_srcs(
             built).
         owner_symbol_graph_dir: A directory-type `File` containing the extracted
             symbol graph for the owner target.
+        swift_testing_only: If `True`, the runner only runs Swift Testing tests;
+            XCTest-style tests are neither discovered nor run, so no symbol
+            graphs are read.
         test_discoverer: The executable `File` representing the test discoverer
             tool that will be spawned to generate the test runner sources.
 
@@ -139,7 +143,9 @@ def _generate_test_discovery_srcs(
     modules_to_scan = []
     args = actions.args()
 
-    if objc_test_discovery:
+    if swift_testing_only:
+        args.add("--swift-testing-only")
+    elif objc_test_discovery:
         args.add("--objc-test-discovery")
     else:
         if owner_symbol_graph_dir:
@@ -304,6 +310,7 @@ def _swift_test_impl(ctx):
 
     discover_tests = ctx.attr.discover_tests
     objc_test_discovery = toolchains.swift.test_configuration.objc_test_discovery
+    swift_testing_only = discover_tests and not ctx.attr.discover_xctests
 
     deps = list(ctx.attr.deps)
     test_runner_deps = list(ctx.attr._test_runner_deps)
@@ -402,8 +409,9 @@ def _swift_test_impl(ctx):
         # If we're going to do symbol-graph-based test discovery below, extract
         # the symbol graph of the module that we just compiled so that we can
         # discover any tests in the `srcs` of this target (instead of just in
-        # the direct `deps`).
-        if not objc_test_discovery:
+        # the direct `deps`). Swift Testing finds its tests at run time, so a
+        # Swift Testing-only runner needs no symbol graph.
+        if not objc_test_discovery and not swift_testing_only:
             owner_symbol_graph_dir = ctx.actions.declare_directory(
                 "{}.symbolgraphs".format(ctx.label.name),
             )
@@ -460,6 +468,7 @@ def _swift_test_impl(ctx):
             objc_test_discovery = objc_test_discovery,
             owner_module_name = module_name,
             owner_symbol_graph_dir = owner_symbol_graph_dir,
+            swift_testing_only = swift_testing_only,
             test_discoverer = ctx.executable._test_discoverer,
         )
         discovery_compile_result = _do_compile(
@@ -628,6 +637,24 @@ If you set this attribute to `False`, then you are responsible for providing
 your own `main`. This allows you to write tests that use a framework other than
 Apple's `XCTest`. The only requirement of such a test is that it terminate with
 a zero exit code for success or a non-zero exit code for failure.
+""",
+                mandatory = False,
+            ),
+            "discover_xctests": attr.bool(
+                default = True,
+                doc = """\
+Determines whether XCTest-style tests are discovered and run when
+`discover_tests` is `True`. The default value is `True`.
+
+Set this to `False` for a target whose tests are written only with Swift
+Testing. Swift Testing finds `@Test` functions at run time, so the generated
+runner then runs only those tests and the symbol graphs that XCTest discovery
+reads on non-Apple platforms are never extracted. This avoids an extraction
+step that such targets do not need, and it is required for modules that
+`swift-symbolgraph-extract` cannot load, such as modules built with C++
+interop against libstdc++.
+
+This attribute has no effect when `discover_tests` is `False`.
 """,
                 mandatory = False,
             ),
