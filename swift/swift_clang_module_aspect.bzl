@@ -359,10 +359,12 @@ def _handle_module(
             module_name = physical_name,
             target = target,
         )
-    validate_swift_module_name(
-        source_name,
-        feature_configuration = feature_configuration,
-    )
+        validate_swift_module_name(
+            source_name,
+            feature_configuration = feature_configuration,
+        )
+    else:
+        validate_swift_module_name(source_name)
 
     compilation_contexts_to_merge_for_compilation = [compilation_context]
 
