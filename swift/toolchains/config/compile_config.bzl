@@ -170,10 +170,7 @@ def compile_action_configs(
         # Dump ast files
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DUMP_AST],
-            configurators = [
-                add_arg("-dump-ast"),
-                add_arg("-suppress-warnings"),
-            ],
+            configurators = [add_arg("-dump-ast")],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DUMP_AST],
