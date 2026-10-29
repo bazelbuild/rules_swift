@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
+    "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE_STRICT_MEMORY_SAFETY",
     "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
@@ -752,6 +753,16 @@ def compile_action_configs(
             ],
             configurators = [_dependencies_clang_modulemaps_configurator],
             not_features = [SWIFT_FEATURE_USE_C_MODULES],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [add_arg("-Xcc", "-std=gnu2x")],
+            features = [SWIFT_FEATURE_STD_GNU2X],
         ),
     ])
 

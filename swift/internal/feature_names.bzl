@@ -267,3 +267,7 @@ SWIFT_FEATURE_LABEL_AS_MODULE_NAME = "swift.label_as_module_name"
 # `-const-gather-protocols-list` driver flag (Swift 6.4 and above). Users should
 # never manually enable, disable, or query this feature.
 SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST = "swift._supports_const_gather_protocols_list"
+
+# If enabled, passes `-Xcc -std=gnu2x` to actions that invoke ClangImporter so
+# C and Objective-C headers are parsed in C23 (`gnu2x`) mode.
+SWIFT_FEATURE_STD_GNU2X = "swift.std_gnu2x"

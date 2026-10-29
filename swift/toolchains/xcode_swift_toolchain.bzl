@@ -50,6 +50,7 @@ load(
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",  # @unused
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
 )
 load(
@@ -762,6 +763,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
         # Ensure hermetic PCM files (no absolute workspace paths).
         SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+        SWIFT_FEATURE_STD_GNU2X,
     ])
 
     if _is_xcode_at_least_version(xcode_config, "27.0"):
