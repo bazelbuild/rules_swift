@@ -1863,8 +1863,8 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
 
 def _collect_clang_module_inputs(
         always_include_headers,
+        transitive_clang_module_inputs,
         explicit_module_compilation_context,
-        modules,
         prefer_precompiled_modules,
         mixed_module_clang_inputs = None,
         unchecked_include_headers = None):
@@ -1874,16 +1874,13 @@ def _collect_clang_module_inputs(
         always_include_headers: If True, pass the transitive headers as inputs
             to the compilation action, even if doing an explicit module
             compilation.
+        transitive_clang_module_inputs: Transitive Clang module input depsets.
         explicit_module_compilation_context: The `CcCompilationContext` of the
             target being compiled, if the inputs are being collected for an
             explicit module compilation action. This parameter should be `None`
             if inputs are being collected for Swift compilation.
         mixed_module_clang_inputs: The initial Clang module for the C half of a
             mixed Swift target, or None if there are no headers to import.
-        modules: A list of module structures (as returned by
-            `create_swift_module_context`). The precompiled Clang modules or the
-            textual module maps and headers of these modules (depending on the
-            value of `prefer_precompiled_modules`) will be collected as inputs.
         prefer_precompiled_modules: If True, precompiled module artifacts should
             be preferred over textual module map files and headers for modules
             that have them. If False, textual module map files and headers
@@ -1942,46 +1939,24 @@ def _collect_clang_module_inputs(
                 depset(explicit_module_compilation_context.direct_textual_headers),
             )
 
-    for module in modules:
-        clang_module = module.clang
+    # Module maps are inputs to both implicit and explicit module builds.
+    transitive_inputs.append(transitive_clang_module_inputs.clang_module_maps)
 
-        # Add the module map, which we use for both implicit and explicit module
-        # builds.
-        module_map = clang_module.module_map
-        if not module.is_system and type(module_map) == "File":
-            direct_inputs.append(module_map)
-
-        precompiled_module = clang_module.precompiled_module
-        use_precompiled_module = (
-            prefer_precompiled_modules and precompiled_module
-        )
-
-        if use_precompiled_module:
-            # For builds preferring explicit modules, use it if we have it
-            # and don't include any headers as inputs, other than the ones that
-            # can be reached by includes that Clang doesn't check.
-            direct_inputs.append(precompiled_module)
-            if prune_headers:
-                transitive_inputs.append(clang_module.unchecked_include_headers)
-
-        if always_include_headers or (
-            not use_precompiled_module and
-            (module_map or not prefer_precompiled_modules)
-        ):
-            # If we don't have an explicit module (or we're not using it), we
-            # need the transitive headers from the compilation context
-            # associated with the module. This will likely overestimate the
-            # headers that will actually be used in the action, but until we can
-            # use include scanning from Starlark, we can't compute a more
-            # precise input set. Modules without a module map (i.e., pure Swift
-            # modules) are skipped in explicit module builds, because Clang
-            # never reads their headers directly; the headers that it reads
-            # through other modules are covered by those modules.
-            compilation_context = clang_module.compilation_context
-            transitive_inputs.append(compilation_context.headers)
+    if prefer_precompiled_modules:
+        # Prefer each available precompiled module and omit its textual headers
+        # unless the action explicitly requires all headers. Modules without a
+        # precompiled module still need their textual headers.
+        transitive_inputs.append(transitive_clang_module_inputs.precompiled_clang_modules)
+        if prune_headers:
+            transitive_inputs.append(transitive_clang_module_inputs.clang_unchecked_include_headers)
+        if always_include_headers:
+            transitive_inputs.append(transitive_clang_module_inputs.clang_headers)
+        else:
             transitive_inputs.append(
-                depset(compilation_context.direct_textual_headers),
+                transitive_clang_module_inputs.clang_headers_without_precompiled_modules,
             )
+    else:
+        transitive_inputs.append(transitive_clang_module_inputs.clang_headers)
 
     if mixed_module_clang_inputs:
         if mixed_module_clang_inputs.module_map_file:
@@ -2034,6 +2009,9 @@ def _clang_modulemap_dependency_args(module, ignore_system = True):
         A list of arguments, possibly empty, to pass to `swiftc` (without the
         `-Xcc` prefix).
     """
+    if not module.clang:
+        return []
+
     module_map = module.clang.module_map
 
     if (module.is_system and ignore_system) or not module_map:
@@ -2064,7 +2042,7 @@ def _clang_module_dependency_args(module, ignore_system = True):
         A list of arguments, possibly empty, to pass to `swiftc` (without the
         `-Xcc` prefix).
     """
-    if module.is_system and ignore_system:
+    if not module.clang or (module.is_system and ignore_system):
         return []
 
     if module.clang.precompiled_module:
@@ -2086,17 +2064,12 @@ def _clang_module_dependency_args_include_system(module):
 
 def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     """Configures Clang module maps from dependencies."""
-    modules = [
-        module
-        for module in prerequisites.transitive_modules
-        if module.clang
-    ]
 
     # Uniquify the arguments because different modules might be defined in the
     # same module map file, so it only needs to be present once on the command
     # line.
     args.add_all(
-        modules,
+        prerequisites.transitive_modules,
         before_each = "-Xcc",
         map_each = _clang_modulemap_dependency_args,
         uniquify = True,
@@ -2116,26 +2089,21 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
             "always_include_headers",
             False,
         ),
+        transitive_clang_module_inputs = prerequisites.transitive_clang_module_inputs,
         explicit_module_compilation_context = compilation_context,
         mixed_module_clang_inputs = mixed_inputs,
-        modules = modules,
         prefer_precompiled_modules = False,
     )
 
 def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system = True):
     """Configures precompiled Clang modules from dependencies."""
-    modules = [
-        module
-        for module in prerequisites.transitive_modules
-        if module.clang
-    ]
 
     # Uniquify the arguments because different modules might be defined in the
     # same module map file, so it only needs to be present once on the command
     # line.
     mapper = _clang_module_dependency_args if ignore_system else _clang_module_dependency_args_include_system
     args.add_all(
-        modules,
+        prerequisites.transitive_modules,
         before_each = "-Xcc",
         map_each = mapper,
         uniquify = True,
@@ -2156,9 +2124,9 @@ def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system 
             "always_include_headers",
             False,
         ),
+        transitive_clang_module_inputs = prerequisites.transitive_clang_module_inputs,
         explicit_module_compilation_context = compilation_context,
         mixed_module_clang_inputs = mixed_inputs,
-        modules = modules,
         prefer_precompiled_modules = True,
         unchecked_include_headers = getattr(prerequisites, "unchecked_include_headers", None),
     )
@@ -2311,8 +2279,8 @@ def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swift_dependency_inputs +
-                 prerequisites.direct_swiftdocs,
+        inputs = prerequisites.direct_swiftdocs,
+        transitive_inputs = [prerequisites.transitive_swift_dependency_inputs],
     )
 
 def _dependencies_swiftmodules_configurator(prerequisites, args):
@@ -2325,7 +2293,7 @@ def _dependencies_swiftmodules_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = prerequisites.transitive_swift_dependency_inputs,
+        transitive_inputs = [prerequisites.transitive_swift_dependency_inputs],
     )
 
 def _module_aliases_configurator(prerequisites, args):
@@ -2362,7 +2330,7 @@ def _plugins_configurator(prerequisites, args):
     )
 
     return ConfigResultInfo(
-        inputs = [p.executable for p in prerequisites.plugins],
+        transitive_inputs = [prerequisites.compiler_plugin_executables],
     )
 
 def _macro_expansion_configurator(prerequisites, args):
@@ -2417,26 +2385,23 @@ def _explicit_swift_module_map_configurator(
     inputs = prerequisites.explicit_swift_module_map_inputs + [
         prerequisites.explicit_swift_module_map_file,
     ]
-    transitive_inputs = []
+    transitive_inputs = list(
+        prerequisites.explicit_swift_module_map_transitive_inputs,
+    )
     if collect_clang_module_inputs:
-        modules = [
-            module
-            for module in prerequisites.transitive_modules
-            if module.clang
-        ]
         clang_module_inputs = _collect_clang_module_inputs(
             always_include_headers = getattr(
                 prerequisites,
                 "always_include_headers",
                 False,
             ),
+            transitive_clang_module_inputs = prerequisites.transitive_clang_module_inputs,
             explicit_module_compilation_context = None,
             mixed_module_clang_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None),
-            modules = modules,
             prefer_precompiled_modules = True,
         )
         inputs += clang_module_inputs.inputs
-        transitive_inputs = clang_module_inputs.transitive_inputs
+        transitive_inputs += clang_module_inputs.transitive_inputs
 
     return ConfigResultInfo(
         inputs = inputs,
