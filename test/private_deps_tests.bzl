@@ -16,18 +16,10 @@
 
 load(
     "@build_bazel_rules_swift//test/rules:provider_test.bzl",
-    "make_provider_test_rule",
+    "provider_test",
 )
 
 visibility("private")
-
-# Force private deps support to be enabled at analysis time, regardless of
-# whether the active toolchain actually supports it.
-private_deps_provider_test = make_provider_test_rule(
-    config_settings = {
-        "//command_line_option:features": ["swift.supports_private_deps"],
-    },
-)
 
 def private_deps_test_suite(name, tags = []):
     """Test suite for propagation behavior of `swift_library.private_deps`.
@@ -39,7 +31,7 @@ def private_deps_test_suite(name, tags = []):
     all_tags = [name] + tags
 
     # Each of the two leaf libraries should propagate their own modules.
-    private_deps_provider_test(
+    provider_test(
         name = "{}_private_swift_swiftmodules".format(name),
         expected_files = [
             "test_fixtures_private_deps_private_swift.swiftmodule",
@@ -50,7 +42,7 @@ def private_deps_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/private_deps:private_swift",
     )
 
-    private_deps_provider_test(
+    provider_test(
         name = "{}_public_swift_swiftmodules".format(name),
         expected_files = [
             "test_fixtures_private_deps_public_swift.swiftmodule",
@@ -63,7 +55,7 @@ def private_deps_test_suite(name, tags = []):
 
     # The client module should propagate its own module and the one from `deps`,
     # but not the one from `private_deps`.
-    private_deps_provider_test(
+    provider_test(
         name = "{}_client_swift_deps_swiftmodules".format(name),
         expected_files = [
             "test_fixtures_private_deps_client_swift_deps.swiftmodule",
@@ -79,7 +71,7 @@ def private_deps_test_suite(name, tags = []):
     # With private deps that are C++ libraries, we shouldn't propagate the
     # compilation context of the private deps. That means the public deps'
     # headers will be repropagated by Swift library, but not the private ones.
-    private_deps_provider_test(
+    provider_test(
         name = "{}_client_cc_deps_headers".format(name),
         expected_files = [
             "/test/fixtures/private_deps/public.h",
@@ -95,7 +87,7 @@ def private_deps_test_suite(name, tags = []):
     )
 
     # Likewise, we shouldn't repropagate the C++ private deps' module maps.
-    private_deps_provider_test(
+    provider_test(
         name = "{}_client_cc_deps_modulemaps".format(name),
         expected_files = [
             "/test/fixtures/private_deps/public_cc.swift.modulemap",
@@ -110,7 +102,7 @@ def private_deps_test_suite(name, tags = []):
     # Make sure we don't also lose linking information when handling C++ private
     # deps. All libraries should be propagated, even if their compilation
     # contexts aren't.
-    private_deps_provider_test(
+    provider_test(
         name = "{}_client_cc_deps_libraries".format(name),
         expected_files = [
             "/test/fixtures/private_deps/libprivate_cc.a",
