@@ -89,10 +89,16 @@ def _generate_pinned_repos(vendored_xcode_tags):
 def _generate_local_repos(module_ctx, sdks, exclude_modules, vendored_xcode_tags = []):
     vendored_xcode_tags_by_version = _vendored_xcode_tags_by_version(vendored_xcode_tags)
     toolchains, err = run_xcode_locator(module_ctx, _XCODE_LOCATOR_SRC)
-    if err:
+
+    # Launch Services reports this when no Xcode application is installed.
+    if err and "kLSApplicationNotFoundErr" not in err:
         fail("xcode-locator failed: " + err)
     if not toolchains:
-        fail("No Xcodes found on this host.")
+        if vendored_xcode_tags:
+            _generate_pinned_repos(vendored_xcode_tags)
+        else:
+            _system_sdk_stub_repo(name = "system_sdk")
+        return
 
     default_path = _default_xcode_path(module_ctx)
     if not default_path:
@@ -232,7 +238,7 @@ def _system_sdk_stub_repo_impl(rctx):
 
 _system_sdk_stub_repo = repository_rule(
     implementation = _system_sdk_stub_repo_impl,
-    doc = "Empty hub repo used on non-macOS hosts so `@system_sdk//:all_modules` always resolves.",
+    doc = "Empty hub repo used when no Xcode is available so `@system_sdk//:all_modules` always resolves.",
 )
 
 _configure_xcode_tag = tag_class(
