@@ -504,6 +504,36 @@ def _all_action_configs(
         ),
     )
 
+    # Neither `swift-symbolgraph-extract` nor `swift-synthesize-interface` is
+    # invoked through the Swift driver, nor do they accept `-target-sdk-version`
+    # or `-prebuilt-module-cache-path` to let the frontend infer the versioned
+    # prebuilt module directory. Instead, we pass the versioned prebuilt module
+    # directory directly as an import search path so that the serialized module
+    # loader finds the prebuilt SDK `.swiftmodule`s instead of compiling their
+    # `.swiftinterface`s from scratch.
+    action_configs.append(
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [
+                add_arg(
+                    "{resource_dir}/{platform}/prebuilt-modules/{sdk_version}".format(
+                        platform = target_triples.platform_name_for_swift(
+                            target_triple,
+                        ),
+                        resource_dir = _resource_dir_path(apple_toolchain),
+                        sdk_version = xcode_config.sdk_version_for_platform(
+                            target_triples.bazel_apple_platform(target_triple),
+                        ),
+                    ),
+                    format = "-I%s",
+                ),
+            ],
+        ),
+    )
+
     # Starting with Xcode 26.0 beta 5, the implementation of Swift Testing's
     # macros is in a separate subdirectory that the build system manually passes
     # to the compiler *only* when building test code. We don't want to plumb
