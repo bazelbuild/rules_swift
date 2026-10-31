@@ -22,6 +22,7 @@ toolchain, see `doc/rules.md`.
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
+load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 load("@build_bazel_apple_support//xcode:providers.bzl", "XcodeVersionInfo")
 load(
     "@build_bazel_rules_swift//swift:providers.bzl",
@@ -696,8 +697,8 @@ def _xcode_env(target_triple, xcode_config):
         passed to Swift compile and link actions.
     """
     return (
-        apple_common.apple_host_system_env(xcode_config) |
-        apple_common.target_apple_env(
+        apple_support.apple_host_system_env(xcode_config) |
+        apple_support.target_apple_env(
             xcode_config,
             target_triples.bazel_apple_platform(target_triple),
         )

@@ -14,29 +14,30 @@
 
 """Utility functions to inspect and manipulate target triples."""
 
+load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
+
 visibility([
     "@build_bazel_rules_swift//swift/...",
 ])
 
 _IOS_SIM_ARM64_MIN_OS_VERSION = apple_common.dotted_version("14.0")
 
-# Maps (operating system, environment) pairs from target triples to the legacy
-# Bazel core `apple_common.platform` values, since we still use some APIs that
-# require these.
+# Maps (operating system, environment) pairs from target triples to
+# `apple_support.platform` values.
 _TRIPLE_OS_TO_PLATFORM = {
-    ("ios", None): apple_common.platform.ios_device,
-    ("ios", "simulator"): apple_common.platform.ios_simulator,
-    ("macos", None): apple_common.platform.macos,
-    ("tvos", None): apple_common.platform.tvos_device,
-    ("tvos", "simulator"): apple_common.platform.tvos_simulator,
-    ("watchos", None): apple_common.platform.watchos_device,
-    ("watchos", "simulator"): apple_common.platform.watchos_simulator,
-    ("xros", None): apple_common.platform.visionos_device,
-    ("xros", "simulator"): apple_common.platform.visionos_simulator,
+    ("ios", None): apple_support.platform.ios_device,
+    ("ios", "simulator"): apple_support.platform.ios_simulator,
+    ("macos", None): apple_support.platform.macos,
+    ("tvos", None): apple_support.platform.tvos_device,
+    ("tvos", "simulator"): apple_support.platform.tvos_simulator,
+    ("watchos", None): apple_support.platform.watchos_device,
+    ("watchos", "simulator"): apple_support.platform.watchos_simulator,
+    ("xros", None): apple_support.platform.visionos_device,
+    ("xros", "simulator"): apple_support.platform.visionos_simulator,
 }
 
 def _bazel_apple_platform(target_triple):
-    """Returns the `apple_common.platform` value for the given target triple."""
+    """Returns the `apple_support.platform` value for the given target triple."""
     return _TRIPLE_OS_TO_PLATFORM[(
         _unversioned_os(target_triple),
         target_triple.environment,

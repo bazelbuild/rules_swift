@@ -262,6 +262,9 @@ bzl_library(
 bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
+    deps = [
+        "@build_bazel_apple_support//lib:apple_support",
+    ],
 )
 
 bzl_library(
