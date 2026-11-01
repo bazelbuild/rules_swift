@@ -54,6 +54,30 @@ check_unused_failure() {
   done
 }
 
+# Targets named `shared_prefix.<n>` all live in one package, so a layering
+# check that derives its scratch file from the text before the first dot would
+# share it between them and, when they compile in parallel, read another
+# target's imports. Workers run unsandboxed (Bazel's default) so they share the
+# exec root, and each run uses a new `-D` so every target recompiles.
+check_shared_prefix_success() {
+  local targets=()
+  for i in $(seq 0 15); do
+    targets+=("//test/fixtures/layering_check:shared_prefix.$i")
+  done
+
+  for run in 1 2 3 4 5; do
+    if ! "$bazel" build "${targets[@]}" \
+      --features=swift.layering_check_unused_deps \
+      --noworker_sandboxing \
+      "--swiftcopt=-DSHARED_PREFIX_RUN_${run}_$$" &>"$log"; then
+      cat "$log"
+      echo "Expected the shared_prefix targets to build (run $run)" >&2
+      exit 1
+    fi
+  done
+}
+
+check_shared_prefix_success
 check_failure \
   "//test/fixtures/layering_check:foundation_consumer_violation_precompiled_modules" \
   "Foundation" \
