@@ -17,7 +17,6 @@
 load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT")
 load(":actions.bzl", "run_toolchain_action")
-load(":compiling.bzl", "transitive_swift_dependency_inputs")
 load(":features.bzl", "gather_toolchains")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "get_swift_implicit_deps", "merge_compilation_contexts")
@@ -95,9 +94,8 @@ def extract_symbol_graph(
         swift_infos = swift_infos + implicit_swift_infos,
     )
 
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally.
+    # Identifying the target module's documentation file requires inspecting
+    # the structured module values.
     transitive_modules = merged_swift_info.transitive_modules.to_list()
 
     direct_swiftdocs = []
@@ -106,9 +104,6 @@ def extract_symbol_graph(
         if swift_module:
             if module.name == module_name and swift_module.swiftdoc:
                 direct_swiftdocs.append(swift_module.swiftdoc)
-    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
-        transitive_modules,
-    )
 
     prerequisites = struct(
         additional_inputs = toolchains.cc.all_files.to_list(),
@@ -124,8 +119,11 @@ def extract_symbol_graph(
         module_name = module_name,
         output_dir = output_dir,
         target_label = feature_configuration._label,
-        transitive_modules = transitive_modules,
-        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_clang_module_inputs = merged_swift_info.transitive_module_inputs,
+        transitive_modules = merged_swift_info.transitive_modules,
+        transitive_swift_dependency_inputs = (
+            merged_swift_info.transitive_module_inputs.swift_dependencies
+        ),
     )
 
     run_toolchain_action(

@@ -122,8 +122,7 @@ where the arguments are:
 *   `swift_infos`: A list of `SwiftInfo` providers from dependencies whose
     transitive modules should be merged into the resulting provider.
 
-When reading an existing `SwiftInfo` provider, it has the two fields described
-below.
+When reading an existing `SwiftInfo` provider, it has the fields described below.
 
 **CONSTRUCTOR PARAMETERS**
 
@@ -138,6 +137,7 @@ below.
 | Name  | Description |
 | :------------- | :------------- |
 | <a id="SwiftInfo-direct_modules"></a>direct_modules |  `List` of values returned from `create_swift_module_context`. The modules (both Swift and C/Objective-C) emitted by the library that propagated this provider.    |
+| <a id="SwiftInfo-transitive_module_inputs"></a>transitive_module_inputs |  A `struct` containing the following transitive module input depsets:<br><br>*   `clang_headers`: Header `File`s propagated by Clang modules. *   `clang_headers_without_precompiled_modules`: Header `File`s propagated by     textual Clang modules with a module map and no precompiled module. *   `clang_module_maps`: Module map `File`s propagated by non-system Clang     modules. *   `clang_unchecked_include_headers`: Header `File`s required by precompiled     Clang modules whose includes bypass layering checks. *   `compiler_plugin_executables`: Executable `File`s for compiler plugins     required by Swift modules. *   `compiler_plugins`: `SwiftCompilerPluginInfo` providers required by Swift     modules. *   `precompiled_clang_modules`: Precompiled module `File`s propagated by Clang     modules. *   `swift_dependencies`: Module and textual interface `File`s needed by Swift     dependencies. *   `swift_module_metadata`: Documentation and source information `File`s needed     when dependencies are loaded through an explicit Swift module map.    |
 | <a id="SwiftInfo-transitive_modules"></a>transitive_modules |  `Depset` of values returned from `create_swift_module_context`. The transitive modules (both Swift and C/Objective-C) emitted by the library that propagated this provider and all of its dependencies.    |
 
 

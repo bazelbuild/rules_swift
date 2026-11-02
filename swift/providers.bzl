@@ -78,6 +78,52 @@ the allowlist.
     },
 )
 
+def _clang_headers(modules, dependency_headers):
+    compilation_contexts = [
+        module.clang.compilation_context
+        for module in modules
+        if module.clang and module.clang.compilation_context
+    ]
+
+    # Textually importing a module requires its transitive headers. This can
+    # overestimate the action inputs, but Starlark cannot use include scanning
+    # to compute a more precise set.
+    return depset(
+        direct = [
+            header
+            for compilation_context in compilation_contexts
+            for header in compilation_context.direct_textual_headers
+        ],
+        transitive = (
+            [
+                compilation_context.headers
+                for compilation_context in compilation_contexts
+            ] +
+            dependency_headers
+        ),
+    )
+
+def _direct_swift_dependency_inputs(modules):
+    inputs = []
+    for module in modules:
+        swift_module = module.swift
+        if not swift_module:
+            continue
+
+        # `swiftmodule` may be a Bazel `File` or a string path to a
+        # system-provided prebuilt module; only `File`s are action inputs.
+        if type(swift_module.swiftmodule) == "File":
+            inputs.append(swift_module.swiftmodule)
+
+        interface_file = (
+            swift_module.private_swiftinterface or
+            swift_module.swiftinterface
+        )
+        if interface_file:
+            inputs.append(interface_file)
+
+    return inputs
+
 def _swift_info_init(
         *,
         direct_swift_infos = [],
@@ -100,13 +146,115 @@ def _swift_info_init(
         for provider in direct_swift_infos
         for module in provider.direct_modules
     ]
+
+    dependency_swift_infos = direct_swift_infos + swift_infos
     transitive_modules = [
         provider.transitive_modules
-        for provider in direct_swift_infos + swift_infos
+        for provider in dependency_swift_infos
     ]
 
+    clang_modules = [module for module in modules if module.clang]
+    clang_modules_without_precompiled_modules = [
+        module
+        for module in clang_modules
+        if module.clang.module_map and not module.clang.precompiled_module
+    ]
+    direct_compiler_plugins = [
+        plugin
+        for module in modules
+        if module.swift
+        for plugin in module.swift.plugins
+    ]
+    transitive_module_inputs = struct(
+        clang_headers = _clang_headers(
+            modules = clang_modules,
+            dependency_headers = [
+                provider.transitive_module_inputs.clang_headers
+                for provider in dependency_swift_infos
+            ],
+        ),
+        clang_headers_without_precompiled_modules = _clang_headers(
+            modules = clang_modules_without_precompiled_modules,
+            dependency_headers = [
+                provider.transitive_module_inputs.clang_headers_without_precompiled_modules
+                for provider in dependency_swift_infos
+            ],
+        ),
+        clang_module_maps = depset(
+            # `module_map` may be a Bazel `File` or a string path to a
+            # system-provided module map; only `File`s are action inputs.
+            direct = [
+                module.clang.module_map
+                for module in clang_modules
+                if (
+                    not module.is_system and
+                    type(module.clang.module_map) == "File"
+                )
+            ],
+            transitive = [
+                provider.transitive_module_inputs.clang_module_maps
+                for provider in dependency_swift_infos
+            ],
+        ),
+        clang_unchecked_include_headers = depset(
+            transitive = [
+                module.clang.unchecked_include_headers
+                for module in clang_modules
+                if module.clang.precompiled_module
+            ] + [
+                provider.transitive_module_inputs.clang_unchecked_include_headers
+                for provider in dependency_swift_infos
+            ],
+        ),
+        compiler_plugin_executables = depset(
+            direct = [plugin.executable for plugin in direct_compiler_plugins],
+            transitive = [
+                provider.transitive_module_inputs.compiler_plugin_executables
+                for provider in dependency_swift_infos
+            ],
+        ),
+        compiler_plugins = depset(
+            direct = direct_compiler_plugins,
+            transitive = [
+                provider.transitive_module_inputs.compiler_plugins
+                for provider in dependency_swift_infos
+            ],
+        ),
+        precompiled_clang_modules = depset(
+            direct = [
+                module.clang.precompiled_module
+                for module in clang_modules
+                if module.clang.precompiled_module
+            ],
+            transitive = [
+                provider.transitive_module_inputs.precompiled_clang_modules
+                for provider in dependency_swift_infos
+            ],
+        ),
+        swift_module_metadata = depset(
+            direct = [
+                metadata
+                for module in modules
+                if module.swift and module.swift.swiftmodule
+                for metadata in [module.swift.swiftdoc, module.swift.swiftsourceinfo]
+                if metadata
+            ],
+            transitive = [
+                provider.transitive_module_inputs.swift_module_metadata
+                for provider in dependency_swift_infos
+            ],
+        ),
+        swift_dependencies = depset(
+            direct = _direct_swift_dependency_inputs(modules),
+            transitive = [
+                provider.transitive_module_inputs.swift_dependencies
+                for provider in dependency_swift_infos
+            ],
+        ),
+    )
     return {
         "direct_modules": direct_modules,
+        "transitive_module_inputs": transitive_module_inputs,
         "transitive_modules": depset(
             direct_modules,
             transitive = transitive_modules,
@@ -140,13 +288,33 @@ where the arguments are:
 *   `swift_infos`: A list of `SwiftInfo` providers from dependencies whose
     transitive modules should be merged into the resulting provider.
 
-When reading an existing `SwiftInfo` provider, it has the two fields described
-below.
+When reading an existing `SwiftInfo` provider, it has the fields described below.
 """,
     fields = {
         "direct_modules": """\
 `List` of values returned from `create_swift_module_context`. The modules (both
 Swift and C/Objective-C) emitted by the library that propagated this provider.
+""",
+        "transitive_module_inputs": """\
+A `struct` containing the following transitive module input depsets:
+
+*   `clang_headers`: Header `File`s propagated by Clang modules.
+*   `clang_headers_without_precompiled_modules`: Header `File`s propagated by
+    textual Clang modules with a module map and no precompiled module.
+*   `clang_module_maps`: Module map `File`s propagated by non-system Clang
+    modules.
+*   `clang_unchecked_include_headers`: Header `File`s required by precompiled
+    Clang modules whose includes bypass layering checks.
+*   `compiler_plugin_executables`: Executable `File`s for compiler plugins
+    required by Swift modules.
+*   `compiler_plugins`: `SwiftCompilerPluginInfo` providers required by Swift
+    modules.
+*   `precompiled_clang_modules`: Precompiled module `File`s propagated by Clang
+    modules.
+*   `swift_dependencies`: Module and textual interface `File`s needed by Swift
+    dependencies.
+*   `swift_module_metadata`: Documentation and source information `File`s needed
+    when dependencies are loaded through an explicit Swift module map.
 """,
         "transitive_modules": """\
 `Depset` of values returned from `create_swift_module_context`. The transitive

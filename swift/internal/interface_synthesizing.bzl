@@ -17,7 +17,6 @@
 load("//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYNTHESIZE_INTERFACE")
 load(":actions.bzl", "run_toolchain_action")
-load(":compiling.bzl", "transitive_swift_dependency_inputs")
 load(":features.bzl", "gather_toolchains")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(":utils.bzl", "merge_compilation_contexts")
@@ -74,15 +73,6 @@ def synthesize_interface(
         ),
     )
 
-    # Flattening this `depset` is necessary because we need to extract the
-    # module maps or precompiled modules out of structured values and do so
-    # conditionally.
-    transitive_modules = merged_swift_info.transitive_modules.to_list()
-
-    transitive_swift_dependency_inputs_list = transitive_swift_dependency_inputs(
-        transitive_modules,
-    )
-
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
@@ -91,8 +81,11 @@ def synthesize_interface(
         module_name = module_name,
         output_file = output_file,
         target_label = feature_configuration._label,
-        transitive_modules = transitive_modules,
-        transitive_swift_dependency_inputs = transitive_swift_dependency_inputs_list,
+        transitive_clang_module_inputs = merged_swift_info.transitive_module_inputs,
+        transitive_modules = merged_swift_info.transitive_modules,
+        transitive_swift_dependency_inputs = (
+            merged_swift_info.transitive_module_inputs.swift_dependencies
+        ),
     )
 
     run_toolchain_action(
