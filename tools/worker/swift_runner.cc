@@ -879,9 +879,11 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stderr_stream,
   // Run the compiler again, this time using `-emit-imported-modules` to
   // override whatever other behavior was requested and get the list of imported
   // modules.
+  // Replace only the last extension: targets named `Foo.Bar` and `Foo.Baz` in
+  // the same package must not share `Foo.imported-modules`.
   std::string imported_modules_path =
       ReplaceExtension(deps_modules_path_, ".imported-modules",
-                       /*all_extensions=*/true);
+                       /*all_extensions=*/false);
 
   std::vector<std::string> emit_imports_args;
   for (auto it = args_.begin(); it != args_.end(); ++it) {

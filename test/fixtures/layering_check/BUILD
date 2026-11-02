@@ -153,3 +153,16 @@ transition_binary(
         "swift.add_default_precompiled_modules",
     ],
 )
+
+# Targets whose names share the prefix before the first dot, compiled in
+# parallel. Each must run the layering check against its own imports.
+[
+    swift_library(
+        name = "shared_prefix.{}".format(i),
+        srcs = ["ImportsDirect.swift" if i % 2 == 0 else "ImportsTransitive.swift"],
+        module_name = "SharedPrefix{}".format(i),
+        tags = FIXTURE_TAGS,
+        deps = [":DirectDependency" if i % 2 == 0 else ":TransitiveDependency"],
+    )
+    for i in range(16)
+]
