@@ -79,7 +79,7 @@ def _feature_configuration_test_fixture_impl(ctx):
     )
     feature_configuration = swift_common.configure_features(
         ctx = ctx,
-        requested_features = ctx.features,
+        requested_features = ctx.features + ctx.attr.additional_features,
         toolchains = toolchains,
         unsupported_features = ctx.disabled_features,
     )
@@ -91,6 +91,7 @@ def _feature_configuration_test_fixture_impl(ctx):
 
 feature_configuration_test_fixture = rule(
     attrs = {
+        "additional_features": attr.string_list(),
         "feature_allowlists": attr.label_list(
             providers = [SwiftFeatureAllowlistInfo],
         ),
@@ -465,6 +466,30 @@ def package_configuration_test_suite(name, tags = []):
         ],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/package_configuration:fixture_allowed_via_aspect_id",
+    )
+
+    # 3b. Internal `swift._*` feature validation tests.
+    analysis_failure_test(
+        name = "{}_direct_internal_feature_enable_fails".format(name),
+        expected_message = "Feature 'swift._internal_feature' is an internal rules_swift feature and cannot be set directly on target",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/package_configuration:fixture_with_direct_internal_feature",
+    )
+
+    analysis_failure_test(
+        name = "{}_direct_internal_feature_disable_fails".format(name),
+        expected_message = "Feature '-swift._internal_feature' is an internal rules_swift feature and cannot be set directly on target",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/package_configuration:fixture_with_direct_disabled_internal_feature",
+    )
+
+    feature_configuration_test(
+        name = "{}_additional_internal_feature_succeeds".format(name),
+        expected_enabled_features = [
+            "swift._internal_feature",
+        ],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/package_configuration:fixture_with_additional_internal_feature",
     )
 
     # 4. `--@build_bazel_rules_swift//swift:per_module_swiftcopt` and

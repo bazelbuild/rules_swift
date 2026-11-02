@@ -240,6 +240,33 @@ apply_feature_configuration_test_aspect(
 )
 
 # -----------------------------------------------------------------------------
+# Internal `swift._*` feature fixtures.
+
+feature_configuration_test_fixture(
+    name = "fixture_with_direct_internal_feature",
+    features = [
+        "swift._internal_feature",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+feature_configuration_test_fixture(
+    name = "fixture_with_direct_disabled_internal_feature",
+    features = [
+        "-swift._internal_feature",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+feature_configuration_test_fixture(
+    name = "fixture_with_additional_internal_feature",
+    additional_features = [
+        "swift._internal_feature",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+# -----------------------------------------------------------------------------
 # Library targets for testing `per_module_swiftcopt` and `copt`.
 
 swift_library(
