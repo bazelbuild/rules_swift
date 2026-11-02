@@ -224,7 +224,6 @@ bzl_library(
         ":utils",
         "//swift:module_name",
         "//swift:providers",
-        "@bazel_skylib//rules:common_settings",
         "@rules_cc//cc/common",
     ],
 )
