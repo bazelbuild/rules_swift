@@ -43,16 +43,6 @@ coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
     },
 )
 
-unsupported_developer_dir_coverage_xcode_prefix_map_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:collect_code_coverage": "true",
-        "//command_line_option:features": [
-            "-swift._supports_developer_dir",
-            "swift.remap_xcode_path",
-        ],
-    },
-)
-
 def coverage_settings_test_suite(name, tags = []):
     """Test suite for coverage options.
 
@@ -150,7 +140,7 @@ def coverage_settings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    unsupported_developer_dir_coverage_xcode_prefix_map_test(
+    coverage_xcode_prefix_map_test(
         name = "{}_xcode_prefix_map_unsupported_developer_dir".format(name),
         tags = all_tags,
         not_expected_argv = [
@@ -158,7 +148,7 @@ def coverage_settings_test_suite(name, tags = []):
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
-        target_under_test = "//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/internal_feature_command_lines:unsupported_developer_dir",
     )
 
     native.test_suite(
