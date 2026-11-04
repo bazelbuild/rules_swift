@@ -21,6 +21,9 @@ load(
     "merged_toolset_options",
 )
 
+# buildifier: disable=bzl-visibility
+load("//swift/internal/extensions:toolchains.bzl", "wasm_sdk_toolchains_for_platform")
+
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
 
@@ -280,6 +283,41 @@ def _linker_options_to_clang_args_test(ctx):
 
 linker_options_to_clang_args_test = unittest.make(_linker_options_to_clang_args_test)
 
+def _wasm_sdk_toolchains_for_platform_test(ctx):
+    env = unittest.begin(ctx)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_sdk_xcode",
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_xcode"' in content)
+    asserts.true(env, 'name = "cc_toolchain_wasm32_xcode"' in content)
+    asserts.false(env, "swift/toolchains/wasm:" in content)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_sdk_xcode",
+        threads = False,
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_xcode"' in content)
+    asserts.true(env, "@rules_swift//swift/toolchains/wasm:single_threaded" in content)
+    asserts.false(env, "@rules_swift//swift/toolchains/wasm:threaded" in content)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_threads_sdk_xcode",
+        threads = True,
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_threads_xcode"' in content)
+    asserts.true(env, 'name = "cc_toolchain_wasm32_threads_xcode"' in content)
+    asserts.true(env, "@swift_toolchain_wasm_threads_sdk_xcode//:swift_toolchain_wasm32" in content)
+    asserts.true(env, "@rules_swift//swift/toolchains/wasm:threaded" in content)
+    asserts.false(env, "@rules_swift//swift/toolchains/wasm:single_threaded" in content)
+
+    return unittest.end(env)
+
+wasm_sdk_toolchains_for_platform_test = unittest.make(_wasm_sdk_toolchains_for_platform_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
@@ -289,4 +327,5 @@ def utils_test_suite(name):
         swift_sdk_download_url_test,
         merged_toolset_options_test,
         linker_options_to_clang_args_test,
+        wasm_sdk_toolchains_for_platform_test,
     )

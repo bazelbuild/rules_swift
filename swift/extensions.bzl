@@ -79,7 +79,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         )
     return build_file_content
 
-def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases):
+def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases, side_by_side = False):
     """Creates the repositories for a `swift.wasm_sdk` tag.
 
     Args:
@@ -88,6 +88,9 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
         swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
+        side_by_side: Whether both a single-threaded and a threads SDK are
+            declared, in which case each SDK's toolchains require their value
+            of `@rules_swift//swift/toolchains/wasm:threads`.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
@@ -114,7 +117,8 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
 
     build_file_content = ""
     for platform in platforms:
-        repository_name = "{}_wasm_sdk_{}".format(toolchain_name, platform)
+        repository_format = "{}_wasm_threads_sdk_{}" if side_by_side and threads else "{}_wasm_sdk_{}"
+        repository_name = repository_format.format(toolchain_name, platform)
         swift_wasm_sdk_repository(
             name = repository_name,
             sha256 = sha256,
@@ -126,6 +130,7 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         build_file_content += wasm_sdk_toolchains_for_platform(
             platform = platform,
             sdk_repository = repository_name,
+            threads = threads if side_by_side else None,
         )
     return build_file_content
 
@@ -162,10 +167,9 @@ def _standalone_toolchain_impl(module_ctx):
         root_module.tags.android_sdk,
         "android_sdk",
     )
-    wasm_sdk_tag = _single_sdk_tag(
-        root_module.tags.wasm_sdk,
-        "wasm_sdk",
-    )
+    wasm_sdk_tags = root_module.tags.wasm_sdk
+    if len(wasm_sdk_tags) > 2 or (len(wasm_sdk_tags) == 2 and wasm_sdk_tags[0].threads == wasm_sdk_tags[1].threads):
+        fail("At most two `wasm_sdk` tags may be used: one single-threaded and one with `threads = True`.")
 
     if len(root_module.tags.toolchain) > 1:
         fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
@@ -173,7 +177,7 @@ def _standalone_toolchain_impl(module_ctx):
     if not root_module.tags.toolchain:
         if android_sdk_tag:
             fail("The `android_sdk` tag requires a `toolchain` tag.")
-        if wasm_sdk_tag:
+        if wasm_sdk_tags:
             fail("The `wasm_sdk` tag requires a `toolchain` tag.")
 
     toolchains_build_file_content = ""
@@ -217,13 +221,14 @@ def _standalone_toolchain_impl(module_ctx):
                 platforms = platforms,
                 swift_sdk_releases = swift_sdk_releases,
             )
-        if wasm_sdk_tag:
+        for wasm_sdk_tag in wasm_sdk_tags:
             toolchains_build_file_content += _setup_wasm_sdk(
                 tag = wasm_sdk_tag,
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
                 swift_sdk_releases = swift_sdk_releases,
+                side_by_side = len(wasm_sdk_tags) == 2,
             )
 
         toolchains_repository(
@@ -261,6 +266,11 @@ versions known to this version of rules_swift, but is required when `url` or
             default = False,
             doc = """\
 If `True`, target `wasm32-unknown-wasip1-threads`. Requires `url` and `sha256`.
+
+A module may declare two `wasm_sdk` tags, one with `threads = True` and one
+without. The threads SDK's toolchains are then named `*_wasm32_threads_*` and
+require the `@rules_swift//swift/toolchains/wasm:threaded` constraint; the other
+SDK's toolchains require `:single_threaded`, the default.
 """,
         ),
         "url": attr.string(
