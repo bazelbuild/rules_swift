@@ -130,8 +130,12 @@ def _single_sdk_tag(tags, kind):
 def _standalone_toolchain_impl(module_ctx):
     root_module = None
     for mod in module_ctx.modules:
-        if not mod.is_root and not module_ctx.is_dev_dependency:
-            fail("Only the root module can use the 'swift' extension. Packages meant to be used as deps should use dev_dependency = True")
+        if not mod.is_root:
+            tags = mod.tags.toolchain + mod.tags.android_sdk + mod.tags.wasm_sdk
+            for tag in tags:
+                if not module_ctx.is_dev_dependency(tag):
+                    fail("Only the root module can use the 'swift' extension. Packages meant to be used as deps should use dev_dependency = True")
+            continue
         root_module = mod
 
     if not root_module:
