@@ -705,6 +705,7 @@ def create_swift_module_inputs(
         generated_header = None,
         indexstore = None,
         original_module_name = None,
+        package_swiftinterface = None,
         plugins = [],
         private_swiftinterface = None,
         swiftdoc,
@@ -727,6 +728,9 @@ def create_swift_module_inputs(
             will be `None`.
         original_module_name: The original name of the module if it was changed
             by a module mapping; otherwise, `None`.
+        package_swiftinterface: The `.package.swiftinterface` file emitted by
+            the compiler for this module. May be `None` if no package module
+            interface file was emitted.
         plugins: A list of `SwiftCompilerPluginInfo` providers representing
             compiler plugins that are required by this module and should be
             loaded by the compiler when this module is directly depended on.
@@ -751,6 +755,7 @@ def create_swift_module_inputs(
         defines = tuple(defines),
         generated_header = generated_header,
         indexstore = indexstore,
+        package_swiftinterface = package_swiftinterface,
         plugins = tuple(plugins),
         private_swiftinterface = private_swiftinterface,
         original_module_name = original_module_name,

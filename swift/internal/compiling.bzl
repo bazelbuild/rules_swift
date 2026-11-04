@@ -106,6 +106,8 @@ def transitive_swift_dependency_inputs(
     Returns:
         A list of `.swiftmodule` files and the preferred textual interface file
         for each Swift dependency, plus module metadata files if requested.
+        Dependencies with a package interface also include that interface and
+        the public interface needed to discover the module.
     """
     inputs = []
 
@@ -129,6 +131,14 @@ def transitive_swift_dependency_inputs(
         )
         if interface_file:
             inputs.append(interface_file)
+
+        if swift_module.package_swiftinterface:
+            inputs.append(swift_module.package_swiftinterface)
+
+            # Swift needs the public interface to discover the module before
+            # selecting its package interface.
+            if swift_module.swiftinterface and swift_module.swiftinterface != interface_file:
+                inputs.append(swift_module.swiftinterface)
 
     return inputs
 
@@ -664,6 +674,7 @@ def compile(
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         module_name = module_name,
+        package_name = package_name,
         target_name = target_name,
         user_compile_flags = copts,
     )
@@ -688,6 +699,7 @@ def compile(
             compile_outputs.macro_expansion_directory,
             compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
+            compile_outputs.package_swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
             compile_outputs.swiftsourceinfo_file,
         ])
@@ -700,6 +712,7 @@ def compile(
             compile_outputs.swiftmodule_file,
             compile_outputs.swiftdoc_file,
             compile_outputs.swiftinterface_file,
+            compile_outputs.package_swiftinterface_file,
             compile_outputs.private_swiftinterface_file,
             compile_outputs.swiftsourceinfo_file,
             compile_outputs.generated_header_file,
@@ -722,10 +735,13 @@ def compile(
     )
 
     defines_set = sets.make(defines)
+    has_package_interface = False
     for module in transitive_modules:
         swift_module = module.swift
         if not swift_module:
             continue
+        if swift_module.package_swiftinterface:
+            has_package_interface = True
         if swift_module.defines:
             defines_set = sets.union(
                 defines_set,
@@ -912,6 +928,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
         explicit_swift_module_map_file = explicit_swift_module_map_info.file,
         explicit_swift_module_map_inputs = explicit_swift_module_map_info.inputs,
         genfiles_dir = feature_configuration._genfiles_dir,
+        has_package_interface = has_package_interface,
         include_dev_srch_paths = include_dev_srch_paths_value,
         is_swift = True,
         local_defines = local_defines,
@@ -1049,6 +1066,7 @@ to use swift_common.compile(include_dev_srch_paths = ...) instead.\
             generated_header = compile_outputs.generated_header_file,
             indexstore = compile_outputs.indexstore_directory,
             original_module_name = original_module_name,
+            package_swiftinterface = compile_outputs.package_swiftinterface_file,
             plugins = plugins,
             private_swiftinterface = compile_outputs.private_swiftinterface_file,
             swiftdoc = compile_outputs.swiftdoc_file,
@@ -1778,6 +1796,7 @@ def _declare_compile_outputs(
         feature_configuration,
         generated_header_name,
         module_name,
+        package_name,
         srcs,
         target_name,
         user_compile_flags):
@@ -1792,6 +1811,8 @@ def _declare_compile_outputs(
         generated_header_name: The desired name of the generated header for this
             module, or `None` if no header should be generated.
         module_name: The name of the Swift module being compiled.
+        package_name: The semantic package name, or an empty string or `None` if
+            the module does not belong to a Swift package.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1856,6 +1877,16 @@ def _declare_compile_outputs(
         )
     else:
         swiftinterface_file = None
+
+    if swiftinterface_file and package_name:
+        package_swiftinterface_file = _declare_target_scoped_file(
+            actions = actions,
+            add_target_name_to_output_path = add_target_name_to_output_path,
+            target_name = target_name,
+            basename = "{}.package.swiftinterface".format(module_name),
+        )
+    else:
+        package_swiftinterface_file = None
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
@@ -2024,6 +2055,7 @@ def _declare_compile_outputs(
         indexstore_directory = indexstore_directory,
         localized_strings_directory = localized_strings_directory,
         macro_expansion_directory = macro_expansion_directory,
+        package_swiftinterface_file = package_swiftinterface_file,
         private_swiftinterface_file = private_swiftinterface_file,
         object_files = object_files,
         output_file_map = output_file_map,
