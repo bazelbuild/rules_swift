@@ -75,6 +75,9 @@ def _xcode_explicit_module_hub_repo_impl(rctx):
             xcode_versions,
         ),
     )
+    if hasattr(rctx, "repo_metadata"):
+        return rctx.repo_metadata(reproducible = True)
+    return None
 
 xcode_explicit_module_hub_repo = repository_rule(
     implementation = _xcode_explicit_module_hub_repo_impl,
