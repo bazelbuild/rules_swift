@@ -2,6 +2,7 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load("//swift:swift_library.bzl", "swift_library")
 load("//swift:swift_overlay.bzl", "swift_overlay")
+load("//swift:swift_test.bzl", "swift_test")
 load("//test:transitions.bzl", "transition_binary")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
@@ -84,7 +85,10 @@ swift_library(
     srcs = ["TransitiveDependency.swift"],
     module_name = "TransitiveDependency",
     tags = FIXTURE_TAGS,
-    deps = ["@system_sdk//:SwiftShims"],
+    deps = select({
+        "@apple_support//configs:apple": ["@system_sdk//:SwiftShims"],
+        "//conditions:default": [],
+    }),
 )
 
 swift_library(
@@ -99,6 +103,21 @@ swift_library(
     name = "layering_violation",
     srcs = ["LayeringViolation.swift"],
     module_name = "LayeringViolation",
+    tags = FIXTURE_TAGS,
+    deps = [":DirectDependency"],
+)
+
+swift_library(
+    name = "unused_dependency",
+    srcs = ["UnusedDependency.swift"],
+    module_name = "UnusedDependency",
+    tags = FIXTURE_TAGS,
+    deps = [":DirectDependency"],
+)
+
+swift_test(
+    name = "unused_test_dependency",
+    srcs = ["UnusedDependency.swift"],
     tags = FIXTURE_TAGS,
     deps = [":DirectDependency"],
 )
@@ -134,3 +153,16 @@ transition_binary(
         "swift.add_default_precompiled_modules",
     ],
 )
+
+# Targets whose names share the prefix before the first dot, compiled in
+# parallel. Each must run the layering check against its own imports.
+[
+    swift_library(
+        name = "shared_prefix.{}".format(i),
+        srcs = ["ImportsDirect.swift" if i % 2 == 0 else "ImportsTransitive.swift"],
+        module_name = "SharedPrefix{}".format(i),
+        tags = FIXTURE_TAGS,
+        deps = [":DirectDependency" if i % 2 == 0 else ":TransitiveDependency"],
+    )
+    for i in range(16)
+]

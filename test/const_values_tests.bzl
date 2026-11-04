@@ -24,7 +24,24 @@ load(
     "provider_test",
 )
 
-const_values_test = make_action_command_line_test_rule()
+const_values_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["-swift._supports_const_gather_protocols_list"],
+    },
+)
+
+const_values_driver_flag_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["swift._supports_const_gather_protocols_list"],
+    },
+)
+
+const_values_wmo_driver_flag_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["swift._supports_const_gather_protocols_list"],
+        str(Label("//swift:copt")): ["-whole-module-optimization"],
+    },
+)
 
 const_values_wmo_test = make_provider_test_rule(
     config_settings = {
@@ -86,8 +103,35 @@ def const_values_test_suite(name, tags = []):
             "first.swift.swiftconstvalues",
         ],
         mnemonic = "SwiftCompile",
+        not_expected_argv = ["-const-gather-protocols-list"],
         tags = all_tags,
         target_under_test = "//test/fixtures/basic:first",
+    )
+
+    const_values_driver_flag_test(
+        name = "{}_driver_flag_expected_argv".format(name),
+        expected_argv = [
+            "-const-gather-protocols-list swift/toolchains/config/const_protocols_to_gather.json",
+            "-emit-const-values-path",
+            "first.swift.swiftconstvalues",
+        ],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = ["-const-gather-protocols-file"],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    const_values_wmo_driver_flag_test(
+        name = "{}_wmo_driver_flag_expected_argv".format(name),
+        expected_argv = [
+            "-const-gather-protocols-list swift/toolchains/config/const_protocols_to_gather.json",
+            "-emit-const-values-path",
+            "$(BIN_DIR)/test/fixtures/multiple_files/multiple_files.swiftconstvalues",
+        ],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = ["-const-gather-protocols-file"],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/multiple_files",
     )
 
     native.test_suite(

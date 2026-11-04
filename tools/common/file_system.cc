@@ -16,9 +16,48 @@
 
 #include <sys/stat.h>
 
+#include <filesystem>
+#include <fstream>
+#include <ostream>
 #include <string>
 
 namespace bazel_rules_swift {
+
+std::filesystem::path LongPath(const std::filesystem::path& path) {
+#if defined(_WIN32)
+  std::error_code ec;
+  std::filesystem::path absolute = std::filesystem::absolute(path, ec);
+  if (ec) {
+    return path;
+  }
+  std::wstring native = absolute.lexically_normal().make_preferred().wstring();
+  if (native.compare(0, 4, L"\\\\?\\") != 0) {
+    native.insert(0, L"\\\\?\\");
+  }
+  return std::filesystem::path(native);
+#else
+  return path;
+#endif
+}
+
+bool TouchFile(const std::filesystem::path& path, std::ostream* stderr_stream) {
+  std::error_code ec;
+  if (!path.parent_path().empty()) {
+    std::filesystem::create_directories(LongPath(path.parent_path()), ec);
+    if (ec) {
+      (*stderr_stream) << "swift_worker: Could not create directory "
+                       << path.parent_path() << " (" << ec.message() << ")\n";
+      return false;
+    }
+  }
+
+  std::ofstream stream(LongPath(path));
+  if (!stream) {
+    (*stderr_stream) << "swift_worker: Could not create " << path << "\n";
+    return false;
+  }
+  return true;
+}
 
 bool PathExists(absl::string_view path) {
   struct stat stats;

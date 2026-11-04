@@ -14,9 +14,73 @@
 
 #include "tools/worker/worker_protocol.h"
 
+#ifdef RULES_SWIFT_USE_PROTO_WORKER
+#include <cstdint>
+
+#include "google/protobuf/util/delimited_message_util.h"
+#include "third_party/bazel_protos/worker_protocol.pb.h"
+#else
 #include <nlohmann/json.hpp>
+#endif
 
 namespace bazel_rules_swift::worker_protocol {
+
+#ifdef RULES_SWIFT_USE_PROTO_WORKER
+
+std::optional<WorkRequest> ReadWorkRequest(std::istream& stream) {
+  // Read exactly one length-delimited message. A temporary protobuf input
+  // stream could buffer bytes from the next request and discard them when it
+  // is destroyed, so read the varint length and payload directly instead.
+  uint32_t size = 0;
+  for (int shift = 0;; shift += 7) {
+    int byte = stream.get();
+    // Protobuf messages are limited to INT_MAX bytes, so the fifth byte may
+    // only contain the remaining three bits of a nonnegative 32-bit length.
+    if (byte == std::char_traits<char>::eof() || (shift == 28 && byte > 0x07)) {
+      return std::nullopt;
+    }
+    size |= static_cast<uint32_t>(byte & 0x7f) << shift;
+    if ((byte & 0x80) == 0) {
+      break;
+    }
+  }
+
+  std::string payload(size, '\0');
+  if (!stream.read(payload.data(), size)) {
+    return std::nullopt;
+  }
+  blaze::worker::WorkRequest proto_request;
+  if (!proto_request.ParseFromString(payload)) {
+    return std::nullopt;
+  }
+
+  WorkRequest request;
+  request.arguments.assign(proto_request.arguments().begin(),
+                           proto_request.arguments().end());
+  for (const auto& input : proto_request.inputs()) {
+    request.inputs.push_back({input.path(), input.digest()});
+  }
+  request.request_id = proto_request.request_id();
+  request.cancel = proto_request.cancel();
+  request.verbosity = proto_request.verbosity();
+  request.sandbox_dir = proto_request.sandbox_dir();
+  return request;
+}
+
+void WriteWorkResponse(const WorkResponse& response, std::ostream& stream) {
+  blaze::worker::WorkResponse proto_response;
+  proto_response.set_exit_code(response.exit_code);
+  proto_response.set_output(response.output);
+  proto_response.set_request_id(response.request_id);
+  proto_response.set_was_cancelled(response.was_cancelled);
+  if (!google::protobuf::util::SerializeDelimitedToOstream(proto_response,
+                                                           &stream)) {
+    stream.setstate(std::ios::badbit);
+  }
+  stream.flush();
+}
+
+#else
 
 // Populates an `Input` parsed from JSON. This function satisfies an API
 // requirement of the JSON library, allowing it to automatically parse `Input`
@@ -72,5 +136,7 @@ void WriteWorkResponse(const WorkResponse& response, std::ostream& stream) {
   // doesn't hang waiting for the response due to buffering.
   stream << response_json.dump() << std::flush;
 }
+
+#endif  // RULES_SWIFT_USE_PROTO_WORKER
 
 }  // namespace bazel_rules_swift::worker_protocol

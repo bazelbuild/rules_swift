@@ -24,6 +24,7 @@ load(
     "SWIFT_FEATURE_ADD_DEFAULT_PRECOMPILED_MODULES",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_NO_IMPLICIT_DEPS",
+    "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_C_MODULES",
 )
 load(":features.bzl", "is_feature_enabled")
@@ -452,7 +453,11 @@ def include_developer_search_paths(attr):
         False,
     )
 
-def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
+def get_swift_implicit_deps(
+        *,
+        feature_configuration,
+        include_runtime = True,
+        swift_toolchain):
     """Returns the Swift and C++ providers for implicit Swift dependencies.
 
     Args:
@@ -460,6 +465,8 @@ def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
             `swift_common.configure_features`. If this feature configuration is
             such that implicit dependencies should be ignored, this function
             returns an empty list for both providers.
+        include_runtime: Whether to include the runtime selected by the feature
+            configuration in the returned C++ providers.
         swift_toolchain: The `SwiftToolchainInfo` provider of the toolchain.
 
     Returns:
@@ -475,11 +482,34 @@ def get_swift_implicit_deps(*, feature_configuration, swift_toolchain):
         feature_configuration = feature_configuration,
         swift_toolchain = swift_toolchain,
     )
+    cc_infos = (
+        swift_toolchain.implicit_deps_providers.cc_infos +
+        system_modules.cc_infos
+    )
+    if include_runtime:
+        if is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_STATIC_STDLIB,
+        ):
+            runtime_cc_info = swift_toolchain.static_runtime_cc_info
+            if not runtime_cc_info:
+                fail(
+                    "The toolchain does not provide a static runtime linking " +
+                    "provider, but the 'swift.static_stdlib' feature is enabled.",
+                )
+        else:
+            runtime_cc_info = getattr(
+                swift_toolchain,
+                "dynamic_runtime_cc_info",
+                None,
+            )
+        if runtime_cc_info:
+            cc_infos = cc_infos + [runtime_cc_info]
+
     return (
         swift_toolchain.implicit_deps_providers.swift_infos +
         system_modules.swift_infos,
-        swift_toolchain.implicit_deps_providers.cc_infos +
-        system_modules.cc_infos,
+        cc_infos,
     )
 
 def get_clang_implicit_deps(*, feature_configuration, swift_toolchain):

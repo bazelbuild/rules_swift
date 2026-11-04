@@ -35,6 +35,7 @@ def _system_module_group_impl(ctx):
         modules.append(create_swift_module_context(
             name = _inferred_module_name(ctx),
             is_system = True,
+            label = ctx.label,
         ))
 
     return [

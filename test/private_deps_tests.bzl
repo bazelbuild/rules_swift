@@ -81,14 +81,32 @@ def private_deps_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/private_deps:client_swift_deps",
     )
 
+    # Module maps needed by generated headers must respect private_deps too.
+    private_deps_provider_test(
+        name = "{}_client_swift_deps_cc_modulemaps".format(name),
+        expected_files = [
+            "test/fixtures/private_deps/public_swift_modulemap/_/module.modulemap",
+            "-test/fixtures/private_deps/private_swift_modulemap/_/module.modulemap",
+            "-test/fixtures/private_deps/private_swift-Swift.h",
+            "*",
+        ],
+        field = "compilation_context.headers",
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/private_deps:client_swift_deps",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     # With private deps that are C++ libraries, we shouldn't propagate the
     # compilation context of the private deps. That means the public deps'
-    # headers will be repropagated by Swift library, but not the private ones.
+    # headers and module maps will be repropagated, but not the private ones.
     private_deps_provider_test(
         name = "{}_client_cc_deps_headers".format(name),
         expected_files = [
             "test/fixtures/private_deps/public.h",
             "-test/fixtures/private_deps/private.h",
+            "test/fixtures/private_deps/public_cc_modulemap/_/module.modulemap",
+            "-test/fixtures/private_deps/private_cc_modulemap/_/module.modulemap",
             # Some C++ toolchains implicitly propagate standard library headers,
             # so we can't look for an exact match here.
             "*",

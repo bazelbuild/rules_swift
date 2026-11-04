@@ -67,33 +67,52 @@ int CaptureFrontendCommand(const std::vector<std::string>& args,
 }
 
 std::vector<std::string> TokenizeShellLine(const std::string& line) {
+  // swiftc -### uses shell quoting, including single quotes for arguments that
+  // contain spaces, when it prints the frontend command.
   std::vector<std::string> tokens;
   std::string token;
-  bool in_quotes = false;
+  char quote = '\0';
+  bool token_started = false;
   for (size_t i = 0; i < line.size(); ++i) {
     char c = line[i];
-    if (c == '\\' && i + 1 < line.size()) {
-      token.push_back(line[i + 1]);
-      ++i;
-      continue;
-    }
-    if (c == '"') {
-      in_quotes = !in_quotes;
-      continue;
-    }
-    if (!in_quotes && (c == ' ' || c == '\t')) {
-      if (!token.empty()) {
-        tokens.push_back(std::move(token));
-        token.clear();
+
+    if (quote != '\0') {
+      if (c == quote) {
+        quote = '\0';
+      } else if (quote == '"' && c == '\\' && i + 1 < line.size()) {
+        token.push_back(line[++i]);
+      } else {
+        token.push_back(c);
       }
       continue;
     }
-    if (!in_quotes && c == '#' && token.empty()) {
+
+    if (c == '\\' && i + 1 < line.size()) {
+      token.push_back(line[i + 1]);
+      token_started = true;
+      ++i;
+      continue;
+    }
+    if (c == '"' || c == '\'') {
+      quote = c;
+      token_started = true;
+      continue;
+    }
+    if (c == ' ' || c == '\t') {
+      if (token_started) {
+        tokens.push_back(std::move(token));
+        token.clear();
+        token_started = false;
+      }
+      continue;
+    }
+    if (c == '#' && !token_started) {
       break;
     }
     token.push_back(c);
+    token_started = true;
   }
-  if (!token.empty()) {
+  if (token_started) {
     tokens.push_back(std::move(token));
   }
   return tokens;

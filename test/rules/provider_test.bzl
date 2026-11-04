@@ -21,7 +21,7 @@ load(
     "unittest",
 )
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
-load("//swift:providers.bzl", "SwiftInfo")
+load("//swift:providers.bzl", "SwiftBinaryInfo", "SwiftInfo")
 load(
     "//test/rules:expected_files.bzl",
     "compare_expected_files",
@@ -165,6 +165,8 @@ def _lookup_provider_by_name(env, target, provider_name):
         provider = OutputGroupInfo
     elif provider_name == "RunEnvironmentInfo":
         provider = RunEnvironmentInfo
+    elif provider_name == "SwiftBinaryInfo":
+        provider = SwiftBinaryInfo
     elif provider_name == "SwiftInfo":
         provider = SwiftInfo
 

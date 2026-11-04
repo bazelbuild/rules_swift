@@ -20,7 +20,7 @@ load(":actions.bzl", "run_toolchain_action")
 load(":compiling.bzl", "transitive_swift_dependency_inputs")
 load(":features.bzl", "gather_toolchains")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
-load(":utils.bzl", "merge_compilation_contexts")
+load(":utils.bzl", "get_swift_implicit_deps", "merge_compilation_contexts")
 
 def extract_symbol_graph(
         *,
@@ -81,16 +81,18 @@ def extract_symbol_graph(
         toolchains = toolchains,
     )
 
+    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in toolchains.swift.implicit_deps_providers.cc_infos
+            for cc_info in implicit_cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
-        swift_infos = (
-            swift_infos + toolchains.swift.implicit_deps_providers.swift_infos
-        ),
+        swift_infos = swift_infos + implicit_swift_infos,
     )
 
     # Flattening this `depset` is necessary because we need to extract the

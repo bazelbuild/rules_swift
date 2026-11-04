@@ -126,6 +126,8 @@ def _swift_library_impl(ctx):
     # not files.
     copts = expand_locations(ctx, ctx.attr.copts, ctx.attr.swiftc_inputs)
     copts = expand_make_variables(ctx, copts, "copts")
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_make_variables(ctx, c_copts, "c_copts")
     linkopts = expand_locations(ctx, ctx.attr.linkopts, ctx.attr.swiftc_inputs)
     linkopts = expand_make_variables(ctx, linkopts, "linkopts")
     srcs = ctx.files.srcs
@@ -159,10 +161,7 @@ def _swift_library_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(
-            ctx.label,
-            feature_configuration = feature_configuration,
-        )
+        module_name = derive_swift_module_name(ctx.label)
 
     swift_infos = get_providers(deps, SwiftInfo)
     private_swift_infos = get_providers(private_deps, SwiftInfo)
@@ -188,9 +187,12 @@ def _swift_library_impl(ctx):
         additional_inputs = additional_inputs,
         cc_infos = get_providers(ctx.attr.deps, CcInfo),
         copts = _maybe_parse_as_library_copts(srcs) + copts,
+        c_copts = c_copts,
         defines = ctx.attr.defines,
+        local_defines = ctx.attr.local_defines,
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
+        hdrs = ctx.files.hdrs,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
         package_name = ctx.attr.package_name,
@@ -256,6 +258,7 @@ def _swift_library_impl(ctx):
         module_context.clang.precompiled_module,
         module_context.swift.swiftdoc,
         module_context.swift.swiftinterface,
+        module_context.swift.package_swiftinterface,
         module_context.swift.private_swiftinterface,
         module_context.swift.swiftmodule,
         module_context.swift.swiftsourceinfo,

@@ -119,6 +119,7 @@ def _swift_import_impl(ctx):
                 compilation_context = cc_info.compilation_context,
                 module_map = None,
             ),
+            label = ctx.label,
             swift = create_swift_module_inputs(
                 plugins = [
                     plugin[SwiftCompilerPluginInfo]
@@ -171,7 +172,9 @@ target.
                 cfg = "exec",
                 doc = """\
 A list of `swift_compiler_plugin` targets that should be loaded by the compiler
-when compiling any modules that directly depend on this target.
+when compiling any modules that depend on this target. Enable the
+`swift.load_plugins_from_direct_dependencies` feature to load them only for
+modules that directly depend on this target.
 """,
                 providers = [[SwiftCompilerPluginInfo]],
             ),
@@ -217,6 +220,11 @@ used instead of `.swiftinterface` files in the `swiftinterface` attribute.
 To import pre-built Swift modules that use `@_spi` when using `swiftinterface`,
 the `.private.swiftinterface` files are required in order to build any code that
 uses the API marked with `@_spi`.
+
+To import pre-built Swift modules that use `package` access control when using
+`swiftinterface`, the `.package.swiftinterface` files are required in order to
+build any code that uses the package API. The `package_name` attribute of targets
+that use this API must match the package name used to build the pre-built module.
 """,
     fragments = ["cpp"],
     implementation = _swift_import_impl,

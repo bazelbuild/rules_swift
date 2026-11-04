@@ -22,6 +22,8 @@ load("//swift/internal:compiling.bzl", "compile", "precompile_clang_module")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ENABLE_EMBEDDED",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_NO_PRIVATE_HEADERS",
 )
@@ -283,10 +285,7 @@ def _module_info_for_target(
         # was some other `Objc`-providing target, derive the module name
         # now.
         if not module_name:
-            module_name = derive_swift_module_name(
-                target.label,
-                feature_configuration = feature_configuration,
-            )
+            module_name = derive_swift_module_name(target.label)
 
     module_map_file = _generate_module_map(
         actions = aspect_ctx.actions,
@@ -308,6 +307,7 @@ def _handle_module(
         feature_configuration,
         module_map_file,
         module_name,
+        requested_features,
         direct_swift_infos,
         swift_infos,
         toolchains,
@@ -327,6 +327,7 @@ def _handle_module(
             legacy support).
         module_name: The name of the module, or None if it should be inferred
             from other properties of the target (for legacy support).
+        requested_features: The features requested for the current target.
         direct_swift_infos: The `SwiftInfo` providers of the current target's
             dependencies, which should be merged into the `SwiftInfo` provider
             created and returned for this target.
@@ -358,6 +359,9 @@ def _handle_module(
             if module.clang:
                 dependent_module_names.append(module.name)
 
+    # Client module maps may declare excluded headers or umbrella directories.
+    has_custom_module_map = bool(module_map_file)
+
     # If we weren't passed a module map (i.e., from a `SwiftInteropInfo`
     # provider), infer it and the module name based on properties of the rule to
     # support legacy rules.
@@ -374,9 +378,30 @@ def _handle_module(
 
     if not module_map_file:
         if all_swift_infos:
+            # Passing every dep SwiftInfo through as *direct* (upstream
+            # b054a972) is only needed so the Swift layering check can see
+            # through targets without module maps. `_swift_info_init`
+            # materializes each direct provider's `direct_modules` into a fresh
+            # per-node list, so this snowballs through chains of
+            # module-map-less aggregate targets and OOMs analysis at monorepo
+            # scale. Keep the pass-through only where a layering-check feature
+            # can actually consume it.
+            if is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+            ) or is_feature_enabled(
+                feature_configuration = feature_configuration,
+                feature_name = SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
+            ):
+                return [
+                    SwiftInfo(
+                        direct_swift_infos = direct_swift_infos + swift_infos,
+                    ),
+                ]
             return [
                 SwiftInfo(
-                    direct_swift_infos = direct_swift_infos + swift_infos,
+                    direct_swift_infos = direct_swift_infos,
+                    swift_infos = swift_infos,
                 ),
             ]
         else:
@@ -417,15 +442,54 @@ def _handle_module(
         )
     )
 
+    # When `swift.layering_check_for_c_deps` is enabled, the headers of
+    # dependencies that are embedded in their precompiled modules don't need
+    # to be staged when precompiling this module, except for the ones that
+    # Clang needs to find in order to map them to a module (see
+    # `precompile_clang_module`). However, Clang only layering-checks the
+    # includes in files that belong to the module being compiled, and there
+    # are files of other modules whose includes aren't checked:
+    #
+    # *   Excluded headers (and headers in umbrella directories) of a module
+    #     can be included by any module that depends on it.
+    # *   The public headers of a `cc_inc_library` are written to its module
+    #     map as textual headers, so modules that depend on it directly can
+    #     include them. (`precompile_clang_module` handles other textual
+    #     headers of direct dependencies on its own.)
+    #
+    # The includes in those headers can reach any of the owning module's
+    # transitive headers, so they must be staged when precompiling this module
+    # and any module that depends on it.
+    if compilation_context and (
+        exclude_headers or
+        has_custom_module_map or
+        aspect_ctx.rule.kind == "cc_inc_library"
+    ):
+        unchecked_include_headers = depset(
+            compilation_context.direct_textual_headers,
+            transitive = [compilation_context.headers],
+        )
+    else:
+        unchecked_include_headers = depset()
+
     output_groups = {}
 
     # Private -D flags might be needed to compile the PCM
     # TODO: Only grab local_defines once that has existed for long enough
-    local_defines = [
-        copt
-        for copt in getattr(attr, "copts", [])
-        if copt.startswith("-D") and "$(" not in copt
-    ]
+    tokenization = not (
+        is_feature_enabled(feature_configuration, "no_copts_tokenization") or
+        "no_copts_tokenization" in requested_features
+    )
+    local_defines = []
+    for copt in getattr(attr, "copts", []):
+        if copt.startswith("-D") and "$(" not in copt:
+            # Match the Bourne shell tokenization applied by C/C++ rules so
+            # that the PCM action receives the same argument value.
+            if tokenization:
+                # TODO: https://github.com/bazelbuild/bazel/issues/8389
+                local_defines.extend(aspect_ctx.tokenize(copt))
+            else:
+                local_defines.append(copt)
     for define in getattr(attr, "local_defines", []):
         local_defines.append("-D" + define)
 
@@ -439,6 +503,7 @@ def _handle_module(
         toolchains = toolchains,
         target_name = target.label.name,
         toolchain_type = toolchain_type,
+        unchecked_include_headers = unchecked_include_headers,
         user_compile_flags = local_defines,
     )
     precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
@@ -449,6 +514,7 @@ def _handle_module(
         module_map = module_map_file,
         precompiled_module = precompiled_module,
         strict_includes = strict_includes,
+        unchecked_include_headers = unchecked_include_headers,
     )
 
     # If we have a `swift_overlay` in the aspect hints of this target, compile
@@ -467,6 +533,7 @@ def _handle_module(
                     create_swift_module_context(
                         name = module_name,
                         clang = clang_module_context,
+                        label = target.label,
                     ),
                 ],
                 direct_swift_infos = direct_swift_infos,
@@ -499,6 +566,7 @@ def _handle_module(
                 create_swift_module_context(
                     name = module_name,
                     clang = clang_module_context,
+                    label = target.label,
                     swift = overlay_swift_module,
                 ),
             ],
@@ -806,10 +874,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
     )
 
     if interop_info and not module_name:
-        module_name = derive_swift_module_name(
-            target.label,
-            feature_configuration = feature_configuration,
-        )
+        module_name = derive_swift_module_name(target.label)
 
     if interop_info or ObjcInfo in target or CcInfo in target:
         return providers + _handle_module(
@@ -819,6 +884,7 @@ def _swift_clang_module_aspect_impl(target, aspect_ctx, toolchain_type):
             feature_configuration = feature_configuration,
             module_map_file = module_map_file,
             module_name = module_name,
+            requested_features = requested_features,
             direct_swift_infos = direct_swift_infos,
             swift_infos = swift_infos,
             toolchains = toolchains,

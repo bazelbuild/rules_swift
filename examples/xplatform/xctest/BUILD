@@ -8,8 +8,8 @@ swift_test(
         "SimpleTests.swift",
     ],
     env = {
-        "XCTEST_ENV_VAR": "TRUE",
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+        "XCTEST_ENV_VAR": "TRUE",
     },
 )
 
@@ -19,8 +19,8 @@ swift_test(
         "SimpleTests.swift",
     ],
     env = {
-        "XCTEST_ENV_VAR": "TRUE",
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+        "XCTEST_ENV_VAR": "TRUE",
     },
     features = ["tsan"],
     # TODO: Re-enable on Linux once Swift race is figured out (or maybe Swift is upgraded)
@@ -33,8 +33,8 @@ swift_test(
         "SimpleTests.swift",
     ],
     env = {
-        "XCTEST_ENV_VAR": "TRUE",
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+        "XCTEST_ENV_VAR": "TRUE",
     },
     features = ["asan"],
     # TODO: Re-enable on Linux once Swift memory leak is figured out (or maybe Swift is upgraded)
@@ -47,8 +47,8 @@ swift_test(
         "SimpleTests.swift",
     ],
     env = {
-        "XCTEST_ENV_VAR": "TRUE",
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+        "XCTEST_ENV_VAR": "TRUE",
     },
     features = ["ubsan"],
     # TODO: Re-enable on Linux if Swift ever supports ubsan on linux
@@ -61,8 +61,8 @@ swift_test(
         "SimpleTests.swift",
     ],
     env = {
-        "XCTEST_ENV_VAR": "TRUE",
         "XCTEST_BINDIR_ENV_VAR": "$(BINDIR)",
+        "XCTEST_ENV_VAR": "TRUE",
     },
     features = [
         "tsan",

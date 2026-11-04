@@ -23,9 +23,9 @@ load(
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
 _WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
     "-force-single-frontend-invocation": True,
+    "-whole-module-optimization": True,
+    "-wmo": True,
 }
 
 def features_from_swiftcopts(swiftcopts):
@@ -88,30 +88,6 @@ def is_wmo_manually_requested(user_compile_flags):
         if copt in _WMO_FLAGS:
             return True
     return False
-
-def wmo_features_from_swiftcopts(swiftcopts):
-    """Returns a list of features to enable based on `--swiftcopt` flags.
-
-    Since `--swiftcopt` flags are hooked into the action configuration when the
-    toolchain is configured, it's not possible for individual actions to query
-    them easily if those flags may determine the nature of outputs (for example,
-    single- vs. multi-threaded WMO). The toolchain can call this function to map
-    those flags to private features that can be queried instead.
-
-    Args:
-        swiftcopts: The list of command line flags that were passed using
-            `--swiftcopt`.
-
-    Returns:
-        A list (possibly empty) of strings denoting feature names that should be
-        enabled on the toolchain.
-    """
-    features = []
-    if is_wmo_manually_requested(user_compile_flags = swiftcopts):
-        features.append(SWIFT_FEATURE__WMO_IN_SWIFTCOPTS)
-    if find_num_threads_flag_value(user_compile_flags = swiftcopts) == 1:
-        features.append(SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS)
-    return features
 
 def _safe_int(s):
     """Returns the base-10 integer value of `s` or `None` if it is invalid.

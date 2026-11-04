@@ -10,17 +10,20 @@ load(":swift_module_mapping.bzl", "swift_module_mapping")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(
+    ["providers.bzl"],
+    visibility = ["//doc:__pkg__"],
+)
+
 licenses(["notice"])
 
 bzl_library(
     name = "extensions",
     srcs = ["extensions.bzl"],
     deps = [
-        "//swift/internal:repositories",
         "//swift/internal/extensions:standalone_toolchain",
-        "//swift/internal/extensions:swift_releases",
+        "//swift/internal/extensions:swift_sdk_releases",
         "//swift/internal/extensions:toolchains",
-        "@bazel_features//:features",
     ],
 )
 
@@ -50,6 +53,7 @@ bzl_library(
         "//swift/internal:binary_attrs",
         "//swift/internal:compiling",
         "//swift/internal:feature_names",
+        "//swift/internal:features",
         "//swift/internal:linking",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
@@ -395,6 +399,18 @@ per_module_swiftcopt_flag(
 bool_flag(
     name = "universal_tools",
     build_setting_default = False,
+)
+
+# Use the protobuf persistent worker protocol instead of JSON.
+bool_flag(
+    name = "use_proto_worker",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_proto_worker_enabled",
+    flag_values = {":use_proto_worker": "true"},
+    visibility = ["//tools/worker:__pkg__"],
 )
 
 config_setting(

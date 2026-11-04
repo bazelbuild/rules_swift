@@ -109,21 +109,6 @@ swift_proto_library = rule(
             requires_srcs = False,
         ),
         {
-            "protos": attr.label_list(
-                doc = """\
-A list of `proto_library` targets (or targets producing `ProtoInfo`),
-from which the Swift source files should be generated.
-""",
-                providers = [ProtoInfo],
-            ),
-            "compilers": attr.label_list(
-                default = ["//proto/compilers:swift_proto"],
-                doc = """\
-One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
-from which the Swift protos will be generated.
-""",
-                providers = [SwiftProtoCompilerInfo],
-            ),
             "additional_compiler_deps": swift_deps_attr(
                 aspects = [
                     swift_clang_module_aspect,
@@ -142,12 +127,27 @@ See the documentation of the respective compiler rules for more information
 on which fields are accepted and how they are used.
 """,
             ),
+            "compilers": attr.label_list(
+                default = ["//proto/compilers:swift_proto"],
+                doc = """\
+One or more `swift_proto_compiler` targets (or targets producing `SwiftProtoCompilerInfo`),
+from which the Swift protos will be generated.
+""",
+                providers = [SwiftProtoCompilerInfo],
+            ),
+            "protos": attr.label_list(
+                doc = """\
+A list of `proto_library` targets (or targets producing `ProtoInfo`),
+from which the Swift source files should be generated.
+""",
+                providers = [ProtoInfo],
+            ),
         },
     ),
     doc = """\
 Generates a Swift static library from one or more targets producing `ProtoInfo`.
 
-```python
+```bzl
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 
@@ -165,7 +165,7 @@ swift_proto_library(
 If your protos depend on protos from other targets, add dependencies between the
 swift_proto_library targets which mirror the dependencies between the proto targets.
 
-```python
+```bzl
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("//proto:swift_proto_library.bzl", "swift_proto_library")
 

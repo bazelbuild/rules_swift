@@ -208,7 +208,7 @@ Provides information needed to generate Swift code from `ProtoInfo` providers
 ## SwiftProtoInfo
 
 <pre>
-SwiftProtoInfo(<a href="#SwiftProtoInfo-module_name">module_name</a>, <a href="#SwiftProtoInfo-module_mappings">module_mappings</a>, <a href="#SwiftProtoInfo-direct_pbswift_files">direct_pbswift_files</a>, <a href="#SwiftProtoInfo-pbswift_files">pbswift_files</a>)
+SwiftProtoInfo(<a href="#SwiftProtoInfo-direct_pbswift_files">direct_pbswift_files</a>, <a href="#SwiftProtoInfo-module_mappings">module_mappings</a>, <a href="#SwiftProtoInfo-module_name">module_name</a>, <a href="#SwiftProtoInfo-pbswift_files">pbswift_files</a>)
 </pre>
 
 Propagates Swift-specific information about a `proto_library`.
@@ -217,9 +217,9 @@ Propagates Swift-specific information about a `proto_library`.
 
 | Name  | Description |
 | :------------- | :------------- |
-| <a id="SwiftProtoInfo-module_name"></a>module_name |  The name of the Swift module compiled from the `swift_proto_library` which produced this provider.    |
-| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  `list` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules. This allows messages that reference messages in other libraries to import those modules in generated code.    |
 | <a id="SwiftProtoInfo-direct_pbswift_files"></a>direct_pbswift_files |  `list` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the `ProtoInfo` providers of the direct proto dependencies of the `swift_proto_library` target.    |
+| <a id="SwiftProtoInfo-module_mappings"></a>module_mappings |  `list` of `struct`s. Each struct contains `module_name` and `proto_file_paths` fields that denote the transitive mappings from `.proto` files to Swift modules. This allows messages that reference messages in other libraries to import those modules in generated code.    |
+| <a id="SwiftProtoInfo-module_name"></a>module_name |  The name of the Swift module compiled from the `swift_proto_library` which produced this provider.    |
 | <a id="SwiftProtoInfo-pbswift_files"></a>pbswift_files |  `depset` of `File`s. The Swift source files (e.g. `.pb.swift`) generated from the `ProtoInfo` providers of the direct and transitive transitive proto dependencies of the `swift_proto_library` target.    |
 
 
@@ -266,10 +266,11 @@ Propagates synthesized Swift interfaces for modules.
 <pre>
 SwiftToolchainInfo(<a href="#SwiftToolchainInfo-action_configs">action_configs</a>, <a href="#SwiftToolchainInfo-cc_language">cc_language</a>, <a href="#SwiftToolchainInfo-cc_toolchain_info">cc_toolchain_info</a>, <a href="#SwiftToolchainInfo-clang_implicit_deps_providers">clang_implicit_deps_providers</a>,
                    <a href="#SwiftToolchainInfo-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#SwiftToolchainInfo-cross_import_overlays">cross_import_overlays</a>, <a href="#SwiftToolchainInfo-debug_outputs_provider">debug_outputs_provider</a>,
-                   <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>, <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>, <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>,
-                   <a href="#SwiftToolchainInfo-generated_header_module_implicit_deps_providers">generated_header_module_implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-implicit_deps_providers">implicit_deps_providers</a>,
-                   <a href="#SwiftToolchainInfo-module_aliases">module_aliases</a>, <a href="#SwiftToolchainInfo-package_configurations">package_configurations</a>, <a href="#SwiftToolchainInfo-requested_features">requested_features</a>, <a href="#SwiftToolchainInfo-root_dir">root_dir</a>, <a href="#SwiftToolchainInfo-runtime">runtime</a>,
-                   <a href="#SwiftToolchainInfo-swift_worker">swift_worker</a>, <a href="#SwiftToolchainInfo-system_modules">system_modules</a>, <a href="#SwiftToolchainInfo-implicit_system_modules">implicit_system_modules</a>, <a href="#SwiftToolchainInfo-test_configuration">test_configuration</a>,
+                   <a href="#SwiftToolchainInfo-developer_dirs">developer_dirs</a>, <a href="#SwiftToolchainInfo-dynamic_runtime_cc_info">dynamic_runtime_cc_info</a>, <a href="#SwiftToolchainInfo-entry_point_linkopts_provider">entry_point_linkopts_provider</a>,
+                   <a href="#SwiftToolchainInfo-feature_allowlists">feature_allowlists</a>, <a href="#SwiftToolchainInfo-generated_header_module_implicit_deps_providers">generated_header_module_implicit_deps_providers</a>,
+                   <a href="#SwiftToolchainInfo-implicit_deps_providers">implicit_deps_providers</a>, <a href="#SwiftToolchainInfo-implicit_system_modules">implicit_system_modules</a>, <a href="#SwiftToolchainInfo-module_aliases">module_aliases</a>,
+                   <a href="#SwiftToolchainInfo-package_configurations">package_configurations</a>, <a href="#SwiftToolchainInfo-requested_features">requested_features</a>, <a href="#SwiftToolchainInfo-root_dir">root_dir</a>, <a href="#SwiftToolchainInfo-static_runtime_cc_info">static_runtime_cc_info</a>,
+                   <a href="#SwiftToolchainInfo-swift_worker">swift_worker</a>, <a href="#SwiftToolchainInfo-swift_worker_protocol">swift_worker_protocol</a>, <a href="#SwiftToolchainInfo-system_modules">system_modules</a>, <a href="#SwiftToolchainInfo-test_configuration">test_configuration</a>,
                    <a href="#SwiftToolchainInfo-tool_configs">tool_configs</a>, <a href="#SwiftToolchainInfo-unsupported_features">unsupported_features</a>)
 </pre>
 
@@ -288,18 +289,20 @@ that use the toolchain.
 | <a id="SwiftToolchainInfo-cross_import_overlays"></a>cross_import_overlays |  A list of `SwiftCrossImportOverlayInfo` providers whose `SwiftInfo` providers will be automatically injected into the dependencies of Swift compilations if their declaring module and bystanding module are both already declared as dependencies.    |
 | <a id="SwiftToolchainInfo-debug_outputs_provider"></a>debug_outputs_provider |  An optional function that provides toolchain-specific logic around the handling of additional debug outputs for `swift_binary` and `swift_test` targets.<br><br>If specified, this function must take the following keyword arguments:<br><br>*   `ctx`: The rule context of the calling binary or test rule.<br><br>It must return a `struct` with the following fields:<br><br>*   `additional_outputs`: Additional outputs expected from the linking action.<br><br>*   `variables_extension`: A dictionary of additional crosstool variables to     pass to the linking action.    |
 | <a id="SwiftToolchainInfo-developer_dirs"></a>developer_dirs |  A list of `structs` containing the following fields:<br><br>*   `developer_path_label`: A `string` representing the type of developer path.<br><br>*   `path`: A `string` representing the path to the developer framework.    |
+| <a id="SwiftToolchainInfo-dynamic_runtime_cc_info"></a>dynamic_runtime_cc_info |  The `CcInfo` that selects the toolchain's ordinary dynamic Swift runtime, or `None` if the toolchain supplies its runtime through implicit dependencies. Final links select this provider unless `swift.static_stdlib` is enabled; it is not propagated by libraries.    |
 | <a id="SwiftToolchainInfo-entry_point_linkopts_provider"></a>entry_point_linkopts_provider |  A function that returns flags that should be passed to the linker to control the name of the entry point of a linked binary for rules that customize their entry point.<br><br>This function must take the following keyword arguments:<br><br>*   `entry_point_name`: The name of the entry point function, as was passed to     the Swift compiler using the `-entry-point-function-name` flag.<br><br>It must return a `struct` with the following fields:<br><br>*   `linkopts`: A list of strings that will be passed as additional linker flags     when linking a binary with a custom entry point.    |
 | <a id="SwiftToolchainInfo-feature_allowlists"></a>feature_allowlists |  A list of `SwiftFeatureAllowlistInfo` providers that allow or prohibit packages from requesting or disabling features.    |
 | <a id="SwiftToolchainInfo-generated_header_module_implicit_deps_providers"></a>generated_header_module_implicit_deps_providers |  A `struct` with the following fields, which are providers from targets that should be treated as compile-time inputs to actions that precompile the explicit module for the generated Objective-C header of a Swift module:<br><br>*   `cc_infos`: A list of `CcInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>This is used to provide modular dependencies for the fixed inclusions (Darwin, Foundation) that are unconditionally emitted in those files.<br><br>For ease of use, this field is never `None`; it will always be a valid `struct` containing the fields described above, even if those lists are empty.    |
 | <a id="SwiftToolchainInfo-implicit_deps_providers"></a>implicit_deps_providers |  A `struct` with the following fields, which represent providers from targets that should be added as implicit dependencies of any Swift compilation or linking target (but not to precompiled explicit C/Objective-C modules):<br><br>*   `cc_infos`: A list of `CcInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>For ease of use, this field is never `None`; it will always be a valid `struct` containing the fields described above, even if those lists are empty.    |
+| <a id="SwiftToolchainInfo-implicit_system_modules"></a>implicit_system_modules |  A `struct` with in the same shape as `system_modules` for the system modules that every Swift compilation implicitly requires.    |
 | <a id="SwiftToolchainInfo-module_aliases"></a>module_aliases |  A `SwiftModuleAliasesInfo` provider that defines the module aliases to use during compilation.    |
 | <a id="SwiftToolchainInfo-package_configurations"></a>package_configurations |  A list of `SwiftPackageConfigurationInfo` providers that specify additional compilation configuration options that are applied to targets on a per-package basis.    |
 | <a id="SwiftToolchainInfo-requested_features"></a>requested_features |  `List` of `string`s. Features that should be implicitly enabled by default for targets built using this toolchain, unless overridden by the user by listing their negation in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
 | <a id="SwiftToolchainInfo-root_dir"></a>root_dir |  `String`. The workspace-relative root directory of the toolchain.    |
-| <a id="SwiftToolchainInfo-runtime"></a>runtime |  `List` of `File`s. Files required at runtime by compiled executables. They will be added to the input root at execution time.    |
+| <a id="SwiftToolchainInfo-static_runtime_cc_info"></a>static_runtime_cc_info |  A `CcInfo` that selects the static Swift runtime, or `None` if the toolchain does not support static Swift runtime linking. Final links select this provider when `swift.static_stdlib` is enabled; it is not propagated by libraries.    |
 | <a id="SwiftToolchainInfo-swift_worker"></a>swift_worker |  `File`. The executable representing the worker executable used to invoke the compiler and other Swift tools (for both incremental and non-incremental compiles).    |
+| <a id="SwiftToolchainInfo-swift_worker_protocol"></a>swift_worker_protocol |  `String`. The persistent worker protocol ("json" or "proto") supported by `swift_worker`.    |
 | <a id="SwiftToolchainInfo-system_modules"></a>system_modules |  A `struct` with the following fields, which represent providers from targets that should be added as implicit dependencies of any compilation or linking target:<br><br>*   `cc_infos`: A list of `CcInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>*   `swift_infos`: A list of `SwiftInfo` providers from targets specified as the     toolchain's implicit dependencies.<br><br>For ease of use, this field is never `None`; it will always be a valid `struct` containing the fields described above, even if those lists are empty.    |
-| <a id="SwiftToolchainInfo-implicit_system_modules"></a>implicit_system_modules |  A `struct` with in the same shape as `system_modules` for the system modules that every Swift compilation implicitly requires.    |
 | <a id="SwiftToolchainInfo-test_configuration"></a>test_configuration |  `Struct` containing the following fields:<br><br>*   `binary_name`: A template string used to compute the name of the output     binary for `swift_test` rules. Any occurrences of the string `"{name}"` will     be substituted by the name of the target.<br><br>*   `env`: A `dict` of environment variables to be set when running tests     that were built with this toolchain.<br><br>*   `execution_requirements`: A `dict` of execution requirements for tests     that were built with this toolchain.<br><br>*   `objc_test_discovery`: A Boolean value indicating whether test targets     should discover tests dynamically using the Objective-C runtime.<br><br>*   `test_linking_contexts`: A list of `CcLinkingContext`s that provide     additional flags to use when linking test binaries.<br><br>This is used, for example, with Xcode-based toolchains to ensure that the `xctest` helper and coverage tools are found in the correct developer directory when running tests.    |
 | <a id="SwiftToolchainInfo-tool_configs"></a>tool_configs |  This field is an internal implementation detail of the build rules.    |
 | <a id="SwiftToolchainInfo-unsupported_features"></a>unsupported_features |  `List` of `string`s. Features that should be implicitly disabled by default for targets built using this toolchain, unless overridden by the user by listing them in the `features` attribute of a target/package or in the `--features` command line flag.<br><br>These features determine various compilation and debugging behaviors of the Swift build rules, and they are also passed to the C++ APIs used when linking (so features defined in CROSSTOOL may be used here).    |
@@ -310,7 +313,7 @@ that use the toolchain.
 ## SwiftToolsInfo
 
 <pre>
-SwiftToolsInfo(<a href="#SwiftToolsInfo-swift_driver">swift_driver</a>, <a href="#SwiftToolsInfo-swift_autolink_extract">swift_autolink_extract</a>, <a href="#SwiftToolsInfo-swift_symbolgraph_extract">swift_symbolgraph_extract</a>, <a href="#SwiftToolsInfo-additional_inputs">additional_inputs</a>)
+SwiftToolsInfo(<a href="#SwiftToolsInfo-additional_inputs">additional_inputs</a>, <a href="#SwiftToolsInfo-swift_autolink_extract">swift_autolink_extract</a>, <a href="#SwiftToolsInfo-swift_driver">swift_driver</a>, <a href="#SwiftToolsInfo-swift_symbolgraph_extract">swift_symbolgraph_extract</a>)
 </pre>
 
 Propagates information about Swift toolchain tools that can be specified as
@@ -323,10 +326,10 @@ dependencies, ensuring they are available in the execution environment.
 
 | Name  | Description |
 | :------------- | :------------- |
-| <a id="SwiftToolsInfo-swift_driver"></a>swift_driver |  `File`. The Swift driver executable that orchestrates compilation and linking operations. This is the main entry point for invoking the Swift compiler toolchain.    |
-| <a id="SwiftToolsInfo-swift_autolink_extract"></a>swift_autolink_extract |  `File`. The executable that extracts autolink information from object files. This tool is used to determine which libraries need to be linked based on import statements in Swift code.    |
-| <a id="SwiftToolsInfo-swift_symbolgraph_extract"></a>swift_symbolgraph_extract |  `File`. The executable that extracts symbol graph information from Swift modules. This tool generates structured data about APIs, which can be used for documentation generation and other tooling purposes.    |
 | <a id="SwiftToolsInfo-additional_inputs"></a>additional_inputs |  `List` of `File`s. Additional files to add to the action input root when calling these tools.    |
+| <a id="SwiftToolsInfo-swift_autolink_extract"></a>swift_autolink_extract |  `File`. The executable that extracts autolink information from object files. This tool is used to determine which libraries need to be linked based on import statements in Swift code.    |
+| <a id="SwiftToolsInfo-swift_driver"></a>swift_driver |  `File`. The Swift driver executable that orchestrates compilation and linking operations. This is the main entry point for invoking the Swift compiler toolchain.    |
+| <a id="SwiftToolsInfo-swift_symbolgraph_extract"></a>swift_symbolgraph_extract |  `File`. The executable that extracts symbol graph information from Swift modules. This tool generates structured data about APIs, which can be used for documentation generation and other tooling purposes.    |
 
 
 <a id="create_clang_module_inputs"></a>
@@ -334,7 +337,8 @@ dependencies, ensuring they are available in the execution environment.
 ## create_clang_module_inputs
 
 <pre>
-create_clang_module_inputs(*, <a href="#create_clang_module_inputs-compilation_context">compilation_context</a>, <a href="#create_clang_module_inputs-module_map">module_map</a>, <a href="#create_clang_module_inputs-precompiled_module">precompiled_module</a>, <a href="#create_clang_module_inputs-strict_includes">strict_includes</a>)
+create_clang_module_inputs(*, <a href="#create_clang_module_inputs-compilation_context">compilation_context</a>, <a href="#create_clang_module_inputs-module_map">module_map</a>, <a href="#create_clang_module_inputs-precompiled_module">precompiled_module</a>, <a href="#create_clang_module_inputs-strict_includes">strict_includes</a>,
+                           <a href="#create_clang_module_inputs-unchecked_include_headers">unchecked_include_headers</a>)
 </pre>
 
 Creates a value representing a Clang module used as a Swift dependency.
@@ -348,6 +352,7 @@ Creates a value representing a Clang module used as a Swift dependency.
 | <a id="create_clang_module_inputs-module_map"></a>module_map |  The text module map file that defines this module. This argument may be specified as a `File` or as a `string`; in the latter case, it is assumed to be the path to a file that cannot be provided as an action input because it is outside the workspace (for example, the module map for a module from an Xcode SDK).   |  none |
 | <a id="create_clang_module_inputs-precompiled_module"></a>precompiled_module |  A `File` representing the precompiled module (`.pcm` file) if one was emitted for the module. This may be `None` if no explicit module was built for the module; in that case, targets that depend on the module will fall back to the text module map and headers.   |  `None` |
 | <a id="create_clang_module_inputs-strict_includes"></a>strict_includes |  A `depset` of strings representing additional Clang include paths that should be passed to the compiler when this module is a _direct_ dependency of the module being compiled. May be `None`. **This field only exists to support a specific legacy use case and should otherwise not be used, as it is fundamentally incompatible with Swift's import model.**   |  `None` |
+| <a id="create_clang_module_inputs-unchecked_include_headers"></a>unchecked_include_headers |  A `depset` of `File`s that must be present when precompiling any explicit module that depends on this module's precompiled module, because they can be reached by `#include`s that Clang does not layering-check. For example, if this module's module map declares excluded headers, any module that depends on it can include them, and the includes in those headers are not checked, so this should contain all of the transitive headers of this module. If `None` (the default), the module map does not declare any such headers (for example, it only declares modular headers and textual headers that are also in `compilation_context.direct_textual_headers`).   |  `None` |
 
 **RETURNS**
 
@@ -360,7 +365,7 @@ A `struct` containing the values provided as arguments.
 
 <pre>
 create_swift_module_context(*, <a href="#create_swift_module_context-name">name</a>, <a href="#create_swift_module_context-clang">clang</a>, <a href="#create_swift_module_context-const_gather_protocols">const_gather_protocols</a>, <a href="#create_swift_module_context-compilation_context">compilation_context</a>,
-                            <a href="#create_swift_module_context-is_framework">is_framework</a>, <a href="#create_swift_module_context-is_system">is_system</a>, <a href="#create_swift_module_context-swift">swift</a>)
+                            <a href="#create_swift_module_context-is_framework">is_framework</a>, <a href="#create_swift_module_context-is_system">is_system</a>, <a href="#create_swift_module_context-label">label</a>, <a href="#create_swift_module_context-swift">swift</a>)
 </pre>
 
 Creates a value containing Clang/Swift module artifacts of a dependency.
@@ -393,6 +398,7 @@ the set of transitive module names that are propagated by dependencies
 | <a id="create_swift_module_context-compilation_context"></a>compilation_context |  A value returned from `swift_common.create_compilation_context` that contains the context needed to compile the module being built. This may be `None` if the module wasn't compiled from sources.   |  `None` |
 | <a id="create_swift_module_context-is_framework"></a>is_framework |  Indictates whether the module is a framework module. The default value is `False`.   |  `False` |
 | <a id="create_swift_module_context-is_system"></a>is_system |  Indicates whether the module is a system module. The default value is `False`. System modules differ slightly from non-system modules in the way that they are passed to the compiler. For example, non-system modules have their Clang module maps passed to the compiler in both implicit and explicit module builds. System modules, on the other hand, do not have their module maps passed to the compiler in implicit module builds because there is currently no way to indicate that modules declared in a file passed via `-fmodule-map-file` should be treated as system modules even if they aren't declared with the `[system]` attribute, and some system modules may not build cleanly with respect to warnings otherwise. Therefore, it is assumed that any module with `is_system == True` must be able to be found using import search paths in order for implicit module builds to succeed.   |  `False` |
+| <a id="create_swift_module_context-label"></a>label |  The Bazel label of the target that owns the module. This is used to produce actionable diagnostics for Swift layering violations. May be `None` for modules that are not owned by a Bazel target.   |  `None` |
 | <a id="create_swift_module_context-swift"></a>swift |  A value returned by `create_swift_module_inputs` that contains artifacts related to Swift modules, such as the `.swiftmodule`, `.swiftdoc`, and/or `.swiftinterface` files emitted by the compiler. This may be `None` if the module is a pure C/Objective-C module.   |  `None` |
 
 **RETURNS**
@@ -406,8 +412,9 @@ A `struct` containing the given values provided as arguments.
 
 <pre>
 create_swift_module_inputs(*, <a href="#create_swift_module_inputs-ast_files">ast_files</a>, <a href="#create_swift_module_inputs-const_protocols_to_gather">const_protocols_to_gather</a>, <a href="#create_swift_module_inputs-defines">defines</a>, <a href="#create_swift_module_inputs-generated_header">generated_header</a>,
-                           <a href="#create_swift_module_inputs-indexstore">indexstore</a>, <a href="#create_swift_module_inputs-original_module_name">original_module_name</a>, <a href="#create_swift_module_inputs-plugins">plugins</a>, <a href="#create_swift_module_inputs-private_swiftinterface">private_swiftinterface</a>,
-                           <a href="#create_swift_module_inputs-swiftdoc">swiftdoc</a>, <a href="#create_swift_module_inputs-swiftinterface">swiftinterface</a>, <a href="#create_swift_module_inputs-swiftmodule">swiftmodule</a>, <a href="#create_swift_module_inputs-swiftsourceinfo">swiftsourceinfo</a>)
+                           <a href="#create_swift_module_inputs-indexstore">indexstore</a>, <a href="#create_swift_module_inputs-original_module_name">original_module_name</a>, <a href="#create_swift_module_inputs-package_swiftinterface">package_swiftinterface</a>, <a href="#create_swift_module_inputs-plugins">plugins</a>,
+                           <a href="#create_swift_module_inputs-private_swiftinterface">private_swiftinterface</a>, <a href="#create_swift_module_inputs-swiftdoc">swiftdoc</a>, <a href="#create_swift_module_inputs-swiftinterface">swiftinterface</a>, <a href="#create_swift_module_inputs-swiftmodule">swiftmodule</a>,
+                           <a href="#create_swift_module_inputs-swiftsourceinfo">swiftsourceinfo</a>)
 </pre>
 
 Creates a value representing a Swift module use as a Swift dependency.
@@ -423,6 +430,7 @@ Creates a value representing a Swift module use as a Swift dependency.
 | <a id="create_swift_module_inputs-generated_header"></a>generated_header |  A `File` representing the Swift generated header.   |  `None` |
 | <a id="create_swift_module_inputs-indexstore"></a>indexstore |  A `File` representing the directory that contains the index store data generated by the compiler if the `"swift.index_while_building"` feature is enabled, otherwise this will be `None`.   |  `None` |
 | <a id="create_swift_module_inputs-original_module_name"></a>original_module_name |  The original name of the module if it was changed by a module mapping; otherwise, `None`.   |  `None` |
+| <a id="create_swift_module_inputs-package_swiftinterface"></a>package_swiftinterface |  The `.package.swiftinterface` file emitted by the compiler for this module. May be `None` if no package module interface file was emitted.   |  `None` |
 | <a id="create_swift_module_inputs-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers representing compiler plugins that are required by this module and should be loaded by the compiler when this module is directly depended on.   |  `[]` |
 | <a id="create_swift_module_inputs-private_swiftinterface"></a>private_swiftinterface |  The `.private.swiftinterface` file emitted by the compiler for this module. May be `None` if no private module interface file was emitted.   |  `None` |
 | <a id="create_swift_module_inputs-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file emitted by the compiler for this module.   |  none |

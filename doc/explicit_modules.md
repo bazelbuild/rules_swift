@@ -20,6 +20,22 @@ negatively impact the IDE experience, more testing is needed):
 build --features=swift.use_explicit_swift_module_map --host_features=swift.use_explicit_swift_module_map
 ```
 
+## Optional: Header pruning
+
+With explicit modules enabled as above, you can optionally reduce PCM
+compilation inputs by pruning redundant transitive C/Objective-C headers.
+To enable this optimization, add this to your `.bazelrc`:
+
+```
+build --features=swift.layering_check_for_c_deps --host_features=swift.layering_check_for_c_deps
+```
+
+This enables Clang layering checks, so targets must declare direct
+dependencies on the modules their headers include. Required headers are
+retained automatically. If you have enabled
+`swift.headers_always_action_inputs` (disabled by default), disable it
+to allow pruning.
+
 ## Debugging
 
 In order to debug your application built with explicit modules in `lldb`
@@ -39,6 +55,22 @@ NOTE: Until Swift 6.3 / Xcode 26.4, with Swift macros absolute paths
 would still be embedded in the swiftmodule files. This means debugging
 in `lldb` with explicit modules would not work with cached swiftmodules
 and is therefore disabled.
+
+### Module tracking in debug info
+
+With Swift 6.4 / Xcode 27 and newer, `swift.debug_module_path` is enabled by default
+for Xcode toolchains.
+In this mode the compiler writes the `.swiftmodule` path into each object file's
+debug information using `-debug-module-path`. Each explicit module also
+records its dependencies. LLDB uses these paths to find the module files
+it needs for expression evaluation, replacing the previous `-add_ast_path`
+or module-wrapping mechanism. See
+[Module Tracking in Swift Debug Info](https://www.swift.org/blog/module-tracking-in-debug-info/)
+for more details.
+
+Expression evaluation still requires the `.swiftmodule` and `.pcm`
+files at their original or remapped locations. Your build or debugger
+integration must make these files available locally.
 
 ## Using explicit dependencies
 
@@ -148,7 +180,7 @@ this local scanning to happen, you can provide the computed `BUILD` file
 yourself:
 
 ```bzl
-system_sdk = use_extension("//swift:extensions.bzl", "system_sdk")
+system_sdk = use_extension("@rules_swift//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_xcode(
     build_file = "//path/to/vendored.BUILD",
     version = "26.4.0.17E192",
@@ -158,6 +190,17 @@ use_repo(system_sdk, "system_sdk")
 
 This is useful if you trigger remote macOS builds from Linux hosts. It
 is up to you to generate the file with whatever SDKs you need.
+
+If you want to have a vendored BUILD file, but still allow discovering
+other Xcode versions on macOS (which is potentially useful for beta
+Xcode version support), set
+`RULES_SWIFT_SYSTEM_SDK_INCLUDE_LOCAL_XCODES=1` in the environment or add
+`common --repo_env=RULES_SWIFT_SYSTEM_SDK_INCLUDE_LOCAL_XCODES=1` to your
+`.bazelrc.
+
+The vendored file is always used for the configured version. Other
+installed Xcode versions are generated using the SDK selection from
+`configure_sdks`.
 
 This file can be generated with this helper:
 

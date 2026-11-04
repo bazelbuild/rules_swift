@@ -1,6 +1,7 @@
 load("@rules_android//rules:rules.bzl", "android_binary", "android_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//swift:swift_binary.bzl", "swift_binary")
+load("//swift:swift_library.bzl", "swift_library")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 
 licenses(["notice"])
@@ -11,6 +12,12 @@ swift_binary(
     name = "jni_lib",
     srcs = ["jni.swift"],
     linkshared = True,
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "jni_lib_artifacts",
+    srcs = ["jni.swift"],
     tags = FIXTURE_TAGS,
 )
 

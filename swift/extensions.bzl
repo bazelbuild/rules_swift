@@ -14,18 +14,10 @@
 
 """Definitions for bzlmod module extensions."""
 
-load("@bazel_features//:features.bzl", "bazel_features")
-load("//swift/internal:repositories.bzl", "swift_rules_dependencies")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
-load("//swift/internal/extensions:swift_releases.bzl", "SWIFT_RELEASES")
-load(
-    "//swift/internal/extensions:swift_sdk_releases.bzl",
-    "SWIFT_SDK_RELEASES",
-    "swift_sdk_download_url",
-)
+load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 load(
     "//swift/internal/extensions:swift_sdks.bzl",
-    "ANDROID_ARCHS",
     "swift_android_sdk_repository",
     "swift_wasm_sdk_repository",
 )
@@ -40,20 +32,14 @@ load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
 system_sdk = _system_sdk
 
-def _non_module_deps_impl(module_ctx):
-    swift_rules_dependencies()
+def _known_sdk_versions(swift_sdk_releases, sdk):
+    return [
+        version
+        for version in swift_sdk_releases
+        if sdk in swift_sdk_releases[version]
+    ]
 
-    metadata_kwargs = {}
-    if bazel_features.external_deps.extension_metadata_has_reproducible:
-        metadata_kwargs["reproducible"] = True
-
-    return module_ctx.extension_metadata(
-        **metadata_kwargs
-    )
-
-non_module_deps = module_extension(implementation = _non_module_deps_impl)
-
-def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
+def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases):
     """Creates the repositories for a `swift.android_sdk` tag.
 
     Args:
@@ -61,6 +47,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
         toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
+        swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
@@ -68,12 +55,12 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
     """
     sha256 = tag.sha256
     if not sha256:
-        if swift_version not in SWIFT_SDK_RELEASES:
+        if swift_version not in swift_sdk_releases or "android" not in swift_sdk_releases[swift_version]:
             fail("No known Android Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
                 swift_version,
-                SWIFT_SDK_RELEASES.keys(),
+                _known_sdk_versions(swift_sdk_releases, "android"),
             ))
-        sha256 = SWIFT_SDK_RELEASES[swift_version]["android"]
+        sha256 = swift_sdk_releases[swift_version]["android"]
 
     build_file_content = ""
     for platform in platforms:
@@ -89,11 +76,10 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms):
         build_file_content += android_sdk_toolchains_for_platform(
             platform = platform,
             sdk_repository = repository_name,
-            archs = ANDROID_ARCHS,
         )
     return build_file_content
 
-def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
+def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_releases):
     """Creates the repositories for a `swift.wasm_sdk` tag.
 
     Args:
@@ -101,6 +87,7 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
         toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
         swift_version: The Swift release version of that toolchain.
         platforms: The host platforms the toolchain was created for.
+        swift_sdk_releases: Bundled Swift SDK checksum metadata by release.
 
     Returns:
         BUILD file content with the `toolchain` declarations to add to the
@@ -108,12 +95,12 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
     """
     sha256 = tag.sha256
     if not sha256:
-        if swift_version not in SWIFT_SDK_RELEASES:
+        if swift_version not in swift_sdk_releases or "wasm" not in swift_sdk_releases[swift_version]:
             fail("No known WebAssembly Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
                 swift_version,
-                SWIFT_SDK_RELEASES.keys(),
+                _known_sdk_versions(swift_sdk_releases, "wasm"),
             ))
-        sha256 = SWIFT_SDK_RELEASES[swift_version]["wasm"]
+        sha256 = swift_sdk_releases[swift_version]["wasm"]
 
     build_file_content = ""
     for platform in platforms:
@@ -131,17 +118,14 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms):
         )
     return build_file_content
 
-def _sdk_tags_by_toolchain_name(tags, kind):
-    """Groups SDK tags by the toolchain they extend, rejecting duplicates."""
-    tags_by_name = {}
+def _single_sdk_tag(tags, kind):
+    """Returns the SDK tag if present, rejecting duplicates."""
+    sdk_tag = None
     for tag in tags:
-        if tag.toolchain_name in tags_by_name:
-            fail("Only one `{}` tag may be used per toolchain, got multiple for `{}`.".format(
-                kind,
-                tag.toolchain_name,
-            ))
-        tags_by_name[tag.toolchain_name] = tag
-    return tags_by_name
+        if sdk_tag != None:
+            fail("Only one `{}` tag may be used.".format(kind))
+        sdk_tag = tag
+    return sdk_tag
 
 def _standalone_toolchain_impl(module_ctx):
     root_module = None
@@ -153,31 +137,29 @@ def _standalone_toolchain_impl(module_ctx):
     if not root_module:
         fail("Could not find a root module. This should never happen.")
 
-    android_sdk_tags = _sdk_tags_by_toolchain_name(
+    swift_release_metadata = json.decode(
+        module_ctx.read(Label("//swift/internal/extensions:swift_release_metadata.json"), watch = "yes"),
+    )
+    swift_releases = swift_release_metadata["toolchains"]
+    swift_sdk_releases = swift_release_metadata["sdks"]
+
+    android_sdk_tag = _single_sdk_tag(
         root_module.tags.android_sdk,
         "android_sdk",
     )
-    wasm_sdk_tags = _sdk_tags_by_toolchain_name(
+    wasm_sdk_tag = _single_sdk_tag(
         root_module.tags.wasm_sdk,
         "wasm_sdk",
     )
 
-    toolchain_names = [
-        toolchain.name
-        for toolchain in root_module.tags.toolchain
-    ]
-    for toolchain_name in android_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `android_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
-    for toolchain_name in wasm_sdk_tags:
-        if toolchain_name not in toolchain_names:
-            fail("The `wasm_sdk` tag references unknown toolchain `{}`. Please use the name of a `toolchain` tag: {}".format(
-                toolchain_name,
-                toolchain_names,
-            ))
+    if len(root_module.tags.toolchain) > 1:
+        fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
+
+    if not root_module.tags.toolchain:
+        if android_sdk_tag:
+            fail("The `android_sdk` tag requires a `toolchain` tag.")
+        if wasm_sdk_tag:
+            fail("The `wasm_sdk` tag requires a `toolchain` tag.")
 
     toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
@@ -189,16 +171,16 @@ def _standalone_toolchain_impl(module_ctx):
 
         swift_version = toolchain.swift_version
         if toolchain.swift_version_file:
-            swift_version = module_ctx.read(toolchain.swift_version_file).strip()
+            swift_version = module_ctx.read(toolchain.swift_version_file, watch = "yes").strip()
 
-        if not toolchain.platform_sha256 and swift_version not in SWIFT_RELEASES:
+        if not toolchain.platform_sha256 and swift_version not in swift_releases:
             fail("Version `{}` is not supported by this version of rules_swift. Please choose one of: {}".format(
                 swift_version,
-                SWIFT_RELEASES.keys(),
+                swift_releases.keys(),
             ))
 
-        swift_releases = toolchain.platform_sha256.items() or SWIFT_RELEASES[swift_version].items()
-        for platform, sha256 in swift_releases:
+        toolchain_releases = toolchain.platform_sha256.items() or swift_releases[swift_version].items()
+        for platform, sha256 in toolchain_releases:
             repository_name = toolchain.name + "_{}".format(platform)
             standalone_toolchain(
                 name = repository_name,
@@ -211,20 +193,22 @@ def _standalone_toolchain_impl(module_ctx):
                 toolchain_repository = repository_name,
             )
 
-        platforms = [platform for platform, _ in swift_releases]
-        if toolchain.name in android_sdk_tags:
+        platforms = [platform for platform, _ in toolchain_releases]
+        if android_sdk_tag:
             toolchains_build_file_content += _setup_android_sdk(
-                tag = android_sdk_tags[toolchain.name],
+                tag = android_sdk_tag,
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
+                swift_sdk_releases = swift_sdk_releases,
             )
-        if toolchain.name in wasm_sdk_tags:
+        if wasm_sdk_tag:
             toolchains_build_file_content += _setup_wasm_sdk(
-                tag = wasm_sdk_tags[toolchain.name],
+                tag = wasm_sdk_tag,
                 toolchain_name = toolchain.name,
                 swift_version = swift_version,
                 platforms = platforms,
+                swift_sdk_releases = swift_sdk_releases,
             )
 
         toolchains_repository(
@@ -232,13 +216,7 @@ def _standalone_toolchain_impl(module_ctx):
             build_file_content = toolchains_build_file_content,
         )
 
-    metadata_kwargs = {}
-    if bazel_features.external_deps.extension_metadata_has_reproducible:
-        metadata_kwargs["reproducible"] = True
-
-    return module_ctx.extension_metadata(
-        **metadata_kwargs
-    )
+    return module_ctx.extension_metadata(reproducible = True)
 
 _android_sdk = tag_class(
     attrs = {
@@ -247,10 +225,6 @@ _android_sdk = tag_class(
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
 versions known to this version of rules_swift.
 """,
-        ),
-        "toolchain_name": attr.string(
-            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
-            mandatory = True,
         ),
     },
     doc = """\
@@ -266,10 +240,6 @@ _wasm_sdk = tag_class(
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
 versions known to this version of rules_swift.
 """,
-        ),
-        "toolchain_name": attr.string(
-            doc = "The name of the `toolchain` tag to add this Swift SDK to.",
-            mandatory = True,
         ),
     },
     doc = """\

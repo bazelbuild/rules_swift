@@ -125,7 +125,7 @@ This mapping is intended to be fairly predictable, but not reversible.
 
 | Name  | Description | Default Value |
 | :------------- | :------------- | :------------- |
-| <a id="derive_swift_module_name-feature_configuration"></a>feature_configuration |  The Swift feature configuration being used when compiling the target. This currently does nothing; it will be used by upcoming changes to manage the migration of module names to raw identifiers that use the Bazel target label.   |  `None` |
+| <a id="derive_swift_module_name-feature_configuration"></a>feature_configuration |  Optional Swift feature configuration. Accepted for compatibility with existing callers; currently unused.   |  `None` |
 | <a id="derive_swift_module_name-args"></a>args |  Either a single argument of type `Label`, or two arguments of type `str` where the first argument is the package name and the second argument is the target name.   |  none |
 
 **RETURNS**
@@ -190,11 +190,11 @@ A C++ `FeatureConfiguration` value (see
 ## swift_common.compile
 
 <pre>
-swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-defines">defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>,
-                     <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>, <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-is_test">is_test</a>,
-                     <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>, <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>,
-                     <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>, <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-toolchains">toolchains</a>,
-                     <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
+swift_common.compile(*, <a href="#swift_common.compile-actions">actions</a>, <a href="#swift_common.compile-additional_inputs">additional_inputs</a>, <a href="#swift_common.compile-cc_infos">cc_infos</a>, <a href="#swift_common.compile-copts">copts</a>, <a href="#swift_common.compile-c_copts">c_copts</a>, <a href="#swift_common.compile-defines">defines</a>,
+                     <a href="#swift_common.compile-local_defines">local_defines</a>, <a href="#swift_common.compile-exec_group">exec_group</a>, <a href="#swift_common.compile-extra_swift_infos">extra_swift_infos</a>, <a href="#swift_common.compile-feature_configuration">feature_configuration</a>,
+                     <a href="#swift_common.compile-generated_header_name">generated_header_name</a>, <a href="#swift_common.compile-hdrs">hdrs</a>, <a href="#swift_common.compile-is_test">is_test</a>, <a href="#swift_common.compile-include_dev_srch_paths">include_dev_srch_paths</a>, <a href="#swift_common.compile-module_name">module_name</a>,
+                     <a href="#swift_common.compile-package_name">package_name</a>, <a href="#swift_common.compile-plugins">plugins</a>, <a href="#swift_common.compile-private_cc_infos">private_cc_infos</a>, <a href="#swift_common.compile-private_swift_infos">private_swift_infos</a>, <a href="#swift_common.compile-srcs">srcs</a>, <a href="#swift_common.compile-swift_infos">swift_infos</a>,
+                     <a href="#swift_common.compile-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.compile-target_name">target_name</a>, <a href="#swift_common.compile-toolchains">toolchains</a>, <a href="#swift_common.compile-toolchain_type">toolchain_type</a>, <a href="#swift_common.compile-workspace_name">workspace_name</a>)
 </pre>
 
 Compiles a Swift module.
@@ -207,12 +207,15 @@ Compiles a Swift module.
 | <a id="swift_common.compile-actions"></a>actions |  The context's `actions` object.   |  none |
 | <a id="swift_common.compile-additional_inputs"></a>additional_inputs |  A list of `File`s representing additional input files that need to be passed to the Swift compile action because they are referenced by compiler flags.   |  `[]` |
 | <a id="swift_common.compile-cc_infos"></a>cc_infos |  A list of `CcInfo` providers that represent C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from a target's dependencies.   |  none |
-| <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the target being built. These flags, along with those from Bazel's Swift configuration fragment (i.e., `--swiftcopt` command line flags) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  `[]` |
+| <a id="swift_common.compile-copts"></a>copts |  A list of compiler flags that apply to the Swift sources in the target being built. These flags, along with those from the `@rules_swift//swift:copt` build setting (typically passed as `--swiftcopt`) are scanned to determine whether whole module optimization is being requested, which affects the nature of the output files.   |  `[]` |
+| <a id="swift_common.compile-c_copts"></a>c_copts |  A list of compiler flags that apply to the C/Objective-C sources in the target being built.   |  `[]` |
 | <a id="swift_common.compile-defines"></a>defines |  Symbols that should be defined by passing `-D` to the compiler.   |  `[]` |
+| <a id="swift_common.compile-local_defines"></a>local_defines |  Symbols defined for this target's Swift and C/Objective-C compilations only, without propagation to dependents.   |  `[]` |
 | <a id="swift_common.compile-exec_group"></a>exec_group |  Runs the Swift compilation action under the given execution group's context. If `None`, the default execution group is used.   |  `None` |
 | <a id="swift_common.compile-extra_swift_infos"></a>extra_swift_infos |  Extra `SwiftInfo` providers that aren't contained by the `deps` of the target being compiled but are required for compilation.   |  `[]` |
 | <a id="swift_common.compile-feature_configuration"></a>feature_configuration |  A feature configuration obtained from `configure_features`.   |  none |
 | <a id="swift_common.compile-generated_header_name"></a>generated_header_name |  The name of the Objective-C generated header that should be generated for this module. If omitted, no header will be generated.   |  `None` |
+| <a id="swift_common.compile-hdrs"></a>hdrs |  Public C/Objective-C headers to export from a mixed-language module. Private headers should be provided via `srcs`.   |  `[]` |
 | <a id="swift_common.compile-is_test"></a>is_test |  Deprecated. This argument will be removed in the next major release. Use the `include_dev_srch_paths` attribute instead. Represents if the `testonly` value of the context.   |  `None` |
 | <a id="swift_common.compile-include_dev_srch_paths"></a>include_dev_srch_paths |  A `bool` that indicates whether the developer framework search paths will be added to the compilation command.   |  `None` |
 | <a id="swift_common.compile-module_name"></a>module_name |  The name of the Swift module being compiled. This must be present and valid; use `derive_swift_module_name` to generate a default from the target's label if needed.   |  none |
@@ -220,7 +223,7 @@ Compiles a Swift module.
 | <a id="swift_common.compile-plugins"></a>plugins |  A list of `SwiftCompilerPluginInfo` providers that represent plugins that should be loaded by the compiler.   |  `[]` |
 | <a id="swift_common.compile-private_cc_infos"></a>private_cc_infos |  A list of `CcInfos`s that represent private (non-propagated) C/Objective-C requirements of the target being compiled, such as Swift-compatible preprocessor defines, header search paths, and so forth. These are typically retrieved from a target's `private_deps`.   |  `[]` |
 | <a id="swift_common.compile-private_swift_infos"></a>private_swift_infos |  A list of `SwiftInfo` providers from private (implementation-only) dependencies of the target being compiled. The modules defined by these providers are used as dependencies of the Swift module being compiled but not of the Clang module for the generated header.   |  `[]` |
-| <a id="swift_common.compile-srcs"></a>srcs |  The Swift source files to compile.   |  none |
+| <a id="swift_common.compile-srcs"></a>srcs |  The source files to compile. Typically this contains only Swift sources, but a mixed language module may contain C/Objective-C sources and private headers as well, and those will be compiled by the underlying C toolchain.   |  none |
 | <a id="swift_common.compile-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers from non-private dependencies of the target being compiled. The modules defined by these providers are used as dependencies of both the Swift module being compiled and the Clang module for the generated header.   |  none |
 | <a id="swift_common.compile-swift_toolchain"></a>swift_toolchain |  The `SwiftToolchainInfo` provider of the toolchain.   |  `None` |
 | <a id="swift_common.compile-target_name"></a>target_name |  The name of the target for which the code is being compiled, which is used to determine unique file paths for the outputs.   |  none |
@@ -622,7 +625,7 @@ check it.
 swift_common.precompile_clang_module(*, <a href="#swift_common.precompile_clang_module-actions">actions</a>, <a href="#swift_common.precompile_clang_module-cc_compilation_context">cc_compilation_context</a>, <a href="#swift_common.precompile_clang_module-exec_group">exec_group</a>,
                                      <a href="#swift_common.precompile_clang_module-feature_configuration">feature_configuration</a>, <a href="#swift_common.precompile_clang_module-module_map_file">module_map_file</a>, <a href="#swift_common.precompile_clang_module-module_name">module_name</a>,
                                      <a href="#swift_common.precompile_clang_module-swift_toolchain">swift_toolchain</a>, <a href="#swift_common.precompile_clang_module-target_name">target_name</a>, <a href="#swift_common.precompile_clang_module-toolchains">toolchains</a>, <a href="#swift_common.precompile_clang_module-toolchain_type">toolchain_type</a>,
-                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>, <a href="#swift_common.precompile_clang_module-user_compile_flags">user_compile_flags</a>)
+                                     <a href="#swift_common.precompile_clang_module-swift_infos">swift_infos</a>, <a href="#swift_common.precompile_clang_module-unchecked_include_headers">unchecked_include_headers</a>, <a href="#swift_common.precompile_clang_module-user_compile_flags">user_compile_flags</a>)
 </pre>
 
 Precompiles an explicit Clang module that is compatible with Swift.
@@ -643,6 +646,7 @@ Precompiles an explicit Clang module that is compatible with Swift.
 | <a id="swift_common.precompile_clang_module-toolchains"></a>toolchains |  The struct containing the Swift and C++ toolchain providers, as returned by `swift_common.find_all_toolchains()`.   |  `None` |
 | <a id="swift_common.precompile_clang_module-toolchain_type"></a>toolchain_type |  The toolchain type of the Swift toolchain.   |  `Label("@rules_swift//toolchains:toolchain_type")` |
 | <a id="swift_common.precompile_clang_module-swift_infos"></a>swift_infos |  A list of `SwiftInfo` providers representing dependencies required to compile this module.   |  `[]` |
+| <a id="swift_common.precompile_clang_module-unchecked_include_headers"></a>unchecked_include_headers |  A `depset` of `File`s that can be reached by `#include`s in the files of this module that Clang does not layering-check, such as all of the module's transitive headers if its module map declares excluded headers. If this is not `None` and `swift.layering_check_for_c_deps` is enabled, only the headers that Clang can read while compiling the module are provided as inputs: the headers of the module and of its direct dependencies, the headers in this `depset`, and the headers of dependencies that don't have a precompiled module or that can be reached by includes that Clang does not check. If `None` (the default), all of the headers in `cc_compilation_context` are provided as inputs, and the returned `clang_module` treats all of them as reachable by such includes.   |  `None` |
 | <a id="swift_common.precompile_clang_module-user_compile_flags"></a>user_compile_flags |  Additional Clang flags to pass to the precompile action. Each flag is forwarded to the underlying clang invocation via `-Xcc`.   |  `[]` |
 
 **RETURNS**

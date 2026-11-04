@@ -61,6 +61,13 @@ swift_library_artifact_collector(
     target_compatible_with = ["@platforms//os:macos"],
 )
 
+swift_library_artifact_collector(
+    name = "toy_module_interface_artifact_collector",
+    swiftinterface = "toy_interface/ToyModule.swiftinterface",
+    tags = FIXTURE_TAGS,
+    target = ":toy_module_library",
+)
+
 swift_library(
     name = "toy_module_library_without_library_evolution",
     srcs = ["ToyModule.swift"],

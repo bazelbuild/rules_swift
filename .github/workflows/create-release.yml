@@ -18,7 +18,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          COPYFILE_DISABLE=1 tar czvf "rules_swift.$TAG.tar.gz" ./*
+          COPYFILE_DISABLE=1 tar czvf "rules_swift.$TAG.tar.gz" ./* .bazelrc
           ./.github/generate-notes.sh "$TAG" | tee notes.md
 
           # Add generated API docs to the release

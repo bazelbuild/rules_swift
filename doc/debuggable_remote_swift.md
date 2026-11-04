@@ -25,7 +25,7 @@ To globally disable debugging options, use the `swift.cacheable_swiftmodules` fe
 
 In a `BUILD` file - in this example, the root `BUILD` file, define the following [`config_setting`](https://docs.bazel.build/versions/master/be/general.html#config_setting). This will allow targets to conditionally depend on the locally built debugging module.
 
-```python
+```bzl
 config_setting(
     name = "debug",
     values = {
@@ -44,7 +44,7 @@ In the `BUILD` file of your choice, define a `swift_library` with:
 
 Here is one way to define the `BUILD` file, using a [`genrule`](https://docs.bazel.build/versions/master/be/general.html#genrule) to create the empty swift file.
 
-```python
+```bzl
 genrule(
     name = "empty",
     outs = ["empty.swift"],
@@ -68,7 +68,7 @@ swift_library(
 
 Finally, for each top-level test target (`ios_unit_test`, `ios_ui_test`*, etc), conditionally add the local debugging module to the deps. This is done via the [debug config](#add-debug-build-config). In the past this also had to be done for `ios_application` targets but that has since been fixed in lldb.
 
-```python
+```bzl
 debug_deps = select({
     "//:debug": ["//some/path:_LocalDebugOptions"],
     "//conditions:default": [],

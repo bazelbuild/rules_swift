@@ -24,11 +24,15 @@ load("//swift/internal:env_expansion.bzl", "expanded_env")
 load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
+    "SWIFT_FEATURE_STATIC_STDLIB",
 )
 load("//swift/internal:features.bzl", "is_feature_enabled")
 load(
     "//swift/internal:linking.bzl",
     "configure_features_for_binary",
+    "entry_point_function_name",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -51,6 +55,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "expand_make_variables",
     "get_providers",
     "include_developer_search_paths",
 )
@@ -86,8 +91,9 @@ def _maybe_parse_as_library_copts(srcs):
     Returns:
         A list of compiler flags to add to `copts`
     """
-    use_parse_as_library = len(srcs) == 1 and \
-                           srcs[0].basename != "main.swift"
+    swift_srcs = [src for src in srcs if src.extension == "swift"]
+    use_parse_as_library = len(swift_srcs) == 1 and \
+                           swift_srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
 def _generate_test_discovery_srcs(
@@ -257,6 +263,9 @@ def _do_compile(
     Returns:
         The same value as would be returned by `compile`.
     """
+    c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+    c_copts = expand_make_variables(ctx, c_copts, "c_copts")
+
     return compile(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
@@ -266,7 +275,9 @@ def _do_compile(
             ctx.attr.copts,
             ctx.attr.swiftc_inputs,
         ) + additional_copts,
+        c_copts = c_copts,
         defines = ctx.attr.defines,
+        local_defines = ctx.attr.local_defines,
         feature_configuration = feature_configuration,
         include_dev_srch_paths = include_dev_srch_paths,
         module_name = module_name,
@@ -285,7 +296,10 @@ def _swift_test_impl(ctx):
         ctx = ctx,
         requested_features = ctx.features,
         toolchains = toolchains,
-        unsupported_features = ctx.disabled_features,
+        # XCTest and Swift Testing are shared libraries whose dependencies use
+        # the dynamic Swift runtime, so a test executable cannot safely link a
+        # separate static copy of that runtime.
+        unsupported_features = ctx.disabled_features + [SWIFT_FEATURE_STATIC_STDLIB],
     )
 
     discover_tests = ctx.attr.discover_tests
@@ -344,10 +358,7 @@ def _swift_test_impl(ctx):
 
     module_name = ctx.attr.module_name
     if not module_name:
-        module_name = derive_swift_module_name(
-            ctx.label,
-            feature_configuration = feature_configuration,
-        )
+        module_name = derive_swift_module_name(ctx.label)
 
     include_dev_srch_paths = include_developer_search_paths(ctx.attr)
 
@@ -411,8 +422,36 @@ def _swift_test_impl(ctx):
         compilation_outputs = cc_common.create_compilation_outputs()
         swift_infos_including_owner = deps_swift_infos
 
+    entry_point_linkopts = []
+
     # If requested, discover tests and generate a runner for them.
     if discover_tests:
+        discovery_module_name = module_name + "__GeneratedTestDiscoveryRunner"
+        discovery_copts = ["-parse-as-library"]
+
+        # Windows fallback aliases cannot override an existing `main`, so
+        # renaming there could run a dependency's main instead of the tests.
+        can_rename_entry_point = not ctx.target_platform_has_constraint(
+            ctx.attr._windows_os_constraint[platform_common.ConstraintValueInfo],
+        )
+        if can_rename_entry_point and not is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_NO_ENTRY_POINT_RENAME,
+        ):
+            # A dependency may contain its own `@main`. Give the generated
+            # runner a distinct entry point and select it when linking so
+            # that tests can use that dependency without running its main.
+            entry_point_name = entry_point_function_name(discovery_module_name)
+            discovery_copts.extend([
+                "-Xfrontend",
+                "-entry-point-function-name",
+                "-Xfrontend",
+                entry_point_name,
+            ])
+            entry_point_linkopts = toolchains.swift.entry_point_linkopts_provider(
+                entry_point_name = entry_point_name,
+            ).linkopts
+
         discovery_srcs = _generate_test_discovery_srcs(
             actions = ctx.actions,
             deps = ctx.attr.deps,
@@ -426,11 +465,21 @@ def _swift_test_impl(ctx):
         discovery_compile_result = _do_compile(
             ctx = ctx,
             # The generated test runner uses `@main`.
-            additional_copts = ["-parse-as-library"],
+            additional_copts = discovery_copts,
             cc_infos = test_runner_deps_cc_infos,
-            feature_configuration = feature_configuration,
+            # The generated runner's deps are internal implementation details.
+            # Runtime test discovery does not require importing every test module.
+            feature_configuration = configure_features_for_binary(
+                ctx = ctx,
+                requested_features = ctx.features,
+                toolchains = toolchains,
+                unsupported_features = ctx.disabled_features + [
+                    SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+                    SWIFT_FEATURE_STATIC_STDLIB,
+                ],
+            ),
             include_dev_srch_paths = include_dev_srch_paths,
-            module_name = module_name + "__GeneratedTestDiscoveryRunner",
+            module_name = discovery_module_name,
             name = ctx.label.name + "__GeneratedTestDiscoveryRunner",
             package_name = ctx.attr.package_name,
             srcs = discovery_srcs,
@@ -495,7 +544,7 @@ def _swift_test_impl(ctx):
             ctx,
             ctx.attr.linkopts,
             ctx.attr.swiftc_inputs,
-        ) + ctx.fragments.cpp.linkopts,
+        ) + entry_point_linkopts + ctx.fragments.cpp.linkopts,
         variables_extension = variables_extension,
     )
 
@@ -516,9 +565,7 @@ def _swift_test_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
-                transitive_files = depset(
-                    transitive = [toolchains.swift.runtime],
-                ),
+                transitive_files = linking_outputs.runtime_dynamic_libraries,
             ),
         ),
         OutputGroupInfo(
@@ -535,6 +582,7 @@ def _swift_test_impl(ctx):
                 create_swift_module_context(
                     name = module_context.name,
                     compilation_context = module_context.compilation_context,
+                    label = getattr(module_context, "label", None),
                     # The rest of the fields are intentionally ommited, as we
                     # only want to expose the compilation_context
                 )
@@ -608,6 +656,9 @@ environment when the test is executed by `bazel test`.
                 default = [
                     Label("//tools/test_observer"),
                 ],
+            ),
+            "_windows_os_constraint": attr.label(
+                default = Label("@platforms//os:windows"),
             ),
         },
     ),

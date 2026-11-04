@@ -22,10 +22,12 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
 #include <string>
 
+#include "tools/common/file_system.h"
 #include "tools/common/temp_file.h"
 #include "tools/worker/output_file_map.h"
 #include "tools/worker/swift_runner.h"
@@ -33,29 +35,7 @@
 
 namespace {
 
-#if defined(_WIN32)
-// On Windows, `std::filesystem` honors the legacy MAX_PATH (260 character) limit
-// unless a path uses the extended-length "\\?\" prefix. The incremental storage
-// area (`bazel-out/.../_swift_incremental/...`) routinely produces paths longer
-// than that, so normalize to an absolute, normalized, backslash-separated path
-// with the prefix applied before performing filesystem operations.
-std::filesystem::path LongPath(const std::filesystem::path& path) {
-  std::error_code ec;
-  std::filesystem::path absolute = std::filesystem::absolute(path, ec);
-  if (ec) {
-    return path;
-  }
-  std::wstring native = absolute.lexically_normal().make_preferred().wstring();
-  if (native.compare(0, 4, L"\\\\?\\") != 0) {
-    native.insert(0, L"\\\\?\\");
-  }
-  return std::filesystem::path(native);
-}
-#else
-std::filesystem::path LongPath(const std::filesystem::path& path) {
-  return path;
-}
-#endif
+using bazel_rules_swift::LongPath;
 
 bool copy_file(const std::filesystem::path& from,
                const std::filesystem::path& to, std::error_code& ec) noexcept {
@@ -68,59 +48,65 @@ bool copy_file(const std::filesystem::path& from,
   ec = std::error_code();
   return true;
 #else
-  return std::filesystem::copy_file(LongPath(from), LongPath(to), ec);
+  return std::filesystem::copy_file(
+      LongPath(from), LongPath(to),
+      std::filesystem::copy_options::overwrite_existing, ec);
 #endif
 }
 
-static bool TouchFile(const std::filesystem::path& path,
-                      std::ostringstream& output) {
+bool RemoveFile(const std::filesystem::path& path,
+                std::ostream& stderr_stream) {
   std::error_code ec;
-  if (!path.parent_path().empty()) {
-    std::filesystem::create_directories(LongPath(path.parent_path()), ec);
-    if (ec) {
-      output << "swift_worker: Could not create directory "
-             << path.parent_path() << " (" << ec.message() << ")\n";
-      return false;
-    }
-  }
-
-  std::ofstream stream(LongPath(path));
-  if (!stream) {
-    output << "swift_worker: Could not create " << path << "\n";
+  std::filesystem::remove(LongPath(path), ec);
+  if (ec) {
+    stderr_stream << "swift_worker: Could not remove " << path << " ("
+                  << ec.message() << ")\n";
     return false;
   }
-
   return true;
 }
 
-static bool CreateVerifyOutputs(const std::string& output_file_map_path,
-                                const std::string& emit_module_path,
-                                std::ostringstream& output) {
-  if (!output_file_map_path.empty()) {
-    OutputFileMap output_file_map;
-    output_file_map.ReadFromPath(output_file_map_path, "", "");
-    for (const auto& expected_output_pair :
-         output_file_map.incremental_outputs()) {
-      if (!TouchFile(expected_output_pair.first, output)) {
-        return false;
-      }
+bool IsModuleFile(const std::string& path) {
+  const std::string extension =
+      std::filesystem::path(path).extension().string();
+  return extension == ".swiftmodule" || extension == ".swiftdoc" ||
+         extension == ".swiftsourceinfo" || extension == ".swiftinterface";
+}
+
+// Returns whether any changed module digest was ignored. Swift checks modules
+// newer than the previous build's start; .priors is written afterward, making
+// its mtime a conservative cutoff. Include .swiftdoc and .swiftsourceinfo,
+// which can change alongside the module without affecting compilation.
+bool IgnoreNewerModuleDigests(nlohmann::json& previous,
+                              const nlohmann::json& current,
+                              const std::filesystem::path& priors_path) {
+  if (!previous.is_object() || !previous.contains("inputs") ||
+      !previous["inputs"].is_object()) {
+    return false;
+  }
+  std::error_code ec;
+  auto priors_time =
+      std::filesystem::last_write_time(LongPath(priors_path), ec);
+  if (ec) {
+    return false;
+  }
+  auto& previous_inputs = previous["inputs"];
+  bool ignored = false;
+  for (const auto& [path, digest] : current.items()) {
+    auto old_digest = previous_inputs.find(path);
+    if (old_digest == previous_inputs.end() || *old_digest == digest ||
+        !IsModuleFile(path)) {
+      continue;
+    }
+    std::error_code input_ec;
+    auto input_time =
+        std::filesystem::last_write_time(LongPath(path), input_ec);
+    if (!input_ec && input_time > priors_time) {
+      *old_digest = digest;
+      ignored = true;
     }
   }
-
-  if (!emit_module_path.empty()) {
-    if (!TouchFile(emit_module_path, output)) {
-      return false;
-    }
-
-    std::string swiftdoc_path = std::filesystem::path(emit_module_path)
-                                    .replace_extension(".swiftdoc")
-                                    .string();
-    if (!TouchFile(swiftdoc_path, output)) {
-      return false;
-    }
-  }
-
-  return true;
+  return ignored;
 }
 
 static void FinalizeWorkRequest(
@@ -157,75 +143,88 @@ void WorkProcessor::ProcessWorkRequest(
 
   OutputFileMap output_file_map;
   std::string output_file_map_path;
-  std::string emit_module_path;
-  std::string emit_objc_header_path;
+  std::map<std::string, std::string> module_outputs;
+  const std::set<std::string> module_output_flags = {
+      "-emit-module-path",
+      "-emit-module-source-info-path",
+      "-emit-module-interface-path",
+      "-emit-private-module-interface-path",
+      "-emit-package-module-interface-path",
+      "-emit-objc-header-path",
+  };
   bool is_wmo = false;
   bool is_dump_ast = false;
-  bool is_verify = false;
-  bool emit_swift_source_info = false;
+  bool enable_incremental_file_hashing = false;
+  bool avoid_source_info = false;
 
   std::string prev_arg;
-  for (std::string arg : request.arguments) {
-    std::string original_arg = arg;
-
-    // Handle arguments, in some cases we rewrite the argument entirely and in
-    // others we simply use it to determine specific behavior.
-    if (arg == "-output-file-map") {
-      // Peel off the `-output-file-map` argument, so we can rewrite it if
-      // necessary later.
-      arg.clear();
+  for (const auto& arg : request.arguments) {
+    if (prev_arg == "-output-file-map") {
+      output_file_map_path = arg;
+    } else if (module_output_flags.count(prev_arg)) {
+      module_outputs[prev_arg] = arg;
     } else if (arg == "-dump-ast") {
       is_dump_ast = true;
-    } else if (arg == "-verify") {
-      is_verify = true;
-    } else if (prev_arg == "-output-file-map") {
-      // Peel off the `-output-file-map` argument, so we can rewrite it if
-      // necessary later.
-      output_file_map_path = arg;
-      arg.clear();
-    } else if (prev_arg == "-emit-module-path") {
-      emit_module_path = arg;
-    } else if (prev_arg == "-emit-objc-header-path") {
-      emit_objc_header_path = arg;
+    } else if (arg == "-avoid-emit-module-source-info") {
+      avoid_source_info = true;
     } else if (ArgumentEnablesWMO(arg)) {
       is_wmo = true;
-    } else if (prev_arg == "-Xwrapped-swift=-emit-swiftsourceinfo") {
-      emit_swift_source_info = true;
+    } else if (arg == "-Xwrapped-swift=-enable-incremental-file-hashing") {
+      enable_incremental_file_hashing = true;
     }
-
-    if (!arg.empty()) {
-      params_file_stream << arg << '\n';
-    }
-
-    prev_arg = original_arg;
+    prev_arg = arg;
   }
 
-  bool is_incremental = !is_wmo && !is_dump_ast;
+  bool is_incremental =
+      !is_wmo && !is_dump_ast && !output_file_map_path.empty();
+  std::string incremental_file_map_path;
+  std::set<std::string> optional_outputs;
+  if (is_incremental) {
+    output_file_map.ReadFromPath(output_file_map_path);
+    incremental_file_map_path = std::filesystem::path(output_file_map_path)
+                                    .replace_extension(".incremental.json")
+                                    .string();
+    output_file_map.WriteToPath(incremental_file_map_path);
 
-  if (!output_file_map_path.empty()) {
-    if (is_incremental) {
-      output_file_map.ReadFromPath(output_file_map_path, emit_module_path,
-                                   emit_objc_header_path);
+    auto module = module_outputs.find("-emit-module-path");
+    if (module != module_outputs.end()) {
+      auto documentation = std::filesystem::path(module->second)
+                               .replace_extension(".swiftdoc")
+                               .string();
+      output_file_map.AddOutput(documentation);
+      optional_outputs.insert(documentation);
+      if (!avoid_source_info &&
+          !module_outputs.count("-emit-module-source-info-path")) {
+        auto source_info = std::filesystem::path(module->second)
+                               .replace_extension(".swiftsourceinfo")
+                               .string();
+        output_file_map.AddOutput(source_info);
+        optional_outputs.insert(source_info);
+      }
+    }
+  }
 
-      // Rewrite the output file map to use the incremental storage area and
-      // pass the compiler the path to the rewritten file.
-      std::string new_path = std::filesystem::path(output_file_map_path)
-                                 .replace_extension(".incremental.json")
-                                 .string();
-      output_file_map.WriteToPath(new_path);
-
-      params_file_stream << "-output-file-map\n";
-      params_file_stream << new_path << '\n';
-
-      // Pass the incremental flags only if WMO is disabled. WMO would overrule
-      // incremental mode anyway, but since we control the passing of this flag,
-      // there's no reason to pass it when it's a no-op.
-      params_file_stream << "-incremental\n";
+  // We rewrite the output paths so swiftc writes module files directly into the
+  // incremental storage area. This keeps them consistent with the dependency
+  // records even if the request fails before we copy the outputs back.
+  prev_arg.clear();
+  for (const auto& arg : request.arguments) {
+    if (arg == "-Xwrapped-swift=-enable-incremental-file-hashing") {
+      continue;
+    }
+    if (is_incremental && prev_arg == "-output-file-map") {
+      params_file_stream << incremental_file_map_path << '\n';
+    } else if (is_incremental && module_output_flags.count(prev_arg)) {
+      params_file_stream << output_file_map.AddOutput(arg) << '\n';
     } else {
-      // If WMO or -dump-ast is forcing us out of incremental mode, just put the
-      // original output file map back so the outputs end up where they should.
-      params_file_stream << "-output-file-map\n";
-      params_file_stream << output_file_map_path << '\n';
+      params_file_stream << arg << '\n';
+    }
+    prev_arg = arg;
+  }
+  if (is_incremental) {
+    params_file_stream << "-incremental\n";
+    if (enable_incremental_file_hashing) {
+      params_file_stream << "-enable-incremental-file-hashing\n";
     }
   }
 
@@ -233,44 +232,26 @@ void WorkProcessor::ProcessWorkRequest(
   params_file_stream.close();
 
   std::ostringstream stderr_stream;
+  std::filesystem::path incremental_inputs_path;
+  nlohmann::json incremental_inputs;
 
   if (is_incremental) {
     std::set<std::string> dir_paths;
 
-    for (const auto& expected_object_pair :
-         output_file_map.incremental_inputs()) {
-      const auto expected_object_path =
-          std::filesystem::path(expected_object_pair.second);
-
-      // In rules_swift < 3.x the .swiftsourceinfo files are unconditionally
-      // written to the module path. In rules_swift >= 3.x these same files are
-      // no longer tracked by Bazel unless explicitly requested. When using
-      // non-sandboxed mode, previous builds will contain these files and cause
-      // build failures when Swift tries to use them, in order to work around
-      // this compatibility issue, we remove them if they are present but not
-      // requested.
-      if (!emit_swift_source_info &&
-          expected_object_path.extension() == ".swiftsourceinfo") {
-        std::filesystem::remove(LongPath(expected_object_path));
-      }
-
-      // Bazel creates the intermediate directories for the files declared at
-      // analysis time, but not any any deeper directories, like one can have
-      // with -emit-objc-header-path, so we need to create those.
-      const std::string dir_path = expected_object_path.parent_path().string();
-      dir_paths.insert(dir_path);
-    }
-
-    for (const auto& expected_object_pair :
+    for (const auto& [declared_path, incremental_path] :
          output_file_map.incremental_outputs()) {
       // Bazel creates the intermediate directories for the files declared at
       // analysis time, but we need to manually create the ones for the
       // incremental storage area.
       const std::string dir_path =
-          std::filesystem::path(expected_object_pair.second)
-              .parent_path()
-              .string();
+          std::filesystem::path(incremental_path).parent_path().string();
       dir_paths.insert(dir_path);
+      dir_paths.insert(
+          std::filesystem::path(declared_path).parent_path().string());
+    }
+
+    for (const auto& output : output_file_map.incremental_dependencies()) {
+      dir_paths.insert(std::filesystem::path(output).parent_path().string());
     }
 
     for (const auto& dir_path : dir_paths) {
@@ -284,44 +265,66 @@ void WorkProcessor::ProcessWorkRequest(
       }
     }
 
-    // Copy some input files from the incremental storage area to the locations
-    // where Bazel will generate them. swiftc expects all or none of them exist
-    // otherwise the next invocation may not produce all the files. We also need
-    // to remove some files that exist in the incremental storage area.
-    auto inputs = output_file_map.incremental_inputs();
-    bool all_inputs_exist = std::all_of(
-        inputs.cbegin(), inputs.cend(), [](const auto& expected_object_pair) {
-          return std::filesystem::exists(LongPath(expected_object_pair.second));
-        });
-
-    if (all_inputs_exist) {
-      for (const auto& expected_object_pair : inputs) {
-        std::error_code ec;
-        copy_file(expected_object_pair.second, expected_object_pair.first, ec);
-        if (ec) {
-          stderr_stream << "swift_worker: Could not copy "
-                        << expected_object_pair.second << " to "
-                        << expected_object_pair.first << " (" << ec.message()
-                        << ")\n";
+    // Swift can skip checking an imported module when its timestamp predates
+    // the build record, even if Bazel restored different contents from cache.
+    // Compare Bazel's digests instead. Leave source edits to Swift's per-file
+    // dependency tracking, but rebuild the target when other inputs change.
+    nlohmann::json dependency_digests = nlohmann::json::object();
+    bool have_digests = !request.inputs.empty();
+    for (const auto& input : request.inputs) {
+      if (!output_file_map.json().contains(input.path)) {
+        dependency_digests[input.path] = input.digest;
+        have_digests = have_digests && !input.digest.empty();
+      }
+    }
+    incremental_inputs = {
+        {"inputs", dependency_digests},
+        {"arguments", request.arguments},
+        {"universal_arguments", universal_args_},
+    };
+    std::filesystem::path build_record = output_file_map.json()
+                                             .at("")
+                                             .at("swift-dependencies")
+                                             .get<std::string>();
+    incremental_inputs_path = build_record;
+    incremental_inputs_path.replace_extension(".inputs.json");
+    // Older drivers use the module swiftdeps file as the build record;
+    // newer drivers replace its extension with .priors.
+    build_record.replace_extension(".priors");
+    bool can_reuse = false;
+    bool ignored_digests = false;
+    {
+      std::ifstream previous_inputs(LongPath(incremental_inputs_path));
+      if (previous_inputs) {
+        auto previous = nlohmann::json::parse(previous_inputs, nullptr, false);
+        ignored_digests = IgnoreNewerModuleDigests(previous, dependency_digests,
+                                                   build_record);
+        can_reuse = have_digests && previous == incremental_inputs;
+      }
+    }
+    if (!can_reuse || ignored_digests) {
+      // Once the inputs change, a failed compilation can leave state from
+      // different input sets. Remove the old record before changing any state,
+      // and only record the new inputs after compilation and output copying
+      // succeed. With matching inputs, keep the record even on failure: Swift
+      // tracks unfinished source jobs and can recover incrementally.
+      // Ignored module digests still count as changed inputs for this record.
+      if (!RemoveFile(incremental_inputs_path, stderr_stream)) {
+        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        return;
+      }
+    }
+    if (!can_reuse) {
+      for (const auto& dependency :
+           output_file_map.incremental_dependencies()) {
+        if (!RemoveFile(dependency, stderr_stream)) {
           FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
           return;
         }
       }
-    } else {
-      auto cleanup_outputs = output_file_map.incremental_cleanup_outputs();
-      for (const auto& cleanup_output : cleanup_outputs) {
-        if (!std::filesystem::exists(LongPath(cleanup_output))) {
-          continue;
-        }
-
-        std::error_code ec;
-        std::filesystem::remove(LongPath(cleanup_output), ec);
-        if (ec) {
-          stderr_stream << "swift_worker: Could not remove " << cleanup_output
-                        << " (" << ec.message() << ")\n";
-          FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
-          return;
-        }
+      if (!RemoveFile(build_record, stderr_stream)) {
+        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+        return;
       }
     }
   }
@@ -334,54 +337,43 @@ void WorkProcessor::ProcessWorkRequest(
     return;
   }
 
-  if (is_verify && !CreateVerifyOutputs(output_file_map_path, emit_module_path,
-                                        stderr_stream)) {
-    FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
-    return;
-  }
-
   if (is_incremental) {
     // Copy the output files from the incremental storage area back to the
     // locations where Bazel declared the files.
-    for (const auto& expected_object_pair :
+    for (const auto& [declared_path, incremental_path] :
          output_file_map.incremental_outputs()) {
+      if (optional_outputs.count(declared_path) &&
+          !std::filesystem::exists(LongPath(incremental_path))) {
+        continue;
+      }
       std::error_code ec;
-      copy_file(expected_object_pair.second, expected_object_pair.first, ec);
+      copy_file(incremental_path, declared_path, ec);
       if (ec) {
-        stderr_stream << "swift_worker: Could not copy "
-                      << expected_object_pair.second << " to "
-                      << expected_object_pair.first << " (" << ec.message()
+        stderr_stream << "swift_worker: Could not copy " << incremental_path
+                      << " to " << declared_path << " (" << ec.message()
                       << ")\n";
         FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
         return;
       }
     }
 
-    // Copy the replaced input files back to the incremental storage for the
-    // next run.
-    for (const auto& expected_object_pair :
-         output_file_map.incremental_inputs()) {
-      if (std::filesystem::exists(LongPath(expected_object_pair.first))) {
-        if (std::filesystem::exists(LongPath(expected_object_pair.second))) {
-          // CopyFile fails if the file already exists
-          std::filesystem::remove(LongPath(expected_object_pair.second));
-        }
-        std::error_code ec;
-        copy_file(expected_object_pair.first, expected_object_pair.second, ec);
-        if (ec) {
-          stderr_stream << "swift_worker: Could not copy "
-                        << expected_object_pair.first << " to "
-                        << expected_object_pair.second << " (" << ec.message()
-                        << ")\n";
-          FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
-          return;
-        }
-      } else if (exit_code == 0) {
-        stderr_stream << "Failed to copy " << expected_object_pair.first
-                      << " for incremental builds, maybe it wasn't produced?\n";
-        FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
-        return;
-      }
+    auto temporary_inputs_path = incremental_inputs_path;
+    temporary_inputs_path += ".tmp";
+    std::ofstream inputs_stream(LongPath(temporary_inputs_path));
+    inputs_stream << incremental_inputs;
+    inputs_stream.close();
+    std::error_code ec;
+    if (inputs_stream) {
+      std::filesystem::rename(LongPath(temporary_inputs_path),
+                              LongPath(incremental_inputs_path), ec);
+    }
+    if (!inputs_stream || ec) {
+      stderr_stream << "swift_worker: Could not write "
+                    << incremental_inputs_path << " ("
+                    << (ec ? ec.message() : "stream failure") << ")\n";
+      RemoveFile(temporary_inputs_path, stderr_stream);
+      FinalizeWorkRequest(request, response, EXIT_FAILURE, stderr_stream);
+      return;
     }
   }
 

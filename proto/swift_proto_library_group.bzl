@@ -173,7 +173,7 @@ import examples_xplatform_proto_library_group_package_2_package_2_proto
 For this reason, we would encourage new consumers of the proto rules to use
 `swift_proto_library` when possible.
 
-```python
+```bzl
 proto_library(
     name = "package_1_proto",
     srcs = glob(["*.proto"]),

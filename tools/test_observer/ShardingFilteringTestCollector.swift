@@ -36,7 +36,9 @@ struct ShardingFilteringTestCollector<Test: Testable> {
   private var shardCount: Int
   private var shardIndex: Int
   private var seenTestCount: Int
-  private var filter: Regex<AnyRegexOutput>?
+  // `NSRegularExpression` rather than `Regex`: the latter is only available on iOS 16, macOS 13 and
+  // later, and this tool is linked into every `swift_test` binary regardless of deployment target.
+  private var filter: NSRegularExpression?
 
   /// Indicates whether the next test added to the collector should be included in the current
   /// shard.
@@ -77,7 +79,7 @@ struct ShardingFilteringTestCollector<Test: Testable> {
         message: "Invalid shard count (\(shardCount)) and shard index (\(shardIndex))")
     }
     if let filterString = environment["TESTBRIDGE_TEST_ONLY"] {
-      guard let maybeFilter = try? Regex(filterString) else {
+      guard let maybeFilter = try? NSRegularExpression(pattern: filterString) else {
         throw Error(
           message: """
             Could not parse '--test_filter' string as a regular expression: \(filterString)
@@ -107,10 +109,7 @@ struct ShardingFilteringTestCollector<Test: Testable> {
   /// Returns `true` if the given test identifier matches the `--test_filter` regular expression.
   private func isIncludedByFilter(_ testIdentifier: String) -> Bool {
     guard let filter = self.filter else { return true }
-    do {
-      return try filter.firstMatch(in: testIdentifier) != nil
-    } catch {
-      return false
-    }
+    let range = NSRange(testIdentifier.startIndex..., in: testIdentifier)
+    return filter.firstMatch(in: testIdentifier, range: range) != nil
   }
 }

@@ -248,8 +248,8 @@ int RunSubProcess(const std::vector<std::string>& args,
 
 #else
 #include <fcntl.h>
+#include <poll.h>
 #include <spawn.h>
-#include <sys/poll.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -354,7 +354,7 @@ void PosixSpawnIORedirector::ConsumeAllSubprocessOutput(
 std::vector<char*> ConvertToCArgs(const std::vector<std::string>& args) {
   std::vector<char*> c_args;
   c_args.reserve(args.size() + 1);
-  for (int i = 0; i < args.size(); i++) {
+  for (size_t i = 0; i < args.size(); i++) {
     c_args.push_back(strdup(args[i].c_str()));
   }
   c_args.push_back(nullptr);

@@ -163,7 +163,7 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
     # Add the plugin argument with the provided name to namespace all of the options:
     plugin_name_argument = "--plugin=protoc-gen-{}={}".format(
         swift_proto_compiler_info.internal.plugin_name,
-        swift_proto_compiler_info.internal.plugin.path,
+        swift_proto_compiler_info.internal.plugin.executable.path,
     )
     arguments.add(plugin_name_argument)
 
@@ -202,11 +202,7 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
     # Run the protoc action:
     actions.run(
         inputs = depset(
-            direct = [
-                swift_proto_compiler_info.internal.protoc,
-                swift_proto_compiler_info.internal.plugin,
-                module_mappings_file,
-            ],
+            direct = [module_mappings_file],
             transitive = [transitive_descriptor_sets],
         ),
         outputs = [temporary_output_directory],
@@ -214,6 +210,7 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         mnemonic = "SwiftProtocGen",
         executable = swift_proto_compiler_info.internal.protoc,
         arguments = [arguments],
+        tools = [swift_proto_compiler_info.internal.plugin],
     )
 
     # Expand the copy Swift sources template:
@@ -223,9 +220,9 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         template = swift_proto_compiler_info.internal.copy_swift_sources_template,
         output = copy_swift_sources_file,
         substitutions = {
-            "{temporary_output_directory_path}": temporary_output_directory.path,
             "{permanent_output_directory_path}": permanent_output_directory_path,
             "{swift_source_file_paths}": " ".join([src.path for src in swift_srcs]),
+            "{temporary_output_directory_path}": temporary_output_directory.path,
         },
         is_executable = True,
     )
@@ -265,7 +262,7 @@ def _swift_proto_compiler_impl(ctx):
             compiler_deps = ctx.attr.deps,
             internal = struct(
                 protoc = _protoc_executable(ctx),
-                plugin = ctx.executable.plugin,
+                plugin = ctx.attr.plugin[DefaultInfo].files_to_run,
                 plugin_name = ctx.attr.plugin_name,
                 plugin_option_allowlist = ctx.attr.plugin_option_allowlist,
                 plugin_options = ctx.attr.plugin_options,
@@ -304,12 +301,6 @@ Added as implicit dependencies for any swift_proto_library using this compiler.
 Typically, these are Well Known Types and proto runtime libraries.
 """,
             providers = [SwiftInfo],
-        ),
-        "protoc": attr.label(
-            allow_single_file = True,
-            cfg = "exec",
-            executable = True,
-            mandatory = False,
         ),
         "plugin": attr.label(
             doc = """\
@@ -379,6 +370,12 @@ protoc \
 ```
 """,
             mandatory = True,
+        ),
+        "protoc": attr.label(
+            allow_single_file = True,
+            cfg = "exec",
+            executable = True,
+            mandatory = False,
         ),
         "suffixes": attr.string_list(
             doc = """\

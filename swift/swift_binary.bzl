@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_helper.bzl", "cc_helper")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//swift/internal:binary_attrs.bzl", "binary_rule_attrs")
 load("//swift/internal:compiling.bzl", "compile")
@@ -24,8 +25,13 @@ load(
     "//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_ADD_TARGET_NAME_TO_OUTPUT",
     "SWIFT_FEATURE_NO_ENTRY_POINT_RENAME",
+    "SWIFT_FEATURE_STATIC_STDLIB",
 )
-load("//swift/internal:features.bzl", "is_feature_enabled")
+load(
+    "//swift/internal:features.bzl",
+    "get_cc_feature_configuration",
+    "is_feature_enabled",
+)
 load(
     "//swift/internal:linking.bzl",
     "configure_features_for_binary",
@@ -47,6 +53,7 @@ load(
 load(
     "//swift/internal:utils.bzl",
     "expand_locations",
+    "expand_make_variables",
     "get_providers",
     "include_developer_search_paths",
 )
@@ -74,8 +81,9 @@ def _maybe_parse_as_library_copts(srcs):
     Returns:
         A list of compiler flags to add to `copts`
     """
-    use_parse_as_library = len(srcs) == 1 and \
-                           srcs[0].basename != "main.swift"
+    swift_srcs = [src for src in srcs if src.extension == "swift"]
+    use_parse_as_library = len(swift_srcs) == 1 and \
+                           swift_srcs[0].basename != "main.swift"
     return ["-parse-as-library"] if use_parse_as_library else []
 
 def _is_wasm(ctx):
@@ -90,7 +98,9 @@ def _swift_binary_impl(ctx):
         ctx = ctx,
         requested_features = ctx.features,
         toolchains = toolchains,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + (
+            [SWIFT_FEATURE_STATIC_STDLIB] if ctx.attr.linkshared else []
+        ),
     )
 
     is_wasm = _is_wasm(ctx)
@@ -112,12 +122,11 @@ def _swift_binary_impl(ctx):
     # If the binary has sources, compile those first and collect the outputs to
     # be passed to the linker.
     if srcs:
+        c_copts = expand_locations(ctx, ctx.attr.c_copts, ctx.attr.swiftc_inputs)
+        c_copts = expand_make_variables(ctx, c_copts, "c_copts")
         module_name = ctx.attr.module_name
         if not module_name:
-            module_name = derive_swift_module_name(
-                ctx.label,
-                feature_configuration = feature_configuration,
-            )
+            module_name = derive_swift_module_name(ctx.label)
 
         if skip_entry_point:
             entry_point_name = None
@@ -145,7 +154,9 @@ def _swift_binary_impl(ctx):
                 ctx.attr.copts,
                 ctx.attr.swiftc_inputs,
             ) + _maybe_parse_as_library_copts(srcs) + entry_point_copts,
+            c_copts = c_copts,
             defines = ctx.attr.defines,
+            local_defines = ctx.attr.local_defines,
             feature_configuration = feature_configuration,
             include_dev_srch_paths = include_dev_srch_paths,
             module_name = module_name,
@@ -246,6 +257,17 @@ def _swift_binary_impl(ctx):
     else:
         output_file = linking_outputs.executable
 
+    cc_helper.create_strip_action(
+        ctx,
+        toolchains.cc,
+        ctx.fragments.cpp,
+        input = output_file,
+        output = ctx.outputs.stripped_binary,
+        feature_configuration = get_cc_feature_configuration(
+            feature_configuration,
+        ),
+    )
+
     providers = [
         DefaultInfo(
             executable = output_file,
@@ -256,6 +278,7 @@ def _swift_binary_impl(ctx):
                 collect_data = True,
                 collect_default = True,
                 files = ctx.files.data,
+                transitive_files = linking_outputs.runtime_dynamic_libraries,
             ),
         ),
         coverage_common.instrumented_files_info(
@@ -270,6 +293,7 @@ def _swift_binary_impl(ctx):
                 create_swift_module_context(
                     name = module_context.name,
                     compilation_context = module_context.compilation_context,
+                    label = getattr(module_context, "label", None),
                     # The rest of the fields are intentionally ommited, as we
                     # only want to expose the compilation_context
                 )
@@ -392,5 +416,8 @@ reactor module instead of an executable; see the `linkshared` attribute.
     executable = True,
     fragments = ["cpp"],
     implementation = _swift_binary_impl,
+    outputs = {
+        "stripped_binary": "%{name}.stripped",
+    },
     toolchains = use_all_toolchains(),
 )

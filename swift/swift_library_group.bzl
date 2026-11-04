@@ -19,6 +19,16 @@ load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo", "new_objc_provider")
 load("//swift/internal:attrs.bzl", "swift_deps_attr")
 load(
+    "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
+    "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+)
+load(
+    "//swift/internal:features.bzl",
+    "configure_features",
+    "is_feature_enabled",
+)
+load(
     "//swift/internal:toolchain_utils.bzl",
     "find_all_toolchains",
     "use_all_toolchains",
@@ -26,6 +36,35 @@ load(
 load("//swift/internal:utils.bzl", "get_providers")
 load(":providers.bzl", "SwiftInfo")
 load(":swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+
+def _swift_info(ctx, toolchains, deps):
+    # Re-exporting every dep SwiftInfo as *direct* (upstream b054a972) is only
+    # needed so the Swift layering check can see through the group.
+    # `_swift_info_init` materializes each direct provider's `direct_modules`
+    # into a fresh per-node list, so chains of groups snowball analysis time
+    # and memory at monorepo scale. Keep the direct pass-through only where a
+    # layering-check feature can consume it.
+    feature_configuration = configure_features(
+        ctx = ctx,
+        swift_toolchain = toolchains.swift,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
+    ) or is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS,
+    ):
+        return SwiftInfo(
+            direct_swift_infos = get_providers(deps, SwiftInfo),
+            swift_infos = toolchains.swift.implicit_deps_providers.swift_infos,
+        )
+    return SwiftInfo(
+        swift_infos = (get_providers(deps, SwiftInfo) +
+                       toolchains.swift.implicit_deps_providers.swift_infos),
+    )
 
 def _swift_library_group_impl(ctx):
     toolchains = find_all_toolchains(ctx)
@@ -42,10 +81,7 @@ def _swift_library_group_impl(ctx):
             ctx,
             dependency_attributes = ["deps"],
         ),
-        SwiftInfo(
-            direct_swift_infos = get_providers(deps, SwiftInfo),
-            swift_infos = toolchains.swift.implicit_deps_providers.swift_infos,
-        ),
+        _swift_info(ctx, toolchains, deps),
         # Propagate an `ObjcInfo` provider with linking info about the
         # library so that linking with Apple Starlark APIs/rules works
         # correctly.
@@ -71,6 +107,7 @@ similar to source-less `{cc,obj}_library` targets.
 A new module isn't created for this target, you need to import the grouped
 libraries directly.
 """,
+    fragments = ["cpp"],
     implementation = _swift_library_group_impl,
     toolchains = use_all_toolchains(),
 )

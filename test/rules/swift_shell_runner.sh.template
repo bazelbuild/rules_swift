@@ -17,6 +17,8 @@
 # --- begin runfiles.bash initialization v3 ---
 # Copy-pasted from the Bazel Bash runfiles library v3.
 set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+# Bazel locates the runfiles library at runtime.
+# shellcheck disable=SC1090
 source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
   source "$0.runfiles/$f" 2>/dev/null || \
@@ -31,7 +33,7 @@ set -euxo pipefail
 executable="%executable%"
 expected_return_code="%expected_return_code%"
 expected_logs=%expected_logs%
-not_expected_logs=%expected_logs%
+not_expected_logs=%not_expected_logs%
 
 # execute the target under test while recording its outputs and return code
 tmp_dir=$(mktemp -d)
@@ -39,7 +41,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 readonly testlog="$tmp_dir/test.log"
 
 return_code=0
-$(rlocation "$executable") 2>&1 | tee -i "$testlog" || return_code=$?
+"$(rlocation "$executable")" 2>&1 | tee -i "$testlog" || return_code=$?
 
 # verify expected return code
 if [[ "$return_code" -ne $expected_return_code ]]; then
@@ -59,7 +61,7 @@ done
 # verify the absence of unexpected logs
 for unexpected in "${not_expected_logs[@]}"
 do
-  if ! grep --quiet --invert-match --regexp "$unexpected" "$testlog"; then
+  if grep --quiet --regexp "$unexpected" "$testlog"; then
     echo "Fail: found unexpected log: $unexpected"
     exit 1
   fi

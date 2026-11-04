@@ -14,7 +14,24 @@
 
 """Tests for `ast_file`."""
 
+load(
+    "//test/rules:action_command_line_test.bzl",
+    "action_command_line_test",
+    "make_action_command_line_test_rule",
+)
 load("//test/rules:provider_test.bzl", "provider_test")
+
+suppress_warnings_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["swift.suppress_warnings"],
+    },
+)
+
+treat_warnings_as_errors_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["swift.treat_warnings_as_errors"],
+    },
+)
 
 def ast_file_test_suite(name, tags = []):
     """Test suite for `swift_library` dumping ast files.
@@ -77,6 +94,34 @@ def ast_file_test_suite(name, tags = []):
         ],
         field = "swift_ast_file",
         provider = "OutputGroupInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/multiple_files",
+    )
+
+    # Warnings are only suppressed when requested, since the driver rejects
+    # `-suppress-warnings` alongside `-warnings-as-errors`, `-Werror`, and
+    # `-Wwarning`.
+    action_command_line_test(
+        name = "{}_does_not_suppress_warnings_by_default".format(name),
+        not_expected_argv = ["-suppress-warnings"],
+        mnemonic = "SwiftDumpAST",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/multiple_files",
+    )
+
+    suppress_warnings_test(
+        name = "{}_suppress_warnings_feature".format(name),
+        expected_argv = ["-suppress-warnings"],
+        mnemonic = "SwiftDumpAST",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/multiple_files",
+    )
+
+    treat_warnings_as_errors_test(
+        name = "{}_treat_warnings_as_errors_feature".format(name),
+        expected_argv = ["-warnings-as-errors"],
+        not_expected_argv = ["-suppress-warnings"],
+        mnemonic = "SwiftDumpAST",
         tags = all_tags,
         target_under_test = "//test/fixtures/multiple_files",
     )

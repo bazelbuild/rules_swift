@@ -14,6 +14,7 @@
 
 """Tests for `swift_library.generated_header`."""
 
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(
     "//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
@@ -105,6 +106,84 @@ def generated_header_test_suite(name, tags = []):
         ],
         tags = all_tags,
         target_under_test = "//test/fixtures/generated_header:auto_header",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
+        name = "{}_objc_consumer_finds_generated_header_imports".format(name),
+        targets = [
+            "//test/fixtures/generated_header:objc_consumer_of_generated_header",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
+        name = "{}_objc_consumer_finds_transitive_generated_header_imports".format(name),
+        targets = [
+            "//test/fixtures/generated_header:objc_consumer_of_generated_header_with_transitive_c_dep",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    build_test(
+        name = "{}_objc_consumer_finds_imports_through_headerless_dep".format(name),
+        targets = [
+            "//test/fixtures/generated_header:objc_consumer_of_generated_header_with_headerless_c_dep",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    # Assert that the successful typealias re-export doesn't depend on an
+    # accidentally generated Objective-C header or Clang module for the relay.
+    provider_test(
+        name = "{}_headerless_dep_has_no_header_or_module_map".format(name),
+        expected_files = [
+            "-test/fixtures/generated_header/headerless_c_dependency-Swift.h",
+            "-test/fixtures/generated_header/headerless_c_dependency_modulemap/_/module.modulemap",
+            "*",
+        ],
+        field = "compilation_context.headers",
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:headerless_c_dependency",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    provider_test(
+        name = "{}_headerless_dep_has_no_direct_clang_module_map".format(name),
+        expected_files = [],
+        field = "direct_modules.clang!.module_map!",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:headerless_c_dependency",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    provider_test(
+        name = "{}_headerless_c_dependency_propagates_c_module_map".format(name),
+        expected_files = [
+            "test/fixtures/generated_header/c_dependency_modulemap/_/module.modulemap",
+            "*",
+        ],
+        field = "compilation_context.headers",
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:headerless_c_dependency",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+    provider_test(
+        name = "{}_generated_header_with_headerless_c_dep_propagates_c_module_map".format(name),
+        expected_files = [
+            "test/fixtures/generated_header/c_dependency_modulemap/_/module.modulemap",
+            "*",
+        ],
+        field = "compilation_context.headers",
+        provider = "CcInfo",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/generated_header:generated_header_with_headerless_c_dep",
         target_compatible_with = ["@platforms//os:macos"],
     )
 

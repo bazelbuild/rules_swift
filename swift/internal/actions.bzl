@@ -202,7 +202,11 @@ def run_toolchain_action(
             tool_config.use_param_file
         ):
             execution_requirements["supports-workers"] = "1"
-            execution_requirements["requires-worker-protocol"] = "json"
+            execution_requirements["requires-worker-protocol"] = getattr(
+                swift_toolchain,
+                "swift_worker_protocol",
+                "json",
+            )
 
         executable = swift_toolchain.swift_worker
         tool_executable_args.add(tool_config.executable)

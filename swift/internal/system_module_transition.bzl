@@ -19,11 +19,11 @@ _MIN_OS_OPTIONS = [
 _SDK_NAME_TO_MIN_OS_OPTION = {
     "AppleTVOS": "//command_line_option:tvos_minimum_os",
     "AppleTVSimulator": "//command_line_option:tvos_minimum_os",
-    "iPhoneOS": "//command_line_option:ios_minimum_os",
-    "iPhoneSimulator": "//command_line_option:ios_minimum_os",
     "MacOSX": "//command_line_option:macos_minimum_os",
     "WatchOS": "//command_line_option:watchos_minimum_os",
     "WatchSimulator": "//command_line_option:watchos_minimum_os",
+    "iPhoneOS": "//command_line_option:ios_minimum_os",
+    "iPhoneSimulator": "//command_line_option:ios_minimum_os",
 }
 
 def sdk_min_os_transition_attrs():

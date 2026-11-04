@@ -5,32 +5,41 @@ load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 
 _COMPILATION_MODE = "//command_line_option:compilation_mode"
+_EXTRA_TOOLCHAINS = "//command_line_option:extra_toolchains"
 _FEATURES = "//command_line_option:features"
 _HOST_FEATURES = "//command_line_option:host_features"
 _IOS_MINIMUM_OS = "//command_line_option:ios_minimum_os"
 _MACOS_MINIMUM_OS = "//command_line_option:macos_minimum_os"
 _PLATFORMS = "//command_line_option:platforms"
+_SWIFTCOPTS = str(Label("//swift:copt"))
 _TVOS_MINIMUM_OS = "//command_line_option:tvos_minimum_os"
+_USE_PROTO_WORKER = str(Label("//swift:use_proto_worker"))
 
 _TRANSITION_OPTIONS = [
     _COMPILATION_MODE,
+    _EXTRA_TOOLCHAINS,
     _FEATURES,
     _HOST_FEATURES,
     _IOS_MINIMUM_OS,
     _MACOS_MINIMUM_OS,
     _PLATFORMS,
+    _SWIFTCOPTS,
     _TVOS_MINIMUM_OS,
+    _USE_PROTO_WORKER,
 ]
 
 def _transition_impl(settings, attr):
     return {
         _COMPILATION_MODE: attr.compilation_mode or settings[_COMPILATION_MODE],
+        _EXTRA_TOOLCHAINS: settings[_EXTRA_TOOLCHAINS] + attr.extra_toolchains,
         _FEATURES: settings[_FEATURES] + attr.transitive_features,
         _HOST_FEATURES: settings[_HOST_FEATURES] + attr.transitive_features,
         _IOS_MINIMUM_OS: attr.ios_minimum_os or settings[_IOS_MINIMUM_OS],
         _MACOS_MINIMUM_OS: attr.macos_minimum_os or attr.minimum_os or settings[_MACOS_MINIMUM_OS],
         _PLATFORMS: [attr.platform] if attr.platform else settings[_PLATFORMS],
+        _SWIFTCOPTS: settings[_SWIFTCOPTS] + attr.swiftcopts,
         _TVOS_MINIMUM_OS: attr.tvos_minimum_os or settings[_TVOS_MINIMUM_OS],
+        _USE_PROTO_WORKER: attr.worker_protocol == "proto" if attr.worker_protocol else settings[_USE_PROTO_WORKER],
     }
 
 _transition = transition(
@@ -48,8 +57,8 @@ _TRANSITION_ATTRS = {
         ),
         values = ["", "dbg", "fastbuild", "opt"],
     ),
-    "minimum_os": attr.string(
-        doc = "Optional value to set `--macos_minimum_os` to.",
+    "extra_toolchains": attr.string_list(
+        doc = "Toolchains appended to --extra_toolchains for the transitioned target.",
     ),
     "ios_minimum_os": attr.string(
         doc = "Optional value to set `--ios_minimum_os` to.",
@@ -57,14 +66,24 @@ _TRANSITION_ATTRS = {
     "macos_minimum_os": attr.string(
         doc = "Optional value to set `--macos_minimum_os` to.",
     ),
-    "tvos_minimum_os": attr.string(
-        doc = "Optional value to set `--tvos_minimum_os` to.",
+    "minimum_os": attr.string(
+        doc = "Optional value to set `--macos_minimum_os` to.",
     ),
     "platform": attr.string(
         doc = "Optional target platform label (e.g. `@apple_support//platforms:macos_x86_64`).",
     ),
+    "swiftcopts": attr.string_list(
+        doc = "Swift compiler flags appended to `//swift:copt` for the transitioned target.",
+    ),
     "transitive_features": attr.string_list(
         doc = "Feature strings appended to `//command_line_option:features` and `//command_line_option:host_features`.",
+    ),
+    "tvos_minimum_os": attr.string(
+        doc = "Optional value to set `--tvos_minimum_os` to.",
+    ),
+    "worker_protocol": attr.string(
+        doc = "Worker protocol to force; empty preserves the inherited setting.",
+        values = ["", "json", "proto"],
     ),
 }
 
@@ -100,7 +119,8 @@ transition_binary = rule(
 
 def _transition_test_impl(ctx):
     target = ctx.attr.target[0]
-    forwarded = ctx.actions.declare_file(ctx.label.name)
+    extension = ".exe" if target.files_to_run.executable.extension == "exe" else ""
+    forwarded = ctx.actions.declare_file(ctx.label.name + extension)
     ctx.actions.symlink(
         output = forwarded,
         target_file = target.files_to_run.executable,

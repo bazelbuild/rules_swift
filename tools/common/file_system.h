@@ -15,9 +15,20 @@
 #ifndef BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
 #define BUILD_BAZEL_RULES_SWIFT_TOOLS_COMMON_FILE_SYSTEM_H_
 
+#include <filesystem>
+#include <ostream>
+
 #include "absl/strings/string_view.h"
 
 namespace bazel_rules_swift {
+
+// Returns a path suitable for filesystem operations, adding the Windows
+// extended-length prefix when necessary.
+std::filesystem::path LongPath(const std::filesystem::path& path);
+
+// Creates or truncates a file, creating its parent directories if necessary.
+// Returns false and writes a diagnostic if the file cannot be created.
+bool TouchFile(const std::filesystem::path& path, std::ostream* stderr_stream);
 
 // Returns true if the given path exists.
 bool PathExists(absl::string_view path);

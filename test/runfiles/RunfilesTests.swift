@@ -497,6 +497,43 @@ final class RunfilesTests: XCTestCase {
           isRunfilesDirectory: isRunfilesDirectory
       ))
   }
+
+  func testDirectoryBasedRlocationWithRepoMapping_FromExtensionRepo() throws {
+    let repoMappingContents = """
+    _,config.json,config.json+1.2.3
+    ,my_module,_main
+    ,my_protobuf,protobuf+3.19.2
+    ,my_workspace,_main
+    my_module++ext+*,my_module,my_module+
+    my_module++ext+*,repo1,my_module++ext+repo1
+    """
+    let (runfilesDir, clean) = try createMockDirectory(name: "foo.runfiles")
+    defer { try? clean() }
+
+    let repoMappingFile = runfilesDir.appendingPathComponent("_repo_mapping")
+    try repoMappingContents.write(to: repoMappingFile, atomically: true, encoding: .utf8)
+    defer { try? FileManager.default.removeItem(at: repoMappingFile) }
+
+    let runfiles = try Runfiles.create(
+        sourceRepository: "my_module++ext+repo1",
+        environment: [
+            "RUNFILES_DIR": runfilesDir.path,
+        ]
+    )
+
+    XCTAssertEqual(
+        try runfiles.rlocation("my_module/foo").path,
+        runfilesDir.appendingPathComponent("my_module+/foo").path
+    )
+    XCTAssertEqual(
+        try runfiles.rlocation("repo1/foo").path,
+        runfilesDir.appendingPathComponent("my_module++ext+repo1/foo").path
+    )
+    XCTAssertEqual(
+        try runfiles.rlocation("repo2+/foo").path,
+        runfilesDir.appendingPathComponent("repo2+/foo").path
+    )
+  }
 }
 
 enum RunfilesTestError: Error {

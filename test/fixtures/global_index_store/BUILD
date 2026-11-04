@@ -18,3 +18,27 @@ swift_library(
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
 )
+
+filegroup(
+    name = "indexstore",
+    srcs = [":compressed"],
+    output_group = "swift_index_store",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "compressed",
+    srcs = [
+        "first.swift",
+        "second.swift",
+    ],
+    features = [
+        "swift.index_while_building",
+        "swift.index_store_compress",
+        "swift.use_global_index_store",
+    ],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
+exports_files(["check_compressed_index.sh"])

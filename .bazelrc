@@ -1,13 +1,23 @@
 common --check_direct_dependencies=off
+common --module_mirrors=https://bcr.cloudflaremirrors.com
 
 # https://github.com/bazelbuild/stardoc/issues/112
 common --incompatible_allow_tags_propagation
+
+# Don't require a system python to run py_binary targets
+common --@rules_python//python/config_settings:bootstrap_impl=script
+common --incompatible_default_to_explicit_init_py
 
 common --flag_alias=swiftcopt=//swift:copt
 common --flag_alias=host_swiftcopt=//swift:exec_copt
 
 build --host_macos_minimum_os=14.0
 build --macos_minimum_os=14.0
+
+# Include the host's libc version so runtime tests can declare their minimum.
+build --host_platform=@platforms_contrib//host:host
+# https://github.com/bazelbuild/bazel/issues/25145
+info --platforms=@platforms//host
 
 # We don't need to bump some of our dependencies, just becuse our dev
 # dependencies cause us to use a newer version
@@ -22,7 +32,10 @@ build --worker_sandboxing
 
 build --enable_platform_specific_config
 
-common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r27c
+common:macos --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common:linux --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+common --repo_env=ACCEPTED_ANDROID_NDK_LICENSE_VERSION=r30
 common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=35
 
 common --android_platforms=@rules_android//:arm64-v8a
@@ -32,7 +45,6 @@ common --tool_java_language_version=17
 common --tool_java_runtime_version=remotejdk_17
 
 common:linux --repo_env=CC=clang
-build:linux --cxxopt='-std=c++17' --host_cxxopt='-std=c++17'
 common:linux --//test:apple_build_tests=False
 
 # Worker sandboxing copies the worker into a sandbox exec root and cleans it
@@ -44,11 +56,19 @@ build:windows --noworker_sandboxing
 # This C2K warning causes zlib to fail to compile.
 # There is an open issue about it on the zlib repository here:
 # https://github.com/madler/zlib/issues/633
-build --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+# These Clang warning flags are not supported by MSVC.
+build:linux --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
+build:macos --per_file_copt="external/.*zlib.*/.*.c@-Wno-deprecated-non-prototype"
 
 # TODO: Remove once fixed
-build --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
-build --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field"
+build:linux --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:linux --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:macos --per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+build:macos --host_per_file_copt="external/.*protobuf.*/.*@-Wno-unused-private-field,-Wno-deprecated-declarations"
+
+# MSVC reports C4715 for the exhaustive enum switch in protobuf's string parser.
+build:windows --per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
+build:windows --host_per_file_copt="external/.*protobuf.*/generated_message_tctable_lite[.]cc@/wd4715"
 
 # ignore warnings in external CC dependencies
 build --features=external_include_paths --host_features=external_include_paths

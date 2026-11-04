@@ -15,6 +15,13 @@ fi
 shift
 
 strings_out=$(strings "$swiftmodule")
+# Explicit-module consumers should not serialize a flag for every SDK module
+# map, rules_xcodeproj processes these options for every Swift target.
+if grep -qF -- "-fmodule-map-file=" <<<"$strings_out"; then
+  echo "error: '$swiftmodule' serializes individual module map options" >&2
+  exit 1
+fi
+
 expected=()
 if [[ "${1:-}" == "--no-default-expected" ]]; then
   shift

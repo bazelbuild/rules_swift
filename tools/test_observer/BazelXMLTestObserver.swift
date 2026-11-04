@@ -30,13 +30,13 @@ extension BazelXMLTestObserver: XCTestObservation {
   public func testCaseWillStart(_ testCase: XCTestCase) {
     XUnitTestRecorder.shared.recordTestStarted(
       nameComponents: testCase.xUnitNameComponents,
-      time: SuspendingClock.now)
+      time: TestInstant.now)
   }
 
   public func testCaseDidFinish(_ testCase: XCTestCase) {
     XUnitTestRecorder.shared.recordTestEnded(
       nameComponents: testCase.xUnitNameComponents,
-      time: SuspendingClock.now)
+      time: TestInstant.now)
   }
 
   // On platforms with the Objective-C runtime, we use the richer `XCTIssue`-based APIs. Anywhere

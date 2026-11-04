@@ -2,6 +2,8 @@
 
 # --- begin runfiles.bash initialization v3 ---
 set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+# Bazel locates the runfiles library at runtime.
+# shellcheck disable=SC1090
 source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
   source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
   source "$0.runfiles/$f" 2>/dev/null || \
@@ -37,6 +39,17 @@ case "$dynsyms" in
 esac
 
 dynamic="$("$readelf" -d "$so")"
+# API 28 and 29 recognize Android's private RELR tags, not the standardized
+# ELF tags. Check the artifact as well as the linker command line.
+case "$dynamic" in
+  *"(ANDROID_RELR)"*) ;;
+  *) echo "error: $so does not use Android-compatible RELR relocations" >&2; exit 1 ;;
+esac
+case "$dynamic" in
+  *"(RELR)"*) echo "error: $so requires the standard RELR tags introduced in API 30" >&2; exit 1 ;;
+  *) ;;
+esac
+
 while IFS= read -r library; do
   [[ -n "$library" ]] || continue
   case "$dynamic" in

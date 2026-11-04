@@ -83,13 +83,13 @@ android_so_abi_test = rule(
         "not_needed_libraries": attr.string_list(
             doc = "Shared library names not expected in the ELF dynamic NEEDED entries.",
         ),
-        "_cc_toolchain": attr.label(
-            cfg = _android_transition,
-            default = "@rules_cc//cc:current_cc_toolchain",
-        ),
         "shared_library": attr.string(
             mandatory = True,
             doc = "The APK entry path of the JNI shared library to inspect.",
+        ),
+        "_cc_toolchain": attr.label(
+            cfg = _android_transition,
+            default = "@rules_cc//cc:current_cc_toolchain",
         ),
         "_runfiles": attr.label(
             default = "@bazel_tools//tools/bash/runfiles",

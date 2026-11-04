@@ -6,41 +6,22 @@ x_defaults:
     platform: macos_arm64
     xcode_version: "26.2"
     build_targets:
-      - "//examples/..."
+      - "//..."
     test_targets:
-      - "//examples/..."
-      - "//test/..."
-  linux_environment: &linux_environment
-    platform: ubuntu2204
-    environment:
-      SWIFT_VERSION: "6.0.3"
-      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
-      PATH: "$SWIFT_HOME/usr/bin:$PATH"
+      - "//..."
   linux_common: &linux_common
-    <<: *linux_environment
-    build_flags: &linux_flags
-      # On Linux, we look for Swift toolchain binaries on the path. We may be
-      # able to change this when we start auto-downloading toolchains (see
-      # https://github.com/bazelbuild/rules_swift/issues/4).
-      - "--action_env=PATH"
+    platform: ubuntu2204
     build_targets:
-      - "//examples/..."
+      - "//..."
       - "-//examples/apple/..."
-    test_flags: *linux_flags
     test_targets:
-      - "//examples/..."
-      - "//test/..."
+      - "//..."
       - "-//examples/apple/..."
-      # The following tests require Swift >5.8.
-      - "-//test:const_values_empty_const_values_multiple_files"
-      - "-//test:const_values_empty_const_values_single_file"
-      - "-//test:const_values_expected_argv"
-      - "-//test:const_values_wmo_single_values_file"
-      - "-//test:output_file_map_default"
   windows_common: &windows_common
     platform: windows
     build_targets:
       - "//tools/..."
+      - "@swift_argument_parser//:ArgumentParser"
       # Cross-platform Swift examples that exercise the Windows host toolchain:
       # a `swift_binary` executable and a `linkshared` Windows DLL.
       - "//examples/xplatform/hello_world"
@@ -49,6 +30,8 @@ x_defaults:
       # Exercises XCTest discovery, the test runner, and `swift_test` execution
       # on Windows.
       - "//examples/xplatform/xctest"
+      - "//tools/worker:json_worker_protocol_test"
+      - "//tools/worker:proto_worker_protocol_test"
 
 tasks:
   macos_latest:
@@ -77,29 +60,47 @@ tasks:
   ubuntu2204_latest:
     name: "Current LTS"
     bazel: latest
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu2204_rolling:
     name: "Latest rolling"
     bazel: rolling
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
     <<: *linux_common
 
   ubuntu2204_last_green:
     name: "Last Green Bazel"
     bazel: last_green
+    <<: *linux_common
+
+  ubuntu2404_latest_sysroots:
+    name: "Current LTS Ubuntu sysroots"
+    bazel: latest
+    platform: ubuntu2404
+    test_targets:
+      - "//test/linux_static_stdlib:linux_ubuntu22.04_cc_test"
+      - "//test/linux_static_stdlib:linux_ubuntu22.04_foundation_test"
+      - "//test/linux_static_stdlib:linux_ubuntu24.04_cc_test"
+      - "//test/linux_static_stdlib:linux_ubuntu24.04_foundation_test"
+
+  ubuntu2204_latest_non_hermetic:
+    name: "Current LTS non-hermetic toolchain"
+    bazel: latest
+    platform: ubuntu2204
+    environment:
+      SWIFT_VERSION: "6.3.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
+      PATH: "$SWIFT_HOME/usr/bin:$PATH"
     shell_commands:
       - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
       - "mkdir $SWIFT_HOME"
       - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
-    <<: *linux_common
+    build_targets:
+      - "//examples/xplatform/hello_world"
+      - "//examples/xplatform/shared_library"
+    test_targets:
+      - "//examples/xplatform/xctest:xctest"
+      - "//test/linux_static_stdlib:linux_non_hermetic_dynamic_stdlib_test"
+      - "//test/linux_static_stdlib:linux_non_hermetic_linkshared_dynamic_stdlib_test"
 
   windows:
     name: "Current LTS"
@@ -130,13 +131,17 @@ tasks:
   doc_tests:
     name: "Doc tests"
     bazel: latest
-    <<: *linux_environment
-    shell_commands:
-      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
-      - "mkdir $SWIFT_HOME"
-      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2204/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu22.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    platform: ubuntu2204
     test_targets:
       - "doc/..."
+
+  sysroot_lockfiles_check:
+    name: "Sysroot lockfiles up-to-date"
+    platform: ubuntu2204
+    bazel: latest
+    shell_commands:
+      - "bazel run //tools/sysroots:lock"
+      - "git diff --exit-code -- 'swift/internal/extensions/*_sysroot.lock.json' || { echo '::error::Sysroot lockfiles are out of date. Run: bazel run //tools/sysroots:lock'; exit 1; }"
 
   gazelle_check:
     name: "Gazelle up-to-date"
@@ -146,4 +151,4 @@ tasks:
       - "bazel run //doc:gazelle"
       - "git diff --exit-code || { echo '::error::Gazelle-generated BUILD files are out of date. Run: bazel run //doc:gazelle'; exit 1; }"
 
-buildifier: 8.5.1
+buildifier: 10.0.1

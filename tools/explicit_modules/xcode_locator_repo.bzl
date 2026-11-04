@@ -14,7 +14,7 @@
 
 """Compile xcode-locator into its own repo so the binary is shareable."""
 
-load("@bazel_tools//tools/osx:xcode_configure.bzl", "run_xcode_locator")
+load("@apple_support//xcode:xcode_configure.bzl", "run_xcode_locator")
 
 _LOCATOR_SRC = Label("@bazel_tools//tools/osx:xcode_locator.m")
 

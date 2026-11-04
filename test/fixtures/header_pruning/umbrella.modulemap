@@ -1,0 +1,1 @@
+module Umbrella { umbrella "umbrella_headers" use test_fixtures_header_pruning_middle export * }

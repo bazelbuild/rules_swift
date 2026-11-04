@@ -1,0 +1,27 @@
+name: Update Swift Releases
+
+on:
+  schedule:
+    - cron: "0 15 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-swift-releases
+  cancel-in-progress: false
+
+jobs:
+  update_swift_releases:
+    name: Update Swift releases
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Update Swift release metadata
+        run: ./.github/update-swift-release-files.sh

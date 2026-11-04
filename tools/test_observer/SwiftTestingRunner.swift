@@ -194,7 +194,7 @@ public final class SwiftTestingRunner: Sendable {
     else {
       return
     }
-    let instant = EncodedInstant(seconds: absolute.doubleValue)
+    let instant = TestInstant(seconds: absolute.doubleValue)
     let nameComponents = nameComponents(for: testID)
 
     // Later versions of swift-testing (after Xcode 16.0) stopped reporting suites that don't use
@@ -218,67 +218,120 @@ public final class SwiftTestingRunner: Sendable {
 
     case "issueRecorded":
       guard
-        case .array(let messages) = payload["messages"],
-        // Don't record known issues.
         case .object(let issue) = payload["issue"],
-        case .bool(false) = issue["isKnown"]
+        !SwiftTestingRunner.isKnownIssue(issue),
+        SwiftTestingRunner.isFailingIssue(issue)
       else {
         return
       }
-      // The issue may have multiple messages, some of which are extra details. Pick out the main
-      // message for the failure.
-      // TODO: b/301468828 - Handle the extra detail messages as well.
-      for case .object(let message) in messages {
-        guard
-          case .string("fail") = message["symbol"],
-          case .string(let text) = message["text"]
-        else {
-          return
-        }
-        XUnitTestRecorder.shared.recordTestIssue(
-          nameComponents: nameComponents,
-          issue: RecordedIssue(kind: .failure, reason: text))
-      }
+      XUnitTestRecorder.shared.recordTestIssue(
+        nameComponents: nameComponents,
+        issue: RecordedIssue(kind: .failure, reason: SwiftTestingRunner.failureReason(for: payload)))
 
     default:
       break
     }
   }
 
+  /// Returns a value indicating whether the given encoded issue is a known issue (i.e., one that
+  /// was recorded inside `withKnownIssue` and therefore should not fail the test).
+  ///
+  /// Before version 6.5 of the JSON event stream schema, `isKnown` was a required boolean. In 6.5
+  /// (https://github.com/swiftlang/swift-testing/pull/1839), it became optional: it is omitted
+  /// entirely when the issue is not known, and it may be the known issue's comment string instead
+  /// of `true`. Only an explicit `true` or a comment string counts as known; treating a missing
+  /// field as known would silently drop every failure.
+  public static func isKnownIssue(_ issue: [String: JSON]) -> Bool {
+    switch issue["isKnown"] {
+    case .bool(let isKnown):
+      return isKnown
+    case .string:
+      return true
+    default:
+      return false
+    }
+  }
+
+  /// Returns a value indicating whether the given encoded issue should fail the test.
+  ///
+  /// `isFailure` was added in version 6.3 of the JSON event stream schema (alongside warning
+  /// severities). Earlier schemas only had failing issues, so a missing field means the issue fails.
+  public static func isFailingIssue(_ issue: [String: JSON]) -> Bool {
+    if case .bool(let isFailure) = issue["isFailure"] {
+      return isFailure
+    }
+    return true
+  }
+
+  /// Returns a human-readable description of the issue in the given `issueRecorded` event payload.
+  ///
+  /// Schemas before 6.5 include a `messages` array containing the same text that swift-testing
+  /// prints to the console, and we use its `fail` message when present. Starting with 6.5,
+  /// `messages` is omitted unless the `SWIFT_TESTING_EVENT_STREAM_MESSAGES_FIELD_ENABLED`
+  /// environment variable is set, so we build an equivalent description from the structured
+  /// `issue`, `sourceLocation`, and `comments` fields instead.
+  public static func failureReason(for payload: [String: JSON]) -> String {
+    if case .array(let messages) = payload["messages"] {
+      for case .object(let message) in messages {
+        if case .string("fail") = message["symbol"], case .string(let text) = message["text"] {
+          return text
+        }
+      }
+    }
+
+    var reason = "Issue recorded"
+    if case .object(let location) = payload["sourceLocation"],
+      case .string(let filePath) = location["filePath"] ?? location["fileID"],
+      case .number(let line) = location["line"],
+      case .number(let column) = location["column"]
+    {
+      let fileName = filePath.split(separator: "/").last.map(String.init) ?? filePath
+      reason += " at \(fileName):\(line.intValue):\(column.intValue)"
+    }
+
+    if case .object(let issue) = payload["issue"] {
+      if case .object(let expression) = issue["expression"],
+        case .string(let sourceCode) = expression["sourceCode"]
+      {
+        reason += ": Expectation failed: \(sourceCode)"
+      } else if case .object(let error) = issue["error"],
+        case .string(let description) = error["description"]
+      {
+        reason += ": Caught error: \(description)"
+      } else if case .number(let timeLimit) = issue["exceededTimeLimit"] {
+        reason += ": Time limit was exceeded: \(timeLimit.doubleValue) seconds"
+      }
+    }
+
+    if case .array(let comments) = payload["comments"] {
+      for case .string(let comment) in comments {
+        reason += " - \(comment)"
+      }
+    }
+    return reason
+  }
+
+  /// Matches the trailing source location that swift-testing appends to some test IDs.
+  ///
+  /// `NSRegularExpression` rather than a regex literal: literals require the `Regex` runtime, which
+  /// is only available on iOS 16, macOS 13 and later, and this tool is linked into every
+  /// `swift_test` binary regardless of deployment target.
+  private static let sourceLocationSuffix = try! NSRegularExpression(
+    pattern: #"\.swift:\d+:\d+"#)
+
   /// Returns a list of name components by parsing the given test identifier.
   private func nameComponents(for testID: String) -> [String] {
     let components = testID.split(separator: "/")
     // Some test IDs end with the source location of the test, which is not typically useful to show
     // as part of the hierarchy.
-    if let last = components.last, last.firstMatch(of: /\.swift:\d+:\d+/) != nil {
-      return components[..<(components.count - 1)].map(String.init)
+    if let last = components.last {
+      let lastString = String(last)
+      let range = NSRange(lastString.startIndex..., in: lastString)
+      if Self.sourceLocationSuffix.firstMatch(in: lastString, range: range) != nil {
+        return components[..<(components.count - 1)].map(String.init)
+      }
     }
     return components.map(String.init)
-  }
-}
-
-/// Represents an instant in time that is encoded as part of a test event.
-///
-/// The instant is encoded as a double representing the number of seconds retrieved from
-/// `SuspendingClock` at the time the event occurred. We can't reconstitute that value back into a
-/// `SuspendingClock.Instant`, but they're all relative to each other so we can provide our own
-/// `InstantProtocol` implementation that is used to compute the duration between two events.
-private struct EncodedInstant: Comparable, InstantProtocol {
-  /// The number of seconds since the test clock's basis.
-  var seconds: Double
-
-  static func < (lhs: EncodedInstant, rhs: EncodedInstant) -> Bool {
-    return lhs.seconds < rhs.seconds
-  }
-
-  func advanced(by duration: Swift.Duration) -> EncodedInstant {
-    let components = duration.components
-    return EncodedInstant(
-      seconds: seconds + Double(components.seconds) + Double(components.attoseconds) / 1e18)
-  }
-
-  func duration(to other: EncodedInstant) -> Swift.Duration {
-    return .seconds(other.seconds - self.seconds)
   }
 }
 

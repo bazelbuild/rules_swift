@@ -9,6 +9,10 @@ load(
     "//test/rules:action_inputs_test.bzl",
     "make_action_inputs_test_rule",
 )
+load(
+    "//test/rules:explicit_swift_module_map_test.bzl",
+    "make_explicit_swift_module_map_test_rule",
+)
 
 default_test = make_action_command_line_test_rule()
 
@@ -93,6 +97,71 @@ explicit_swift_module_map_inputs_test = make_action_inputs_test_rule(
     },
 )
 
+EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "swift.emit_swiftdoc",
+        "swift.emit_swiftsourceinfo",
+        "swift.split_derived_files_generation",
+    ],
+}
+
+explicit_swift_module_map_metadata_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_metadata_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_METADATA_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "-swift.emit_swiftdoc",
+        "-swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_no_metadata_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_no_metadata_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_NO_METADATA_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "swift.emit_swiftdoc",
+        "-swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_doc_only_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_doc_only_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_DOC_ONLY_CONFIG_SETTINGS,
+)
+
+EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS = {
+    "//command_line_option:features": [
+        "swift.use_explicit_swift_module_map",
+        "-swift.emit_swiftdoc",
+        "swift.emit_swiftsourceinfo",
+    ],
+}
+
+explicit_swift_module_map_source_info_only_test = make_explicit_swift_module_map_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS,
+)
+
+explicit_swift_module_map_source_info_only_inputs_test = make_action_inputs_test_rule(
+    config_settings = EXPLICIT_SWIFT_MODULE_MAP_SOURCE_INFO_ONLY_CONFIG_SETTINGS,
+)
+
 # Test with enabled `swift.add_target_name_to_output` feature
 explicit_swift_module_map_with_target_name_test = make_action_command_line_test_rule(
     config_settings = {
@@ -108,6 +177,14 @@ disable_objc_test = make_action_command_line_test_rule(
         "//command_line_option:features": [
             "-objc_link_flag",
             "-swift.objc_link_flag",
+        ],
+    },
+)
+
+ios_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": [
+            str(Label("@apple_support//platforms:ios_arm64")),
         ],
     },
 )
@@ -219,10 +296,26 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
+    disable_swift_sandbox_test(
+        name = "{}_disable_swift_sandbox_module_interface_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-disable-sandbox",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
     default_opt_test(
         name = "{}_default_opt_test".format(name),
         tags = all_tags,
-        expected_argv = ["-emit-object", "-O", "-whole-module-optimization"],
+        expected_argv = [
+            "-emit-object",
+            "-O",
+            "-whole-module-optimization",
+            "-num-threads 12",
+        ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
@@ -260,6 +353,121 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/basic:second",
     )
 
+    explicit_swift_module_map_metadata_test(
+        name = "{}_explicit_swift_module_map_metadata_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "docPath": "test/fixtures/basic/first.swiftdoc",
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+            "sourceInfoPath": "test/fixtures/basic/first.swiftsourceinfo",
+        },
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_metadata_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+            "first.swiftsourceinfo",
+        ],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_metadata_derive_files_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftDeriveFiles",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+            "first.swiftsourceinfo",
+        ],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_no_metadata_test(
+        name = "{}_explicit_swift_module_map_no_metadata_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+        },
+        not_expected_keys = ["docPath", "sourceInfoPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_no_metadata_inputs_test(
+        name = "{}_explicit_swift_module_map_no_metadata_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+        ],
+        not_expected_inputs = ["first.swiftdoc", "first.swiftsourceinfo"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_doc_only_test(
+        name = "{}_explicit_swift_module_map_doc_only_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "docPath": "test/fixtures/basic/first.swiftdoc",
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+        },
+        not_expected_keys = ["sourceInfoPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_doc_only_inputs_test(
+        name = "{}_explicit_swift_module_map_doc_only_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftdoc",
+        ],
+        not_expected_inputs = ["first.swiftsourceinfo"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_source_info_only_test(
+        name = "{}_explicit_swift_module_map_source_info_only_test".format(name),
+        tags = all_tags,
+        module_map = "test/fixtures/basic/second.swift-explicit-module-map.json",
+        module_name = "first",
+        expected_mapping = {
+            "modulePath": "test/fixtures/basic/first.swiftmodule",
+            "sourceInfoPath": "test/fixtures/basic/first.swiftsourceinfo",
+        },
+        not_expected_keys = ["docPath"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
+    explicit_swift_module_map_source_info_only_inputs_test(
+        name = "{}_explicit_swift_module_map_source_info_only_inputs_test".format(name),
+        tags = all_tags,
+        mnemonic = "SwiftCompile",
+        expected_inputs = [
+            "first.swiftmodule",
+            "second.swift-explicit-module-map.json",
+            "first.swiftsourceinfo",
+        ],
+        not_expected_inputs = ["first.swiftdoc"],
+        target_under_test = "//test/fixtures/basic:second",
+    )
+
     build_test(
         name = "{}_explicit_swift_module_map_build_test".format(name),
         tags = all_tags,
@@ -287,7 +495,6 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
@@ -300,7 +507,6 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         not_expected_argv = ["-ObjC"],
@@ -315,7 +521,6 @@ def features_test_suite(name, tags = []):
         expected_argv = [
             "-L/usr/lib/swift",
             "-ObjC",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         mnemonic = "CppLink",
@@ -328,7 +533,6 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-L/usr/lib/swift",
-            "-Wl,-objc_abi_version,2",
             "-Wl,-rpath,/usr/lib/swift",
         ],
         not_expected_argv = ["-ObjC"],
@@ -350,6 +554,21 @@ def features_test_suite(name, tags = []):
         ],
         mnemonic = "CppLink",
         target_under_test = "//test/fixtures/xctest_runner:PassingUnitTests",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    ios_test(
+        name = "{}_ios_link_omits_developer_dir_symlink_rpaths_test".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-Wl,-rpath,/usr/lib/swift",
+        ],
+        not_expected_argv = [
+            "-Wl,-rpath,/private/var/select/developer_dir/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/iphoneos",
+            "-Wl,-rpath,/var/db/xcode_select_link/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/iphoneos",
+        ],
+        mnemonic = "CppLink",
+        target_under_test = "//test/fixtures/linking:bin",
         target_compatible_with = ["@platforms//os:macos"],
     )
 

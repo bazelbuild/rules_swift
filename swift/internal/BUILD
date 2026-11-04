@@ -88,6 +88,7 @@ bzl_library(
     deps = [
         ":action_names",
         ":actions",
+        ":attrs",
         ":debugging",
         ":explicit_module_map_file",
         ":feature_names",
@@ -261,16 +262,6 @@ bzl_library(
     visibility = ["//swift:__subpackages__"],
     deps = [
         ":feature_names",
-    ],
-)
-
-bzl_library(
-    name = "repositories",
-    srcs = ["repositories.bzl"],
-    visibility = ["//swift:__subpackages__"],
-    deps = [
-        ":swift_autoconfiguration",
-        "@bazel_tools//tools/build_defs/repo:http.bzl",
     ],
 )
 

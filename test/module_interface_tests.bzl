@@ -67,6 +67,22 @@ def module_interface_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
+    build_test(
+        name = "{}_interface_only".format(name),
+        targets = [
+            "//test/fixtures/module_interface:toy_module_interface",
+        ],
+        tags = all_tags,
+    )
+
+    build_test(
+        name = "{}_swiftcopt_driver_flags".format(name),
+        targets = [
+            "//test/fixtures/module_interface:toy_module_interface_with_driver_flags",
+        ],
+        tags = all_tags,
+    )
+
     # Verify that a `swift_binary` builds properly when depending on a
     # `swift_import` target that references a `.swiftinterface` file.
     build_test(

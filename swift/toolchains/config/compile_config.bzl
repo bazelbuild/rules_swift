@@ -41,6 +41,7 @@ load(
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_COVERAGE_PREFIX_MAP",
     "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_DEBUG_MODULE_PATH",
     "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
@@ -66,7 +67,9 @@ load(
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_FULL_LTO",
     "SWIFT_FEATURE_GLOBAL_MODULE_CACHE_USES_TMPDIR",
+    "SWIFT_FEATURE_INCREMENTAL_FILE_HASHING",
     "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
+    "SWIFT_FEATURE_INDEX_STORE_COMPRESS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
@@ -91,6 +94,7 @@ load(
     "SWIFT_FEATURE_USE_PCH_OUTPUT_DIR",
     "SWIFT_FEATURE__COVERAGE_PREFIX_MAP_ABSOLUTE_SOURCES_NON_HERMETIC",
     "SWIFT_FEATURE__NUM_THREADS_0_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEVELOPER_DIR",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
@@ -106,9 +110,9 @@ _DEFAULT_WMO_THREAD_COUNT = 12
 # Swift command line flags that enable whole module optimization. (This
 # dictionary is used as a set for quick lookup; the values are irrelevant.)
 _WMO_FLAGS = {
-    "-wmo": True,
-    "-whole-module-optimization": True,
     "-force-single-frontend-invocation": True,
+    "-whole-module-optimization": True,
+    "-wmo": True,
 }
 
 def compile_action_configs(
@@ -166,10 +170,7 @@ def compile_action_configs(
         # Dump ast files
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DUMP_AST],
-            configurators = [
-                add_arg("-dump-ast"),
-                add_arg("-suppress-warnings"),
-            ],
+            configurators = [add_arg("-dump-ast")],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DUMP_AST],
@@ -271,7 +272,40 @@ def compile_action_configs(
         # Configure constant value extraction.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE],
-            configurators = [_constant_value_extraction_configurator],
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = True,
+                ),
+            ],
+            features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [
+                lambda prerequisites, args: _constant_value_extraction_configurator(
+                    prerequisites,
+                    args,
+                    use_driver_flag = False,
+                ),
+            ],
+            not_features = [SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST],
+        ),
+
+        # Record this object's own module path in debugging configurations.
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [lambda prerequisites, args: args.add(
+                "-debug-module-path",
+                prerequisites.swiftmodule_file,
+            )],
+            features = [[
+                SWIFT_FEATURE_DEBUG_MODULE_PATH,
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+                compilation_mode,
+            ] for compilation_mode in [SWIFT_FEATURE_DBG, SWIFT_FEATURE_FASTBUILD, SWIFT_FEATURE_FULL_DEBUG_INFO]],
         ),
 
         # Link Time Optimization (LTO).
@@ -460,6 +494,7 @@ def compile_action_configs(
         # Disable Swift sandbox.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
             ],
             configurators = [
@@ -579,22 +614,17 @@ def compile_action_configs(
             ],
             not_features = [SWIFT_FEATURE_COVERAGE_PREFIX_MAP, SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),
-
-        # Ensure that .swiftsourceinfo files are tracked and not deleted by the worker
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_COMPILE,
-            ],
-            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
-            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
-            not_features = [SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION],
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-avoid-emit-module-source-info")],
+            not_features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
         ),
         ActionConfigInfo(
-            actions = [
-                SWIFT_ACTION_DERIVE_FILES,
+            actions = [SWIFT_ACTION_COMPILE, SWIFT_ACTION_DERIVE_FILES],
+            configurators = [
+                add_arg("-Xwrapped-swift=-enable-incremental-file-hashing"),
             ],
-            configurators = [add_arg("-Xwrapped-swift=-emit-swiftsourceinfo")],
-            features = [SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO],
+            features = [SWIFT_FEATURE_INCREMENTAL_FILE_HASHING],
         ),
     ]
 
@@ -808,7 +838,6 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -825,7 +854,6 @@ def compile_action_configs(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [
@@ -1070,20 +1098,40 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_USE_C_MODULES],
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
+        # The JSON manifest contains dependencies, not the target's own
+        # incomplete Clang module. Configure that module separately.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [
+                lambda prerequisites, args: _configure_mixed_module_clang_inputs(
+                    getattr(prerequisites, "mixed_module_clang_inputs", None),
+                    args,
+                    prefer_precompiled_modules = True,
+                ),
+            ],
+            features = [
+                SWIFT_FEATURE_USE_C_MODULES,
+                SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+            ],
+        ),
         ActionConfigInfo(
             actions = [
-                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_dependencies_clang_modules_configurator],
             features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
+
         # These actions do not support reading system modules from the
-        # explicit module map json file
+        # explicit module map JSON file, so pass all Clang modules directly,
+        # including system modules.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
             ],
             configurators = [
                 lambda prerequisites, args: _dependencies_clang_modules_configurator(
@@ -1195,11 +1243,12 @@ def compile_action_configs(
             configurators = [_package_name_configurator],
         ),
 
-        # Extra flags for swiftmodule only compilations.
+        # Match the driver's body-skipping mode for module emission, preserving
+        # bodies that declare nested types needed by the debugger.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_DERIVE_FILES],
             configurators = [
-                add_arg("-experimental-skip-non-inlinable-function-bodies"),
+                add_arg("-experimental-skip-non-inlinable-function-bodies-without-types"),
             ],
             features = [SWIFT_FEATURE_ENABLE_SKIP_FUNCTION_BODIES],
         ),
@@ -1212,6 +1261,32 @@ def compile_action_configs(
             ],
             configurators = [_index_while_building_configurator],
             features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-Xfrontend", "-index-store-compress")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_STORE_COMPRESS,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [add_arg("-index-store-compress")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_STORE_COMPRESS,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
+            configurators = [add_arg("-Xfrontend", "-index-store-compress")],
+            features = [
+                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
+                SWIFT_FEATURE_INDEX_STORE_COMPRESS,
+                SWIFT_FEATURE_MODULAR_INDEXING,
+                SWIFT_FEATURE_SYSTEM_MODULE,
+            ],
         ),
 
         # Configure localized-string extraction. Emission requires a real
@@ -1292,6 +1367,7 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [
                 _upcoming_and_experimental_features_configurator,
+                _warnings_as_errors_configurator,
             ],
         ),
         ActionConfigInfo(
@@ -1432,7 +1508,6 @@ def compile_action_configs(
         action_configs.append(
             ActionConfigInfo(
                 actions = all_compile_action_names() + [
-                    SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                     SWIFT_ACTION_DUMP_AST,
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 ],
@@ -1609,8 +1684,13 @@ def _emit_module_path_configurator(prerequisites, args):
     args.add("-emit-module-path", prerequisites.swiftmodule_file)
 
 def _emit_module_interface_path_configurator(prerequisites, args):
-    """Adds the `.swiftinterface` output path to the command line."""
+    """Adds the public and package `.swiftinterface` output paths."""
     args.add("-emit-module-interface-path", prerequisites.swiftinterface_file)
+    if prerequisites.package_swiftinterface_file:
+        args.add(
+            "-emit-package-module-interface-path",
+            prerequisites.package_swiftinterface_file,
+        )
 
 def _emit_private_module_interface_path_configurator(prerequisites, args):
     """Adds the `.private.swiftinterface` output path to the command line."""
@@ -1790,7 +1870,9 @@ def _collect_clang_module_inputs(
         always_include_headers,
         explicit_module_compilation_context,
         modules,
-        prefer_precompiled_modules):
+        prefer_precompiled_modules,
+        mixed_module_clang_inputs = None,
+        unchecked_include_headers = None):
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
@@ -1801,6 +1883,8 @@ def _collect_clang_module_inputs(
             target being compiled, if the inputs are being collected for an
             explicit module compilation action. This parameter should be `None`
             if inputs are being collected for Swift compilation.
+        mixed_module_clang_inputs: The initial Clang module for the C half of a
+            mixed Swift target, or None if there are no headers to import.
         modules: A list of module structures (as returned by
             `create_swift_module_context`). The precompiled Clang modules or the
             textual module maps and headers of these modules (depending on the
@@ -1809,6 +1893,15 @@ def _collect_clang_module_inputs(
             be preferred over textual module map files and headers for modules
             that have them. If False, textual module map files and headers
             should always be used.
+        unchecked_include_headers: A `depset` of `File`s that the explicit
+            module compilation needs in addition to the headers of the module
+            being compiled and of its direct dependencies, because they can be
+            reached by includes that Clang doesn't layering-check. If this is
+            not `None`, only those headers (and the `unchecked_include_headers`
+            of the precompiled modules of dependencies) are passed as inputs,
+            instead of all of the transitive headers of the module being
+            compiled. Ignored if `explicit_module_compilation_context` is
+            `None`.
 
     Returns:
         A toolchain configuration result (i.e.,
@@ -1818,22 +1911,41 @@ def _collect_clang_module_inputs(
     direct_inputs = []
     transitive_inputs = []
 
+    prune_headers = (
+        explicit_module_compilation_context != None and
+        prefer_precompiled_modules and
+        not always_include_headers and
+        unchecked_include_headers != None
+    )
+
     if explicit_module_compilation_context:
         # This is a `SwiftPrecompileCModule` action, so by definition we're
-        # only here in a build with explicit modules enabled. We should only
-        # need the direct headers of the module being compiled and its
-        # direct dependencies (the latter because Clang needs them present
-        # on the file system to map them to the module that contains them.)
-        # However, we may also need some of the transitive headers, if the
-        # module has dependencies that aren't recognized as modules (e.g.,
-        # `cc_library` targets without an aspect hint) and the module's
-        # headers include those. This will likely over-estimate the needed
-        # inputs, but we can't do better without include scanning in
-        # Starlark.
-        transitive_inputs.append(explicit_module_compilation_context.headers)
-        transitive_inputs.append(
-            depset(explicit_module_compilation_context.direct_textual_headers),
-        )
+        # only here in a build with explicit modules enabled.
+        if prune_headers:
+            # We only need the headers of the module being compiled and of its
+            # direct dependencies (the latter because Clang needs them present
+            # on the file system to map them to the module that contains them),
+            # plus the ones that can be reached by includes that Clang doesn't
+            # check (see `_precompile_clang_module`).
+            transitive_inputs.append(depset(
+                explicit_module_compilation_context.direct_headers +
+                explicit_module_compilation_context.direct_textual_headers,
+            ))
+            transitive_inputs.append(unchecked_include_headers)
+        else:
+            # We should only need the direct headers of the module being
+            # compiled and its direct dependencies (the latter because Clang
+            # needs them present on the file system to map them to the module
+            # that contains them.) However, we may also need some of the
+            # transitive headers, if the module has dependencies that aren't
+            # recognized as modules (e.g., `cc_library` targets without an
+            # aspect hint) and the module's headers include those. This will
+            # likely over-estimate the needed inputs, but we can't do better
+            # without include scanning in Starlark.
+            transitive_inputs.append(explicit_module_compilation_context.headers)
+            transitive_inputs.append(
+                depset(explicit_module_compilation_context.direct_textual_headers),
+            )
 
     for module in modules:
         clang_module = module.clang
@@ -1851,26 +1963,68 @@ def _collect_clang_module_inputs(
 
         if use_precompiled_module:
             # For builds preferring explicit modules, use it if we have it
-            # and don't include any headers as inputs.
+            # and don't include any headers as inputs, other than the ones that
+            # can be reached by includes that Clang doesn't check.
             direct_inputs.append(precompiled_module)
+            if prune_headers:
+                transitive_inputs.append(clang_module.unchecked_include_headers)
 
-        if not use_precompiled_module or always_include_headers:
+        if always_include_headers or (
+            not use_precompiled_module and
+            (module_map or not prefer_precompiled_modules)
+        ):
             # If we don't have an explicit module (or we're not using it), we
             # need the transitive headers from the compilation context
             # associated with the module. This will likely overestimate the
             # headers that will actually be used in the action, but until we can
             # use include scanning from Starlark, we can't compute a more
-            # precise input set.
+            # precise input set. Modules without a module map (i.e., pure Swift
+            # modules) are skipped in explicit module builds, because Clang
+            # never reads their headers directly; the headers that it reads
+            # through other modules are covered by those modules.
             compilation_context = clang_module.compilation_context
             transitive_inputs.append(compilation_context.headers)
             transitive_inputs.append(
                 depset(compilation_context.direct_textual_headers),
             )
 
+    if mixed_module_clang_inputs:
+        if mixed_module_clang_inputs.module_map_file:
+            direct_inputs.append(mixed_module_clang_inputs.module_map_file)
+        if mixed_module_clang_inputs.vfs_overlay_file:
+            direct_inputs.append(mixed_module_clang_inputs.vfs_overlay_file)
+        precompiled_module = mixed_module_clang_inputs.precompiled_module
+        use_precompiled_module = prefer_precompiled_modules and precompiled_module
+        if use_precompiled_module:
+            direct_inputs.append(precompiled_module)
+        if (not use_precompiled_module or always_include_headers) and mixed_module_clang_inputs.compilation_context:
+            compilation_context = mixed_module_clang_inputs.compilation_context
+            transitive_inputs.append(compilation_context.headers)
+            transitive_inputs.append(depset(compilation_context.direct_textual_headers))
+
     return ConfigResultInfo(
         inputs = direct_inputs,
         transitive_inputs = transitive_inputs,
     )
+
+def _configure_mixed_module_clang_inputs(mixed_inputs, args, prefer_precompiled_modules):
+    """Imports the C half of a mixed module with explicit or implicit Clang."""
+    if not mixed_inputs or not mixed_inputs.module_name:
+        return
+    args.add("-import-underlying-module")
+    if mixed_inputs.vfs_overlay_file:
+        args.add_all(["-ivfsoverlay", mixed_inputs.vfs_overlay_file], before_each = "-Xcc")
+    args.add_all(
+        [mixed_inputs.virtual_module_map_path or mixed_inputs.module_map_file],
+        format_each = "-fmodule-map-file=%s",
+        before_each = "-Xcc",
+    )
+    if prefer_precompiled_modules and mixed_inputs.precompiled_module:
+        args.add_all(
+            [mixed_inputs.virtual_precompiled_module_path or mixed_inputs.precompiled_module],
+            format_each = "-fmodule-file={}=%s".format(mixed_inputs.module_name),
+            before_each = "-Xcc",
+        )
 
 def _clang_modulemap_dependency_args(module, ignore_system = True):
     """Returns a `swiftc` argument for the module map of a Clang module.
@@ -1954,8 +2108,11 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
     )
 
     if prerequisites.is_swift:
+        mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
+        _configure_mixed_module_clang_inputs(mixed_inputs, args, prefer_precompiled_modules = False)
         compilation_context = None
     else:
+        mixed_inputs = None
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
@@ -1965,6 +2122,7 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
             False,
         ),
         explicit_module_compilation_context = compilation_context,
+        mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
         prefer_precompiled_modules = False,
     )
@@ -1989,9 +2147,12 @@ def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system 
     )
 
     if prerequisites.is_swift:
+        mixed_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None)
+        _configure_mixed_module_clang_inputs(mixed_inputs, args, prefer_precompiled_modules = True)
         compilation_context = None
 
     else:
+        mixed_inputs = None
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
@@ -2001,8 +2162,10 @@ def _dependencies_clang_modules_configurator(prerequisites, args, ignore_system 
             False,
         ),
         explicit_module_compilation_context = compilation_context,
+        mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
         prefer_precompiled_modules = True,
+        unchecked_include_headers = getattr(prerequisites, "unchecked_include_headers", None),
     )
 
 def _framework_search_paths_configurator(prerequisites, args, is_swift):
@@ -2273,6 +2436,7 @@ def _explicit_swift_module_map_configurator(
                 False,
             ),
             explicit_module_compilation_context = None,
+            mixed_module_clang_inputs = getattr(prerequisites, "mixed_module_clang_inputs", None),
             modules = modules,
             prefer_precompiled_modules = True,
         )
@@ -2291,6 +2455,9 @@ def _module_name_configurator(prerequisites, args):
 def _package_name_configurator(prerequisites, args):
     if prerequisites.package_name:
         args.add("-package-name", prerequisites.package_name)
+
+        if prerequisites.has_package_interface:
+            args.add("-experimental-package-interface-load")
 
 def _index_while_building_configurator(prerequisites, args):
     """Adds flags for indexstore generation to the command line."""
@@ -2419,7 +2586,7 @@ def _exclude_swift_incompatible_define(define):
 def _conditional_compilation_flag_configurator(prerequisites, args):
     """Adds (non-Clang) conditional compilation flags to the command line."""
     all_defines = depset(
-        prerequisites.defines,
+        prerequisites.defines + prerequisites.local_defines,
         transitive = [
             # Take any Swift-compatible defines from Objective-C dependencies
             # and define them for Swift.
@@ -2433,19 +2600,29 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
         uniquify = True,
     )
 
-def _constant_value_extraction_configurator(prerequisites, args):
+def _constant_value_extraction_configurator(
+        prerequisites,
+        args,
+        *,
+        use_driver_flag = False):
     """Adds flags related to constant value extraction to the command line."""
     if not prerequisites.const_gather_protocols_file:
         return None
 
-    args.add("-emit-const-values-path", prerequisites.const_values_files[0])
-    args.add_all(
-        [
-            "-const-gather-protocols-file",
+    args.add("-emit-const-values-path", prerequisites.const_values_files[0].path)
+    if use_driver_flag:
+        args.add(
+            "-const-gather-protocols-list",
             prerequisites.const_gather_protocols_file,
-        ],
-        before_each = "-Xfrontend",
-    )
+        )
+    else:
+        args.add_all(
+            [
+                "-const-gather-protocols-file",
+                prerequisites.const_gather_protocols_file,
+            ],
+            before_each = "-Xfrontend",
+        )
     return ConfigResultInfo(
         inputs = [prerequisites.const_gather_protocols_file],
     )
@@ -2459,6 +2636,13 @@ def _upcoming_and_experimental_features_configurator(prerequisites, args):
     args.add_all(
         prerequisites.experimental_features,
         before_each = "-enable-experimental-feature",
+    )
+
+def _warnings_as_errors_configurator(prerequisites, args):
+    """Adds warning groups to the command line."""
+    args.add_all(
+        getattr(prerequisites, "werror_warning_groups", []),
+        before_each = "-Werror",
     )
 
 def _additional_inputs_configurator(prerequisites, _args):

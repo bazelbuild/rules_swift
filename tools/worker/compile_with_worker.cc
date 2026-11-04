@@ -17,6 +17,13 @@
 #include <iostream>
 #include <optional>
 
+#if defined(RULES_SWIFT_USE_PROTO_WORKER) && defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
+
+#include <cstdio>
+#endif
+
 #include "tools/worker/work_processor.h"
 #include "tools/worker/worker_protocol.h"
 
@@ -30,6 +37,15 @@
 // are interrelated. Once all of these outputs exist on the file system, future
 // invocations of the compiler will use them to detect which source files
 // actually need to be recompiled if any of them change.
+//
+// With split derived-files generation, SwiftDeriveFiles uses its own output
+// file map containing per-source dependency paths. The worker also adds paths
+// for partial .swiftmodules: the driver requires those outputs to exist before
+// it can skip a source, and otherwise places them in a temporary directory.
+// These partial modules and dependencies stay in _swift_incremental_derived,
+// separate from SwiftCompile's state in _swift_incremental. They are not Bazel
+// outputs; only the final module and other requested derived files are exposed
+// to downstream actions.
 //
 // This compilation model doesn't interact well with Bazel, which expects builds
 // to be hermetic (not affected by each other). In other words, outputs of build
@@ -71,9 +87,25 @@
 // `bazel clean`, as the user would expect.) Then, after the compiler is done,
 // we copy those outputs into the locations where Bazel declared them, so that
 // it can find them as well.
+//
+// We also redirect module-level outputs, such as the final .swiftmodule and
+// generated header, to this location. The compiler updates these files along
+// with its dependency records, so we need to keep them together even if a build
+// fails. Otherwise, the next invocation could treat an older module as up to
+// date and copy it into Bazel's output location without recompiling.
+//
+// Cached inputs can change without newer timestamps. We track arguments and
+// non-source input digests to invalidate stale incremental state, leaving
+// source changes to Swift's dependency tracking.
 
 int CompileWithWorker(const std::vector<std::string>& args,
                       std::string index_import_path) {
+#if defined(RULES_SWIFT_USE_PROTO_WORKER) && defined(_WIN32)
+  // The protobuf wire format must not undergo Windows text-mode translation.
+  _setmode(_fileno(stdin), _O_BINARY);
+  _setmode(_fileno(stdout), _O_BINARY);
+#endif
+
   // Pass the "universal arguments" to the Swift work processor. They will be
   // rewritten to replace any placeholders if necessary, and then passed at the
   // beginning of any process invocation. Note that these arguments include the

@@ -7,16 +7,10 @@ load("//swift:swift_library.bzl", "swift_library")
 load("//test:transitions.bzl", "transition_binary")
 load(":extract_pcm.bzl", "extract_pcm")
 load(":extract_swiftmodule.bzl", "extract_swiftmodule")
-load(":xcode_version_at_least.bzl", "xcode_version_at_least")
-
-xcode_version_at_least(
-    name = "xcode_at_least_26_4",
-    minimum_version = "26.4",
-)
 
 config_setting(
     name = "supports_hermetic_swiftmodule",
-    flag_values = {":xcode_at_least_26_4": "True"},
+    flag_values = {"//test:xcode_at_least_26_4": "True"},
 )
 
 transition_binary(
@@ -66,6 +60,7 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_obj_pcm)"],
     data = [":simple_obj_pcm"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -93,6 +88,7 @@ sh_test(
     srcs = ["check_hermetic_pcm.sh"],
     args = ["$(rootpath :simple_swift_header_pcm)"],
     data = [":simple_swift_header_pcm"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -122,6 +118,7 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_swiftmodule)"],
     data = [":downstream_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -139,6 +136,7 @@ sh_test(
     srcs = ["check_hermetic_swiftmodule.sh"],
     args = ["$(rootpath :downstream_explicit_swiftmodule)"],
     data = [":downstream_explicit_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -148,6 +146,10 @@ sh_test(
 extract_swiftmodule(
     name = "testing_swiftmodule",
     target = "@system_sdk//:Testing",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 # Direct system Swift modules should not embed absolute Xcode paths either,
@@ -161,6 +163,7 @@ sh_test(
         "Testing",
     ],
     data = [":testing_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -185,6 +188,10 @@ system_swiftinterface(
 extract_swiftmodule(
     name = "non_xcode_swiftinterface_swiftmodule",
     target = ":non_xcode_swiftinterface_module",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 # A swiftinterface outside DEVELOPER_DIR can come from an external framework.
@@ -199,6 +206,7 @@ sh_test(
         "test/fixtures/precompiled_modules/LowerVersionLib.swiftinterface",
     ],
     data = [":non_xcode_swiftinterface_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = ["@platforms//os:macos"],
 )
 
@@ -226,6 +234,10 @@ swift_library(
 extract_swiftmodule(
     name = "downstream_with_plugin_swiftmodule",
     target = ":DownstreamWithPlugin",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 sh_test(
@@ -236,6 +248,7 @@ sh_test(
         "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
     ],
     data = [":downstream_with_plugin_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -246,6 +259,10 @@ extract_swiftmodule(
     name = "downstream_with_plugin_explicit_swiftmodule",
     extra_features = ["swift.use_explicit_swift_module_map"],
     target = ":DownstreamWithPlugin",
+    target_compatible_with = select({
+        ":supports_hermetic_swiftmodule": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
 )
 
 sh_test(
@@ -256,6 +273,7 @@ sh_test(
         "test/hermetic_pcm/noop_plugin#NoopMacroPlugin",  # Make sure the plugin path is included
     ],
     data = [":downstream_with_plugin_explicit_swiftmodule"],
+    tags = ["latest-xcode"],
     target_compatible_with = select({
         ":supports_hermetic_swiftmodule": [],
         "//conditions:default": ["@platforms//:incompatible"],

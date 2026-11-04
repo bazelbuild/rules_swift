@@ -25,8 +25,12 @@ load(
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_DBG",
+    "SWIFT_FEATURE_DEBUG_MODULE_PATH",
     "SWIFT_FEATURE_FASTBUILD",
+    "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
+    "SWIFT_FEATURE_USE_C_MODULES",
+    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
 )
 load(":features.bzl", "is_feature_enabled")
 
@@ -123,8 +127,35 @@ def should_embed_swiftmodule_for_debugging(
         not is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
-        )
+        ) and
+        not uses_precise_debug_module_tracking(feature_configuration)
     )
+
+def uses_precise_debug_module_tracking(feature_configuration):
+    """Returns whether precise module tracking is enabled for this build.
+
+    Args:
+        feature_configuration: The Swift feature configuration.
+
+    Returns:
+        True for builds with debug info and all required module features enabled.
+    """
+
+    has_debug_info = _is_debugging(feature_configuration) or is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_FULL_DEBUG_INFO,
+    )
+    return has_debug_info and all([
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = feature_name,
+        )
+        for feature_name in [
+            SWIFT_FEATURE_DEBUG_MODULE_PATH,
+            SWIFT_FEATURE_USE_C_MODULES,
+            SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        ]
+    ])
 
 def _is_debugging(feature_configuration):
     """Returns `True` if the current compilation mode produces debug info.

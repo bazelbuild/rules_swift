@@ -54,7 +54,7 @@ actually build on. Each platform repo name is `<toolchain_name>_<platform>`.
 | `name` | string, required | Repository name of the generated parent toolchain repo. Per-platform repos are named `<name>_<platform>`. |
 | `swift_version` | string | The Swift release version (e.g. `6.2.4`) or a snapshot identifier (see [Snapshots](#snapshot-toolchains)). Mutually exclusive with `swift_version_file`. |
 | `swift_version_file` | label | A label pointing at a file containing the version string (typically a `.swift-version` file checked into the repo). Mutually exclusive with `swift_version`. |
-| `platform_sha256` | string_dict | Optional map of platform → SHA-256. Required for snapshots and any version not present in the bundled `SWIFT_RELEASES` table. When set, it overrides the bundled checksums. |
+| `platform_sha256` | string_dict | Optional map of platform -> SHA-256. Required for snapshots and any version not present in the bundled release metadata. When set, it overrides the bundled checksums. |
 
 ### Supported platforms
 
@@ -104,7 +104,7 @@ swift.toolchain(
 ## Adding versions not bundled with `rules_swift`
 
 `rules_swift` bundles SHA-256 checksums for a curated list of releases (see
-`swift/internal/extensions/swift_releases.bzl`). To use a release that
+`swift/internal/extensions/swift_release_metadata.json`). To use a release that
 isn't bundled, supply your own `platform_sha256` map:
 
 ```bzl
@@ -151,23 +151,23 @@ bazel run @rules_swift//tools/swift-releases -- list \
 The `swift` module extension can be used to download the Swift Android
 SDK for writing NDK code in Swift.
 
-Add the `android_sdk` tag, referencing the `toolchain` tag by name (the
-Swift module format is not stable across compiler versions, so the SDK
-is always downloaded for exactly the toolchain's version):
+Add the `android_sdk` tag alongside the `toolchain` tag (the Swift module
+format is not stable across compiler versions, so the SDK is always downloaded
+for exactly the toolchain's version):
 
 ```bzl
 swift.toolchain(
     name = "swift_toolchain",
-    swift_version = "6.3.2",
+    swift_version = "6.4.0",
 )
 
-swift.android_sdk(toolchain_name = "swift_toolchain")
+swift.android_sdk()
 
 # rules_swift provides only the Swift toolchain; register an Android C/C++ cc
 # toolchain too. For example, @androidndk//:all from hermetic_android_toolchains:
 android = use_extension("@hermetic_android_toolchains//:extensions.bzl", "android")
 android.sdk(version = "35", build_tools_version = "35.0.0")
-android.ndk(version = "r27c", api_level = 28)
+android.ndk(version = "r30", api_level = 28)
 use_repo(android, "androidndk")
 
 register_toolchains(
@@ -209,12 +209,17 @@ The `swift` module extension can also download the Swift WebAssembly SDK,
 which defines matching Swift and C/C++ toolchains targeting
 `wasm32-unknown-wasip1`.
 
-Add the `wasm_sdk` tag, referencing the `toolchain` tag by name (the Swift
-module format is not stable across compiler versions, so the SDK is always
-downloaded for exactly the toolchain's version):
+Add the `wasm_sdk` tag alongside the `toolchain` tag (the Swift module format
+is not stable across compiler versions, so the SDK is always downloaded for
+exactly the toolchain's version):
 
 ```bzl
-swift.wasm_sdk(toolchain_name = "swift_toolchain")
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.wasm_sdk()
 
 register_toolchains(
     "@swift_toolchain//:swift_toolchain_wasm32_xcode",

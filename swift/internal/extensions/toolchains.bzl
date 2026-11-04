@@ -31,6 +31,9 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+"""
+
+_EXEC_TOOLCHAIN_PLATFORM = """
 ## Exec toolchains
 toolchain(
     name = "swift_toolchain_exec_{platform}",
@@ -41,6 +44,18 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
+"""
+
+_CC_EXEC_TOOLCHAIN_PLATFORM = """
+# C++ exec toolchain from repository: `{toolchain_repository}`
+toolchain(
+    name = "cc_toolchain_exec_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {exec_compatible_with},
+    toolchain = "@{toolchain_repository}//:cc_toolchain_exec",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
 """
 
 _SDK_TOOLCHAIN_PLATFORM = """
@@ -94,13 +109,53 @@ def _exec_compatible_with_for_platform(platform):
     ]
 
 def toolchains_for_platform(platform, toolchain_repository):
-    return _TOOLCHAIN_PLATFORM.format(
+    """Returns `toolchain` declarations for a standalone Swift toolchain.
+
+    Args:
+        platform: The platform name (e.g. "xcode" or "ubuntu22.04").
+        toolchain_repository: The name of the repository containing the
+            standalone Swift toolchain.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    content = _TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         toolchain_repository = toolchain_repository,
     )
 
-def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
+    if platform != "xcode":
+        content += _EXEC_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
+
+    if platform in (
+        "ubuntu22.04",
+        "ubuntu22.04-aarch64",
+        "ubuntu24.04",
+        "ubuntu24.04-aarch64",
+        "ubuntu26.04",
+        "ubuntu26.04-aarch64",
+    ):
+        content += _CC_EXEC_TOOLCHAIN_PLATFORM.format(
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            toolchain_repository = toolchain_repository,
+        )
+    return content
+
+# Mirrored from https://github.com/bazelbuild/rules_android_ndk/blob/27b38742eade7e8000b9ed0f320c9f277a0e89d1/target_systems.bzl.tpl
+# Swift doesn't support any other ones
+_ANDROID_ARCHS = [
+    "aarch64",
+    "armv7",
+    "x86_64",
+]
+
+def android_sdk_toolchains_for_platform(platform, sdk_repository):
     """Returns Swift `toolchain` declarations for an Android Swift SDK.
 
     Args:
@@ -108,14 +163,13 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository, archs):
             standalone toolchain the SDK is paired with.
         sdk_repository: The name of the repository created by
             `swift_android_sdk_repository`.
-        archs: The Android architectures (e.g. aarch64) to declare
             toolchains for.
 
     Returns:
         BUILD file content declaring the Swift toolchains.
     """
     content = ""
-    for arch in archs:
+    for arch in _ANDROID_ARCHS:
         content += _SDK_TOOLCHAIN_PLATFORM.format(
             exec_compatible_with = _exec_compatible_with_for_platform(platform),
             platform = platform,

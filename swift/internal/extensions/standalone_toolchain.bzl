@@ -95,11 +95,22 @@ def _standalone_toolchain_impl(repository_ctx):
             strip_prefix = filename.removesuffix(".tar.gz"),
         )
 
+    # llvm-objcopy and llvm-strip are provided by the same multicall binary,
+    # but standalone Swift toolchains do not include the llvm-strip symlink.
+    if not repository_ctx.path("usr/bin/llvm-strip").exists:
+        repository_ctx.symlink("usr/bin/llvm-objcopy", "usr/bin/llvm-strip")
+
     repository_ctx.file(".swift-version", repository_ctx.attr.swift_version)
+
+    linux_sysroot_version = "22.04"
+    for version in ["24.04", "26.04"]:
+        if repository_ctx.attr.platform.startswith("ubuntu" + version):
+            linux_sysroot_version = version
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
         substitutions = {
+            "{linux_sysroot_version}": linux_sysroot_version,
             "{swift_version}": repository_ctx.attr.swift_version,
         },
     )
@@ -110,9 +121,6 @@ def _standalone_toolchain_impl(repository_ctx):
 standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
-        "_build_template": attr.label(
-            default = "//swift/internal/extensions:toolchain.BUILD",
-        ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",
             mandatory = True,
@@ -123,6 +131,9 @@ standalone_toolchain = repository_rule(
         "swift_version": attr.string(
             doc = "Version of the swift toolchain to be installed.",
             mandatory = True,
+        ),
+        "_build_template": attr.label(
+            default = "//swift/internal/extensions:toolchain.BUILD",
         ),
     },
 )
