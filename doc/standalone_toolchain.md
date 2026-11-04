@@ -243,6 +243,40 @@ linked statically from the SDK, so the reactor is a self-contained
 
 See `examples/cross_compilation/wasm` for an end to end example.
 
+## Building for Windows
+
+The `windows_sdk` tag defines Swift and C/C++ toolchains targeting Windows
+(`aarch64` and `x86_64`) from a Linux host. Like an Xcode for Apple's
+platforms, its two SDKs are yours to bring: a Windows Swift SDK for the
+toolchain's Swift version, and the Windows SDK's and MSVC's headers and import
+libraries, which Microsoft's license lets you use but not redistribute.
+`tools/windows_sdk/README.md` says how to make both and how to host them.
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.3.2",
+)
+
+swift.windows_sdk(
+    url = "https://example.com/swift-windows-sdk-6.3.2.tar.gz",
+    sha256 = "…",
+    msvc_url = "https://example.com/msvc-sysroot.tar.gz",
+    msvc_sha256 = "…",
+)
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_windows_aarch64_ubuntu24.04-aarch64",
+    "@swift_toolchain//:cc_toolchain_windows_aarch64_ubuntu24.04-aarch64",
+)
+```
+
+and build with a platform that has the `@platforms//os:windows` and
+`@platforms//cpu:aarch64` (or `x86_64`) constraints. Swift compiles with the
+host toolchain's `swiftc`; C and C++ with its `clang-cl`, linked by its
+`lld-link`. A `.exe` needs the Swift runtime's DLLs beside it:
+`@swift_toolchain_windows_sdk_<host platform>//:runtime_aarch64`.
+
 ## Using the extension from a non-root module
 
 The extension is intended for the root module — it fails if a non-root

@@ -173,3 +173,96 @@ toolchain's compiler.
 """,
     implementation = _swift_wasm_sdk_impl,
 )
+
+def _swift_windows_sdk_impl(repository_ctx):
+    repository_ctx.download_and_extract(
+        url = repository_ctx.attr.url,
+        sha256 = repository_ctx.attr.sha256,
+        type = "tar.gz",
+    )
+    repository_ctx.download_and_extract(
+        url = repository_ctx.attr.msvc_url,
+        sha256 = repository_ctx.attr.msvc_sha256,
+        type = "tar.gz",
+    )
+    repository_ctx.file(".swift-version", repository_ctx.attr.swift_version)
+
+    sdk_version = repository_ctx.read("swift-windows-sdk/VERSION").strip()
+    if sdk_version != repository_ctx.attr.swift_version:
+        fail(("The Windows Swift SDK at {} is Swift {}, but the paired " +
+              "toolchain is Swift {}; they must be the same release.").format(
+            repository_ctx.attr.url,
+            sdk_version,
+            repository_ctx.attr.swift_version,
+        ))
+    versions = {}
+    for line in repository_ctx.read("winsysroot/VERSIONS").splitlines():
+        key, _, value = line.partition("=")
+        versions[key.strip()] = value.strip()
+    if "msvc" not in versions or "sdk" not in versions:
+        fail("The MSVC sysroot at {} has no VERSIONS file naming `msvc` and `sdk`.".format(
+            repository_ctx.attr.msvc_url,
+        ))
+
+    # The paired toolchain's own resource directory holds the host's modules,
+    # which clash with the SDK's; this one is the SDK's Windows modules beside
+    # the paired toolchain's clang headers and shims.
+    paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
+    sdk_swift = "swift-windows-sdk/Windows.platform/Developer/SDKs/Windows.sdk/usr/lib/swift"
+    for entry in repository_ctx.path(sdk_swift).readdir():
+        if entry.basename not in ("clang", "shims"):
+            repository_ctx.symlink(entry, "resource/" + entry.basename)
+    repository_ctx.symlink(paired_usr.get_child("lib", "swift", "clang"), "resource/clang")
+    repository_ctx.symlink(paired_usr.get_child("lib", "swift", "shims"), "resource/shims")
+
+    # The paired toolchain's LLVM tools in MSVC's roles.
+    for tool, name in [("clang-cl", "clang-cl"), ("lld-link", "lld-link"), ("llvm-ar", "llvm-lib")]:
+        repository_ctx.symlink(paired_usr.get_child("bin", tool), "bin/" + name)
+
+    repository_ctx.template(
+        "BUILD.bazel",
+        repository_ctx.attr._build_template,
+        substitutions = {
+            "{clang_root}": _execroot_relative_path(paired_usr.get_child("lib", "clang")),
+            "{msvc_version}": versions["msvc"],
+            "{repo_root}": "external/" + repository_ctx.name,
+            "{sdk_version}": versions["sdk"],
+            "{swift_version}": repository_ctx.attr.swift_version,
+            "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
+        },
+    )
+    if hasattr(repository_ctx, "repo_metadata"):
+        return repository_ctx.repo_metadata(reproducible = True)
+    return None
+
+swift_windows_sdk_repository = repository_rule(
+    attrs = _common_attrs() | {
+        "msvc_sha256": attr.string(
+            doc = "The expected SHA-256 of the MSVC sysroot archive.",
+            mandatory = True,
+        ),
+        "msvc_url": attr.string(
+            doc = """\
+The URL of an archive of the Windows SDK's and MSVC's headers and import
+libraries, made with `tools/windows_sdk/make_msvc_sysroot.sh`.
+""",
+            mandatory = True,
+        ),
+        "paired_swiftc": attr.label(
+            doc = """\
+The `swiftc` of the standalone toolchain this SDK is paired with, whose clang,
+lld-link and llvm-ar build the C and C++ side and link.
+""",
+            mandatory = True,
+        ),
+        "_build_template": attr.label(
+            default = "//swift/internal/extensions:windowssdk.BUILD",
+        ),
+    },
+    doc = """\
+Defines Swift and C/C++ toolchains that target Windows (aarch64 and x86_64)
+from a non-Windows host, with a Windows Swift SDK archive and an MSVC sysroot
+archive the builder supplies (`tools/windows_sdk`).
+""",
+    implementation = _swift_windows_sdk_impl,
+)

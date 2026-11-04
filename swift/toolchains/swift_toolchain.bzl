@@ -829,7 +829,7 @@ def _swift_toolchain_impl(ctx):
         xctest = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "XCTest-{}".format(ctx.attr.xctest_version), "usr", bindir))
         env = dicts.add(
             ctx.attr.env,
-            {"Path": xctest + ";" + ctx.attr.env["Path"]},
+            {"Path": ";".join([p for p in [xctest, ctx.attr.env.get("Path", "")] if p])},
         )
     else:
         env = ctx.attr.env

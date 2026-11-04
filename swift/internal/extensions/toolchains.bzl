@@ -183,6 +183,53 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository):
         )
     return content
 
+_WINDOWS_SDK_TOOLCHAIN_PLATFORM = """
+# Swift and C/C++ toolchains from repository: `{sdk_repository}`
+toolchain(
+    name = "swift_toolchain_windows_{cpu}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:swift_toolchain_{cpu}",
+    toolchain_type = "@rules_swift//toolchains:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "cc_toolchain_windows_{cpu}_{platform}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    toolchain = "@{sdk_repository}//:cc_toolchain_{cpu}",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+    visibility = ["//visibility:public"],
+)
+"""
+
+def windows_sdk_toolchains_for_platform(platform, sdk_repository):
+    """Returns Swift and C++ `toolchain` declarations for a Windows Swift SDK.
+
+    Args:
+        platform: The platform name (e.g. "ubuntu24.04") whose standalone
+            toolchain the SDK is paired with.
+        sdk_repository: The name of the repository created by
+            `swift_windows_sdk_repository`.
+
+    Returns:
+        BUILD file content declaring the Swift and C++ toolchains.
+    """
+    content = ""
+    for cpu in ("aarch64", "x86_64"):
+        content += _WINDOWS_SDK_TOOLCHAIN_PLATFORM.format(
+            cpu = cpu,
+            exec_compatible_with = _exec_compatible_with_for_platform(platform),
+            platform = platform,
+            sdk_repository = sdk_repository,
+            target_compatible_with = [
+                "@platforms//os:windows",
+                "@platforms//cpu:" + cpu,
+            ],
+        )
+    return content
+
 def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
     """Returns `toolchain` declarations for a WebAssembly Swift SDK.
 
