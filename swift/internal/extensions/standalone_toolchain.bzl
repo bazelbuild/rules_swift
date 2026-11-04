@@ -6,6 +6,7 @@ Supports both macOS (.pkg) and Linux (.tar.gz) toolchain formats, with automatic
 platform detection and appropriate extraction methods.
 """
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 
 # Download URLs are documented in the OpenAPI spec here:
@@ -62,6 +63,22 @@ def _run(repository_ctx, command):
 
     return result.stdout.strip()
 
+def sysroot_substitutions(sysroot, env):
+    """Returns the BUILD template substitutions for the optional sysroot and env.
+
+    Args:
+        sysroot: A `Label` of the sysroot files, or `None`.
+        env: A string dict of environment variables for the exec toolchain.
+
+    Returns:
+        A dict of template substitutions.
+    """
+    return {
+        "{env}": repr(env),
+        "{sdkroot}": sysroot.workspace_root if sysroot else "",
+        "{sysroot_inputs}": repr([str(sysroot)]) if sysroot else "[]",
+    }
+
 def _standalone_toolchain_impl(repository_ctx):
     url = get_download_url(repository_ctx.attr.swift_version, repository_ctx.attr.platform)
     filename = paths.basename(url)
@@ -109,15 +126,21 @@ def _standalone_toolchain_impl(repository_ctx):
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
-        substitutions = {
-            "{linux_sysroot_version}": linux_sysroot_version,
-            "{swift_version}": repository_ctx.attr.swift_version,
-        },
+        substitutions = dicts.add(
+            {
+                "{linux_sysroot_version}": linux_sysroot_version,
+                "{swift_version}": repository_ctx.attr.swift_version,
+            },
+            sysroot_substitutions(repository_ctx.attr.sysroot, repository_ctx.attr.env),
+        ),
     )
 
 standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
+        "env": attr.string_dict(
+            doc = "Environment variables for the exec Swift toolchain. The embedded toolchain is unaffected.",
+        ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",
             mandatory = True,
@@ -128,6 +151,12 @@ standalone_toolchain = repository_rule(
         "swift_version": attr.string(
             doc = "Version of the swift toolchain to be installed.",
             mandatory = True,
+        ),
+        "sysroot": attr.label(
+            doc = """\
+Label of the files of a sysroot to build against. The exec Swift toolchain passes
+the sysroot's root as `-sdk` and adds the files to the inputs of its Swift tools.
+""",
         ),
         "_build_template": attr.label(
             default = "//swift/internal/extensions:toolchain.BUILD",
