@@ -14,6 +14,7 @@
 
 """Definitions for bzlmod module extensions."""
 
+load("//swift/internal/extensions:module_guard.bzl", "non_dev_toolchain_modules")
 load("//swift/internal/extensions:standalone_toolchain.bzl", "standalone_toolchain")
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 load(
@@ -128,10 +129,12 @@ def _single_sdk_tag(tags, kind):
     return sdk_tag
 
 def _standalone_toolchain_impl(module_ctx):
+    offenders = non_dev_toolchain_modules(module_ctx.modules, module_ctx.is_dev_dependency)
+    if offenders:
+        fail("Only the root module can use the 'swift' extension, but these modules do too: {}. Packages meant to be used as deps should use dev_dependency = True".format(", ".join(offenders)))
+
     root_module = None
     for mod in module_ctx.modules:
-        if not mod.is_root and not module_ctx.is_dev_dependency:
-            fail("Only the root module can use the 'swift' extension. Packages meant to be used as deps should use dev_dependency = True")
         root_module = mod
 
     if not root_module:

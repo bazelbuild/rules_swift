@@ -9,6 +9,9 @@ load("//swift/internal:developer_dirs.bzl", "developer_dirs_linkopts")
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 # buildifier: disable=bzl-visibility
+load("//swift/internal/extensions:module_guard.bzl", "non_dev_toolchain_modules")
+
+# buildifier: disable=bzl-visibility
 load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 
 # buildifier: disable=bzl-visibility
@@ -193,11 +196,41 @@ def _swift_sdk_download_url_test(ctx):
 
 swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 
+def _non_dev_toolchain_modules_test(ctx):
+    env = unittest.begin(ctx)
+
+    def module(name, is_root, tags):
+        return struct(name = name, is_root = is_root, tags = struct(toolchain = tags))
+
+    def is_dev(tag):
+        return tag.dev
+
+    dev_tag = struct(dev = True)
+    prod_tag = struct(dev = False)
+
+    tests = [
+        struct(msg = "root module with a regular tag", modules = [module("root", True, [prod_tag])], expected = []),
+        struct(msg = "non-root module with only dev tags", modules = [module("dep", False, [dev_tag])], expected = []),
+        struct(msg = "non-root module without tags", modules = [module("dep", False, [])], expected = []),
+        struct(
+            msg = "non-root module with a regular tag",
+            modules = [module("root", True, [prod_tag]), module("dep", False, [dev_tag, prod_tag])],
+            expected = ["dep"],
+        ),
+    ]
+    for t in tests:
+        asserts.equals(env, t.expected, non_dev_toolchain_modules(t.modules, is_dev), t.msg)
+
+    return unittest.end(env)
+
+non_dev_toolchain_modules_test = unittest.make(_non_dev_toolchain_modules_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
         developer_dirs_linkopts_test,
         include_developer_search_paths_test,
+        non_dev_toolchain_modules_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
     )
