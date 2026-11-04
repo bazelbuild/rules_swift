@@ -120,6 +120,18 @@ cc_args(
 )
 
 cc_args(
+    name = "cc_compile_args_wasm32",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    # Clang's builtin headers from the SDK, as action inputs.
+    args = [
+        "-resource-dir",
+        _RESOURCE_DIR + "/clang",
+    ],
+)
+
+cc_args(
     name = "cc_link_args_wasm32",
     actions = [
         "@rules_cc//cc/toolchains/actions:link_actions",
@@ -143,6 +155,7 @@ cc_toolchain(
     name = "cc_toolchain_wasm32",
     args = [
         ":cc_args_wasm32",
+        ":cc_compile_args_wasm32",
         ":cc_link_args_wasm32",
     ],
     compiler = "clang",

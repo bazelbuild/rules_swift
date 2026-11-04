@@ -1,4 +1,5 @@
 import Greeter
+import Measure
 
 // A WebAssembly "reactor" module: it has no `main`/entry point. Instead it
 // exports functions that a host (e.g. JavaScript via `WebAssembly.instantiate`)
@@ -20,8 +21,9 @@ public func greeting_into(_ buffer: UnsafeMutablePointer<CChar>, _ capacity: Int
   return Int32(limit)
 }
 
-/// Returns the length the greeting would occupy (so the host can size a buffer).
+/// Returns the length the greeting would occupy (so the host can size a buffer),
+/// measured by C code compiled for wasm by the SDK's clang.
 @_cdecl("greeting_length")
 public func greeting_length() -> Int32 {
-  return Int32(Greeter(subject: "WebAssembly").greeting().utf8.count)
+  return Greeter(subject: "WebAssembly").greeting().withCString { Int32(measure_length($0)) }
 }
