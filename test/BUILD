@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("//test/hermetic_pcm:xcode_version_at_least.bzl", "xcode_version_at_least")
 load(":additional_linker_inputs_tests.bzl", "additional_linker_inputs_test_suite")
@@ -176,4 +177,10 @@ config_setting(
     name = "apple_build_tests_enabled",
     flag_values = {":apple_build_tests": "True"},
     visibility = ["//visibility:public"],
+)
+
+# A non-root module can declare its own standalone toolchain.
+build_test(
+    name = "non_root_toolchain_test",
+    targets = ["@rules_swift_non_root_toolchain_test//:swift_toolchain_exec"],
 )

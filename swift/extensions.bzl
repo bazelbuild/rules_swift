@@ -128,45 +128,48 @@ def _single_sdk_tag(tags, kind):
     return sdk_tag
 
 def _standalone_toolchain_impl(module_ctx):
-    root_module = None
-    for mod in module_ctx.modules:
-        if not mod.is_root:
-            tags = mod.tags.toolchain + mod.tags.android_sdk + mod.tags.wasm_sdk
-            for tag in tags:
-                if not module_ctx.is_dev_dependency(tag):
-                    fail("Only the root module can use the 'swift' extension. Packages meant to be used as deps should use dev_dependency = True")
-            continue
-        root_module = mod
-
-    if not root_module:
-        fail("Could not find a root module. This should never happen.")
-
     swift_release_metadata = json.decode(
         module_ctx.read(Label("//swift/internal/extensions:swift_release_metadata.json"), watch = "yes"),
     )
     swift_releases = swift_release_metadata["toolchains"]
     swift_sdk_releases = swift_release_metadata["sdks"]
 
-    android_sdk_tag = _single_sdk_tag(
-        root_module.tags.android_sdk,
-        "android_sdk",
-    )
-    wasm_sdk_tag = _single_sdk_tag(
-        root_module.tags.wasm_sdk,
-        "wasm_sdk",
-    )
+    toolchains = []
+    toolchain_modules = {}
+    for mod in module_ctx.modules:
+        if not mod.is_root and (mod.tags.android_sdk or mod.tags.wasm_sdk):
+            fail("Only the root module can use the `android_sdk` and `wasm_sdk` tags.")
 
-    if len(root_module.tags.toolchain) > 1:
-        fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
+        android_sdk_tag = _single_sdk_tag(
+            mod.tags.android_sdk,
+            "android_sdk",
+        )
+        wasm_sdk_tag = _single_sdk_tag(
+            mod.tags.wasm_sdk,
+            "wasm_sdk",
+        )
 
-    if not root_module.tags.toolchain:
-        if android_sdk_tag:
-            fail("The `android_sdk` tag requires a `toolchain` tag.")
-        if wasm_sdk_tag:
-            fail("The `wasm_sdk` tag requires a `toolchain` tag.")
+        if len(mod.tags.toolchain) > 1:
+            fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
 
-    toolchains_build_file_content = ""
-    for toolchain in root_module.tags.toolchain:
+        if not mod.tags.toolchain:
+            if android_sdk_tag:
+                fail("The `android_sdk` tag requires a `toolchain` tag.")
+            if wasm_sdk_tag:
+                fail("The `wasm_sdk` tag requires a `toolchain` tag.")
+
+        for toolchain in mod.tags.toolchain:
+            if toolchain.name in toolchain_modules:
+                fail("swift.toolchain() name `{}` is used by both `{}` and `{}`. Each toolchain needs a unique name.".format(
+                    toolchain.name,
+                    toolchain_modules[toolchain.name],
+                    mod.name,
+                ))
+            toolchain_modules[toolchain.name] = mod.name
+            toolchains.append((toolchain, android_sdk_tag, wasm_sdk_tag))
+
+    for toolchain, android_sdk_tag, wasm_sdk_tag in toolchains:
+        toolchains_build_file_content = ""
         if toolchain.swift_version and toolchain.swift_version_file:
             fail("Cannot use both swift_version and swift_version_file together. Please choose one.")
 
