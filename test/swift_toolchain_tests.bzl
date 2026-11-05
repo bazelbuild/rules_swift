@@ -53,7 +53,7 @@ def swift_toolchain_test_suite(name, tags = []):
         name = "{}_linux_sdk_from_swift_sysroot".format(name),
         expected_argv = ["-sdk", "swift_ubuntu22.04_amd64_sysroot"],
         mnemonic = "SwiftCompile",
-        not_expected_argv = ["swift_ubuntu22.04_arm64_sysroot"],
+        not_expected_argv = ["test/fixtures/toolchains"],
         tags = all_tags,
         target_compatible_with = [
             "@platforms//cpu:x86_64",
