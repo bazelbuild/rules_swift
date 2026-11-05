@@ -375,6 +375,7 @@ swift_toolchain(
         "@platforms//os:macos": "macos",
     }),
     parsed_version = "{swift_version}",
+    sdkroot = "{sdkroot}",
     static_runtime = select({
         "@platforms//os:linux": glob(
             [
@@ -388,7 +389,6 @@ swift_toolchain(
         ),
         "//conditions:default": [],
     }),
-    sdkroot = "{sdkroot}",
     swift_tools = "tools_exec",
     version_file = ".swift-version",
 )
