@@ -69,13 +69,18 @@ def sysroot_substitutions(sysroot, env):
     Args:
         sysroot: A `Label` of the sysroot files, or `None`.
         env: A string dict of environment variables for the exec toolchain.
+            `{sysroot}` in a value is replaced with the sysroot's root.
 
     Returns:
         A dict of template substitutions.
     """
+    sdkroot = sysroot.workspace_root if sysroot else ""
+    for key, value in env.items():
+        if "{sysroot}" in value and not sysroot:
+            fail("env `{}` uses `{{sysroot}}` but no sysroot is set".format(key))
     return {
-        "{env}": repr(env),
-        "{sdkroot}": sysroot.workspace_root if sysroot else "",
+        "{env}": repr({key: value.replace("{sysroot}", sdkroot) for key, value in env.items()}),
+        "{sdkroot}": sdkroot,
         "{sysroot_inputs}": repr([str(sysroot)]) if sysroot else "[]",
     }
 
@@ -142,7 +147,10 @@ standalone_toolchain = repository_rule(
     implementation = _standalone_toolchain_impl,
     attrs = {
         "env": attr.string_dict(
-            doc = "Environment variables for the exec Swift toolchain. The embedded toolchain is unaffected.",
+            doc = """\
+Environment variables for the exec Swift toolchain. `{sysroot}` in a value is
+replaced with the sysroot's root. The embedded toolchain is unaffected.
+""",
         ),
         "platform": attr.string(
             doc = "The host platform name in the swift package download URL",
