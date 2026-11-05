@@ -80,17 +80,16 @@ def _swift_android_sdk_impl(repository_ctx):
              "toolchain, found: " + str(clang_versions))
 
     # The bundle's clang resource directory points into the machine that built
-    # it; point it at the paired toolchain's instead, as setup-android-sdk.sh
-    # does. Relative, from this repository to the toolchain's beside it.
-    clang_link = sdk_dir_relative + "/swift-resources/usr/lib/swift/clang"
-    target = "../" * len(clang_link.split("/")) + "{}/usr/lib/clang/{}".format(
-        paired_usr.dirname.basename,
-        clang_versions[0].basename,
-    )
-    repository_ctx.delete(clang_link)
-    result = repository_ctx.execute(["ln", "-s", target, clang_link])
+    # it; give it the paired toolchain's builtin headers instead, as
+    # setup-android-sdk.sh does. Copied, not linked, so that they are among
+    # the SDK's files in a sandbox.
+    clang_dir = sdk_dir_relative + "/swift-resources/usr/lib/swift/clang"
+    repository_ctx.delete(clang_dir)
+    result = repository_ctx.execute(["mkdir", "-p", clang_dir])
+    if result.return_code == 0:
+        result = repository_ctx.execute(["cp", "-R", str(clang_versions[0].get_child("include")), clang_dir + "/include"])
     if result.return_code != 0:
-        fail("Couldn't link the Android SDK's clang resource directory: " + result.stderr)
+        fail("Couldn't copy the clang headers into the Android SDK: " + result.stderr)
 
     # C++ interop autolinks `c++`, which the NDK's libc++.so linker script
     # resolves to libc++_shared; this one, searched first, links the static

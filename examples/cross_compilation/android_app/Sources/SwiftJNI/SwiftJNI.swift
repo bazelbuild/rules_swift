@@ -1,5 +1,4 @@
 import Android
-import CxxGreeting
 import Greeter
 
 @available(Android 33, *)
@@ -24,7 +23,7 @@ public func greetingFromSwift(_ env: UnsafeMutablePointer<JNIEnv?>, _ clazz: jcl
   Task {
     _ = await Greeter(subject: "Android").greetingAsync()
   }
-  let message = Greeter(subject: "Android").greeting() + " " + cxxGreeting(subject: "Android")
+  let message = Greeter(subject: "Android").greeting()
   return message.withCString { cString in
     env.pointee!.pointee.NewStringUTF(env, cString)
   }
