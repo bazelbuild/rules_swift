@@ -59,13 +59,31 @@ cc_library(
 swift_binary(
     name = "SwiftJNI",
     srcs = ["Sources/SwiftJNI/SwiftJNI.swift"],
+    features = ["swift.enable_cpp20_interop"],
     linkshared = True,
     target_compatible_with = ["@platforms//os:android"],
-    deps = [":Greeter"],
+    deps = [
+        ":CxxGreeting",
+        ":Greeter",
+    ],
 )
 
 swift_library(
     name = "Greeter",
     srcs = ["Sources/Greeter/Greeter.swift"],
     module_name = "Greeter",
+)
+
+cc_library(
+    name = "CxxGreeter",
+    hdrs = ["Sources/CxxGreeter/cxx_greeter.h"],
+    aspect_hints = ["//swift:auto_module"],
+)
+
+swift_library(
+    name = "CxxGreeting",
+    srcs = ["Sources/CxxGreeter/CxxGreeting.swift"],
+    features = ["swift.enable_cpp20_interop"],
+    module_name = "CxxGreeting",
+    deps = [":CxxGreeter"],
 )
