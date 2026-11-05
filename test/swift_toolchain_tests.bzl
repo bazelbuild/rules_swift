@@ -12,6 +12,12 @@ toolchain_macos_arm64_with_sdkroot_test = make_action_command_line_test_rule(
     },
 )
 
+linux_sdk_with_other_cc_sysroot_test = make_action_command_line_test_rule(
+    config_settings = {
+        str(Label("//swift/toolchains:linux_sysroot_feature")): str(Label("//test/fixtures/toolchains:other_linux_sysroot_feature")),
+    },
+)
+
 def swift_toolchain_test_suite(name, tags = []):
     """Test suite for swift_toolchain's provider.
 
@@ -34,6 +40,20 @@ def swift_toolchain_test_suite(name, tags = []):
         name = "{}_linux_sdk_from_cc_sysroot".format(name),
         expected_argv = ["-sdk", "swift_ubuntu22.04_amd64_sysroot"],
         mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_compatible_with = [
+            "@platforms//cpu:x86_64",
+            "@platforms//os:linux",
+        ],
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    # The exec Swift toolchain's `sysroot` wins over the C++ toolchain's.
+    linux_sdk_with_other_cc_sysroot_test(
+        name = "{}_linux_sdk_from_swift_sysroot".format(name),
+        expected_argv = ["-sdk", "swift_ubuntu22.04_amd64_sysroot"],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = ["swift_ubuntu22.04_arm64_sysroot"],
         tags = all_tags,
         target_compatible_with = [
             "@platforms//cpu:x86_64",

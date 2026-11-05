@@ -213,6 +213,12 @@ def _sysroot_substitutions_test(ctx):
         sysroot_substitutions(sysroot, {"A": "b"}),
     )
 
+    asserts.equals(
+        env,
+        repr({"LD_LIBRARY_PATH": sysroot.workspace_root + "/lib"}),
+        sysroot_substitutions(sysroot, {"LD_LIBRARY_PATH": "{sysroot}/lib"})["{env}"],
+    )
+
     return unittest.end(env)
 
 sysroot_substitutions_test = unittest.make(_sysroot_substitutions_test)
