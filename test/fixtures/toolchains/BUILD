@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains/args:sysroot.bzl", "cc_sysroot")
 load(
@@ -44,13 +45,18 @@ forward_swift_toolchain_info(
     visibility = ["//test:__subpackages__"],
 )
 
+directory(
+    name = "other_linux_sysroot",
+    srcs = [],
+)
+
 cc_sysroot(
     name = "other_linux_sysroot_args",
     actions = [
         "@rules_cc//cc/toolchains/actions:compile_actions",
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    sysroot = "@swift_ubuntu22.04_arm64_sysroot//:root",
+    sysroot = ":other_linux_sysroot",
 )
 
 cc_feature(
