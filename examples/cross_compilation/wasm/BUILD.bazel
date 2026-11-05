@@ -1,7 +1,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load("//examples/embedded:transition.bzl", "transition_binary")
-load("//swift:swift.bzl", "swift_binary", "swift_interop_hint", "swift_library")
+load("//swift:swift.bzl", "swift_binary", "swift_library")
 
 platform(
     name = "wasm32-wasip1",
@@ -22,12 +22,7 @@ cc_library(
     name = "Measure",
     srcs = ["Sources/Measure/measure.c"],
     hdrs = ["Sources/Measure/measure.h"],
-    aspect_hints = [":Measure_swift_hint"],
-)
-
-swift_interop_hint(
-    name = "Measure_swift_hint",
-    module_name = "Measure",
+    aspect_hints = ["//swift:auto_module"],
 )
 
 # A reactor module (no `main`; exports functions for a host). `@_cdecl` names

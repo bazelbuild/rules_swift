@@ -1,5 +1,5 @@
 import Greeter
-import Measure
+import examples_cross_compilation_wasm_Measure
 
 // A WebAssembly "reactor" module: it has no `main`/entry point. Instead it
 // exports functions that a host (e.g. JavaScript via `WebAssembly.instantiate`)

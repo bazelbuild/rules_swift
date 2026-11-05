@@ -120,25 +120,14 @@ cc_args(
 )
 
 cc_args(
-    name = "cc_compile_args_wasm32",
+    name = "cc_resource_dir_args_wasm32",
     actions = [
         "@rules_cc//cc/toolchains/actions:compile_actions",
-    ],
-    # Clang's builtin headers from the SDK, as action inputs.
-    args = [
-        "-resource-dir",
-        _RESOURCE_DIR + "/clang",
-    ],
-)
-
-cc_args(
-    name = "cc_link_args_wasm32",
-    actions = [
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    # The Swift SDK's clang resource directory provides the compiler builtins
-    # (libclang_rt) for wasm32, which the host toolchain's own resource
-    # directory does not include.
+    # The SDK's clang resource directory has the builtin headers and the
+    # wasm32 compiler builtins (libclang_rt), which the host toolchain's
+    # doesn't.
     args = [
         "-resource-dir",
         _RESOURCE_DIR + "/clang",
@@ -155,8 +144,7 @@ cc_toolchain(
     name = "cc_toolchain_wasm32",
     args = [
         ":cc_args_wasm32",
-        ":cc_compile_args_wasm32",
-        ":cc_link_args_wasm32",
+        ":cc_resource_dir_args_wasm32",
     ],
     compiler = "clang",
     enabled_features = [
