@@ -75,6 +75,7 @@ cc_library(
     name = "CxxGreeter",
     hdrs = ["Sources/CxxGreeter/cxx_greeter.h"],
     aspect_hints = ["//swift:auto_module"],
+    target_compatible_with = ["@platforms//os:android"],
 )
 
 swift_library(
@@ -82,6 +83,7 @@ swift_library(
     srcs = ["Sources/CxxGreeter/CxxGreeting.swift"],
     features = ["swift.enable_cpp20_interop"],
     module_name = "CxxGreeting",
+    target_compatible_with = ["@platforms//os:android"],
     deps = [":CxxGreeter"],
 )
 
