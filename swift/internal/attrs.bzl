@@ -183,9 +183,13 @@ configuration. C/Objective-C header files listed in `srcs` will be treated as
 _private headers_ of the module (that is, not propagated to dependent targets)
 and must be parsable as C/Objective-C like any other header imported by Swift.
 
-`swift_library` also accepts generated directories (Bazel tree artifacts)
-containing only Swift source files. Their contents are discovered at execution
-time, so generators do not need to declare individual filenames.
+Generated directories (Bazel tree artifacts) containing only Swift source
+files are also accepted. Their contents are discovered at execution time, so
+generators do not need to declare individual filenames. For the same reason,
+they are not considered when deciding whether to pass `-parse-as-library`: a
+`main.swift` in one is compiled as top-level code in a binary or test, and a
+binary or test whose `@main` entry point is in one must pass
+`-parse-as-library` in `copts`.
 
 Except in very rare circumstances, a Swift source file should only appear in a
 single `swift_*` target. Adding the same source file to multiple `swift_*`

@@ -550,6 +550,29 @@ def register_link_binary_action(
         for cc_info in implicit_cc_infos
     ])
 
+    # The objects of a source directory (tree artifact) are a directory too,
+    # which the link action wraps in `--start-lib`/`--end-lib`; ld64 doesn't
+    # support those. Archive the objects into an always-linked library instead,
+    # which links the same object files. It goes first, where the objects would
+    # be on the command line.
+    if any([
+        object.is_directory
+        for object in compilation_outputs.objects + compilation_outputs.pic_objects
+    ]):
+        objects_linking_context, _ = cc_common.create_linking_context_from_compilation_outputs(
+            actions = actions,
+            alwayslink = True,
+            cc_toolchain = toolchains.cc,
+            compilation_outputs = compilation_outputs,
+            disallow_dynamic_library = True,
+            feature_configuration = get_cc_feature_configuration(
+                feature_configuration,
+            ),
+            name = "{}_srcs".format(name),
+        )
+        linking_contexts.insert(0, objects_linking_context)
+        compilation_outputs = cc_common.create_compilation_outputs()
+
     linking_outputs = cc_common.link(
         actions = actions,
         additional_inputs = additional_inputs,

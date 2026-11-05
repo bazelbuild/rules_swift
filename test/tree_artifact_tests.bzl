@@ -16,6 +16,7 @@
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("//test/rules:action_inputs_test.bzl", "action_inputs_test")
 
 visibility("private")
 
@@ -91,6 +92,24 @@ def tree_artifact_test_suite(name, tags = []):
             "//test/fixtures/tree_artifacts:with_tree_artifact_wmo",
         ],
         tags = all_tags,
+    )
+
+    # A binary's own objects from a tree artifact are linked from an
+    # always-linked archive; other binaries link their objects directly.
+    action_inputs_test(
+        name = "{}_binary_links_objects_archive".format(name),
+        expected_inputs = ["libtree_artifact_main_binary_srcs.lo"],
+        mnemonic = "CppLink",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifacts:tree_artifact_main_binary",
+    )
+
+    action_inputs_test(
+        name = "{}_binary_without_tree_artifact_links_objects".format(name),
+        not_expected_inputs = ["libtree_artifact_binary_srcs.lo"],
+        mnemonic = "CppLink",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/tree_artifacts:tree_artifact_binary",
     )
 
     native.test_suite(
