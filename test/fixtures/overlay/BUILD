@@ -44,10 +44,18 @@ swift_overlay(
 )
 
 cc_library(
+    name = "cc_dep",
+    hdrs = ["dep_header.h"],
+    aspect_hints = ["//swift:auto_module"],
+    tags = FIXTURE_TAGS,
+)
+
+cc_library(
     name = "cc_with_overlay",
     hdrs = ["header.h"],
     aspect_hints = [":overlay"],
     tags = FIXTURE_TAGS,
+    deps = [":cc_dep"],
 )
 
 forward_swift_info_from_swift_clang_module_aspect(

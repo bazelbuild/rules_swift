@@ -176,15 +176,11 @@ the Swift code in `MyModule_overlay` will be compiled into the same module.
 Therefore, when that library imports `MyModule`, it will see the APIs from the
 `objc_library` and the `swift_overlay` as a single combined module.
 
-When writing a Swift overlay, the Swift code must do a re-exporting import of
-its own module in order to access the C/Objective-C APIs; they are not available
-automatically. Continuing the example above, any Swift sources that want to use
-or extend the API from the C/Objective-C side of the module would need to write
-the following:
-
-```swift
-@_exported import MyModule
-```
+When writing a Swift overlay, the underlying C/Objective-C module is
+automatically imported into and re-exported from the overlay module. Therefore,
+the Swift sources in the overlay can immediately use or extend the APIs from
+the C/Objective-C side of the module without needing an explicit
+`@_exported import MyModule` statement.
 
 The `swift_overlay` rule supports all the same attributes as `swift_library`,
 except for the following:

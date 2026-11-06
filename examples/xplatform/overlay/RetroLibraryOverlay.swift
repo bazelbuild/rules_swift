@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import OrientationModule
-@_exported import RetroLibrary
 
 extension RetroRect {
   public var orientation: Orientation {

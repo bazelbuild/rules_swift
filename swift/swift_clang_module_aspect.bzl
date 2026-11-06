@@ -467,19 +467,23 @@ def _handle_module(
     overlay_info = _find_swift_overlay_compile_info(aspect_ctx)
     if overlay_info:
         overlay_direct_deps = overlay_info.deps.swift_infos
-        swift_infos_for_overlay = direct_swift_infos + overlay_direct_deps + [
-            SwiftInfo(
-                modules = [
-                    create_swift_module_context(
-                        name = physical_name,
-                        clang = clang_module_context,
-                        source_name = source_name,
-                    ),
-                ],
-                direct_swift_infos = direct_swift_infos,
-                swift_infos = swift_infos + overlay_direct_deps,
-            ),
-        ]
+        swift_infos_for_overlay = (
+            direct_swift_infos +
+            overlay_direct_deps +
+            [
+                SwiftInfo(
+                    modules = [
+                        create_swift_module_context(
+                            name = physical_name,
+                            clang = clang_module_context,
+                            source_name = source_name,
+                        ),
+                    ],
+                    direct_swift_infos = direct_swift_infos,
+                    swift_infos = swift_infos + overlay_direct_deps,
+                ),
+            ]
+        )
         overlay_compile_result, overlay_linking_context = _compile_swift_overlay(
             aspect_ctx = aspect_ctx,
             compilation_context = compilation_context_to_compile,
@@ -568,7 +572,10 @@ def _compile_swift_overlay(
             cc_info.compilation_context
             for cc_info in overlay_info.deps.cc_infos
         ] + [compilation_context],
-        copts = overlay_info.copts + ["-parse-as-library"],
+        copts = overlay_info.copts + [
+            "-import-underlying-module",
+            "-parse-as-library",
+        ],
         defines = overlay_info.defines,
         feature_configuration = feature_configuration,
         module_name = module_name,

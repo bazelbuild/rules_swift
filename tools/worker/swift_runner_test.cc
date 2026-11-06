@@ -602,6 +602,13 @@ TEST(SwiftRunnerTest, RunPerformLayeringCheckDetectsViolationsAndMapsAliases) {
       absl::StrCat("params_file=\"${1#@}\"\n"
                    "if grep -q -- '-emit-imported-modules' \"$params_file\"; "
                    "then\n"
+                   "  if grep -qE -- "
+                   "'(-import-underlying-module|"
+                   "-emit-private-module-interface-path|"
+                   "-emit-package-module-interface-path)' "
+                   "\"$params_file\"; then\n"
+                   "    exit 1\n"
+                   "  fi\n"
                    "  cat << 'EOF' > '",
                    imported_modules_path,
                    "'\n"
@@ -612,6 +619,13 @@ TEST(SwiftRunnerTest, RunPerformLayeringCheckDetectsViolationsAndMapsAliases) {
                    "PhysicalDisallowedMod\n"
                    "DirectDisallowedMod\n"
                    "EOF\n"
+                   "elif ! grep -q -- '-import-underlying-module' "
+                   "\"$params_file\" || ! grep -q -- "
+                   "'-emit-private-module-interface-path' "
+                   "\"$params_file\" || ! grep -q -- "
+                   "'-emit-package-module-interface-path' "
+                   "\"$params_file\"; then\n"
+                   "  exit 1\n"
                    "fi\n"
                    "exit 0\n"));
 
@@ -619,6 +633,11 @@ TEST(SwiftRunnerTest, RunPerformLayeringCheckDetectsViolationsAndMapsAliases) {
     SwiftRunner failing_runner(
         {
             mock_swiftc,
+            "-import-underlying-module",
+            "-emit-private-module-interface-path",
+            "out/SelfMod.private.swiftinterface",
+            "-emit-package-module-interface-path",
+            "out/SelfMod.package.swiftinterface",
             "-module-name",
             "SelfMod",
             "-module-alias",
@@ -656,6 +675,11 @@ TEST(SwiftRunnerTest, RunPerformLayeringCheckDetectsViolationsAndMapsAliases) {
     SwiftRunner passing_runner(
         {
             mock_swiftc,
+            "-import-underlying-module",
+            "-emit-private-module-interface-path",
+            "out/SelfMod.private.swiftinterface",
+            "-emit-package-module-interface-path",
+            "out/SelfMod.package.swiftinterface",
             "-module-name",
             "SelfMod",
             "-module-alias",

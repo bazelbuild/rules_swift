@@ -374,9 +374,11 @@ bool SkipIncompatibleArgs(IncompatibleArgMode mode,
     return true;
   }
   if (*it == "-o" || *it == "-emit-module-path" ||
-      *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
-      *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
-      *it == "-num-threads") {
+      *it == "-emit-module-interface-path" ||
+      *it == "-emit-private-module-interface-path" ||
+      *it == "-emit-package-module-interface-path" ||
+      *it == "-emit-objc-header-path" || *it == "-emit-clang-header-path" ||
+      *it == "-emit-const-values-path" || *it == "-num-threads") {
     // This flag has a value after it that we also need to skip.
     ++it;
     return true;
@@ -385,6 +387,13 @@ bool SkipIncompatibleArgs(IncompatibleArgMode mode,
   // Some flags we only want to skip when doing a layering check, but we still
   // need them for JSON AST dumps.
   if (mode == IncompatibleArgMode::kLayeringCheck) {
+    if (*it == "-import-underlying-module") {
+      // Skip just this argument. With `-import-underlying-module`,
+      // `-emit-imported-modules` loads the underlying Clang module and reports
+      // all of its header `#import`s as imported modules, which are already
+      // layering-checked during C/Objective-C compilation.
+      return true;
+    }
     if (*it == "-output-file-map") {
       // This flag has a value after it that we also need to skip.
       ++it;

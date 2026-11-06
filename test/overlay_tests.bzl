@@ -165,14 +165,16 @@ def overlay_test_suite(name, tags = []):
 
         # Verify that the overlay compile action registered on the `cc_library`
         # by `swift_clang_module_aspect` uses the underlying C target's module
-        # name, passes `-parse-as-library`, and receives the underlying C module
-        # (modulemap and, for explicit modules, pcm) along with both public and
-        # private dependencies of the `swift_overlay`.
+        # name, passes `-import-underlying-module` and `-parse-as-library`, and
+        # receives the underlying C module (modulemap and, for explicit modules,
+        # pcm) along with both public and private dependencies of the
+        # `swift_overlay`.
         mode.aspect_action_command_line_test(
             name = "{}_{}_overlay_compile".format(name, mode_name),
             expected_argv = [
                 "-module-name",
                 "test_fixtures_overlay_cc_with_overlay",
+                "-import-underlying-module",
                 "-parse-as-library",
             ],
             expected_inputs = expected_overlay_inputs,
@@ -205,6 +207,7 @@ def overlay_test_suite(name, tags = []):
             name = "{}_{}_custom_module_name_overlay_compile".format(name, mode_name),
             expected_argv = [
                 "-module-name CustomOverlayMod",
+                "-import-underlying-module",
                 "-parse-as-library",
             ],
             mnemonic = mode.mnemonic,
