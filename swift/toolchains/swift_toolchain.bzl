@@ -635,6 +635,15 @@ def _c_compile_args(ctx, cc_toolchain):
         variables = compile_variables,
     )
 
+def _check_android_api(target_system_name):
+    """Fails for Android API levels below the Swift SDK's minimum (28)."""
+    api = ""
+    for char in target_system_name.elems():
+        api = api + char if char.isdigit() else ""
+    if api and int(api) < 28:
+        fail("The Swift SDK for Android requires API 28 or later, but the " +
+             "C++ toolchain targets {}.".format(target_system_name))
+
 def _android_target_system_name(ctx, cc_toolchain):
     """Returns the Android target system name from the C compiler arguments."""
     target_arg_prefix = "--target="
@@ -724,6 +733,7 @@ def _swift_toolchain_impl(ctx):
     elif ctx.attr.os == "android":
         if not sdkroot:
             fail("Android toolchain requires a sysroot to be set, either via the `sdkroot` attribute or by using a CC toolchain that provides one.")
+        _check_android_api(target_system_name)
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
             ["--sysroot={}".format(sdkroot)] + ctx.attr.linkopts,
