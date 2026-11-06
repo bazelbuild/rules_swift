@@ -635,14 +635,30 @@ def _c_compile_args(ctx, cc_toolchain):
         variables = compile_variables,
     )
 
-def _check_android_api(target_system_name):
-    """Fails for Android API levels below the Swift SDK's minimum (28)."""
+def _android_linkopts(linkopts, target_system_name, minimum_os_version):
+    """Checks the target API against the SDK's minimum and adjusts linkopts.
+
+    Android's loader reads RELR relocations only from API 28, so below that
+    they're packed without it.
+    """
     api = ""
     for char in target_system_name.elems():
         api = api + char if char.isdigit() else ""
-    if api and int(api) < 28:
-        fail("The Swift SDK for Android requires API 28 or later, but the " +
-             "C++ toolchain targets {}.".format(target_system_name))
+    if not api:
+        return linkopts
+    if minimum_os_version and int(api) < int(minimum_os_version):
+        fail(("The Swift SDK for Android supports API {} and later, but the " +
+              "C++ toolchain targets {}.").format(minimum_os_version, target_system_name))
+    if int(api) >= 28:
+        return linkopts
+    result = []
+    for opt in linkopts:
+        if opt == "-Wl,--use-android-relr-tags":
+            continue
+        if opt == "-Wl,--pack-dyn-relocs=android+relr":
+            opt = "-Wl,--pack-dyn-relocs=android"
+        result.append(opt)
+    return result
 
 def _android_target_system_name(ctx, cc_toolchain):
     """Returns the Android target system name from the C compiler arguments."""
@@ -733,10 +749,13 @@ def _swift_toolchain_impl(ctx):
     elif ctx.attr.os == "android":
         if not sdkroot:
             fail("Android toolchain requires a sysroot to be set, either via the `sdkroot` attribute or by using a CC toolchain that provides one.")
-        _check_android_api(target_system_name)
         swift_linkopts_cc_info = _swift_sdk_linkopts_cc_info(
             ctx.label,
-            ["--sysroot={}".format(sdkroot)] + ctx.attr.linkopts,
+            ["--sysroot={}".format(sdkroot)] + _android_linkopts(
+                ctx.attr.linkopts,
+                target_system_name,
+                ctx.attr.minimum_os_version,
+            ),
             ctx.files.linker_inputs,
         )
     elif ctx.attr.os == "wasi":
@@ -995,6 +1014,12 @@ This is not additive: when set, it *replaces* the runtime link flags the
 toolchain would otherwise compute, because those are specific to a Linux host
 toolchain and do not apply to a cross-compiled SDK target. Leave it unset for an
 ordinary host toolchain, which computes its own flags.
+""",
+            ),
+            "minimum_os_version": attr.string(
+                doc = """\
+The lowest OS version the SDK supports. For Android, an API level: targeting a
+lower one fails.
 """,
             ),
             "os": attr.string(
