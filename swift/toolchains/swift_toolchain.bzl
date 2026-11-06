@@ -50,11 +50,13 @@ load("//swift/internal:attrs.bzl", "swift_toolchain_driver_attrs")
 load("//swift/internal:autolinking.bzl", "autolink_extract_action_configs")
 load(
     "//swift/internal:feature_names.bzl",
+    "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_INCREMENTAL_FILE_HASHING",
     "SWIFT_FEATURE_INDEX_STORE_COMPRESS",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_STATIC_STDLIB",
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
+    "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
@@ -838,6 +840,12 @@ def _swift_toolchain_impl(ctx):
         SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
         SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE,
     ]
+    if ctx.attr.os in ("android", "wasi"):
+        # TODO: We need to scan these if we want to support this
+        unsupported_features.extend([
+            SWIFT_FEATURE_EMIT_C_MODULE,
+            SWIFT_FEATURE_USE_C_MODULES,
+        ])
     if not static_runtime_cc_info:
         unsupported_features.append(SWIFT_FEATURE_STATIC_STDLIB)
 
