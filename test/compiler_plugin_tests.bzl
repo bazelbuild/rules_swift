@@ -228,6 +228,28 @@ def compiler_plugin_test_suite(name, tags = []):
                 target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_plugin:indirect_consumer",
             )
 
+            # Verify that `swift_compiler_plugin` with `swift.label_as_module_name`
+            # passes its physical module name (rather than the backtick-escaped
+            # target label) to `-load-plugin-executable`.
+            test_rule(
+                name = "{}_label_module_macro_library_loads_plugin_{}_{}".format(
+                    name,
+                    mode_name,
+                    mnemonic.lower(),
+                ),
+                expected_argv = [
+                    "-Xfrontend -load-plugin-executable -Xfrontend",
+                    "/third_party/bazel_rules/rules_swift/test/fixtures/compiler_plugin/label_module_plugin#third_party_bazel_rules_rules_swift_test_fixtures_compiler_plugin_label_module_plugin",
+                ],
+                expected_inputs = [
+                    "/third_party/bazel_rules/rules_swift/test/fixtures/compiler_plugin/label_module_plugin",
+                    "*",
+                ],
+                mnemonic = mnemonic,
+                tags = all_tags,
+                target_under_test = "@build_bazel_rules_swift//test/fixtures/compiler_plugin:label_module_macro_library",
+            )
+
             # Verify that `swift_compiler_plugin_import` with multiple
             # `module_names` joins them with commas (`#ImportedPluginA,ImportedPluginB`)
             # and passes the imported executable as an action input for both the

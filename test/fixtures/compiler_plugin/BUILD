@@ -41,6 +41,13 @@ swift_compiler_plugin(
 )
 
 swift_compiler_plugin(
+    name = "label_module_plugin",
+    srcs = ["Plugin.swift"],
+    features = ["swift.label_as_module_name"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_compiler_plugin(
     name = "empty_srcs_plugin",
     srcs = [],
     tags = FIXTURE_TAGS,
@@ -60,6 +67,13 @@ swift_library(
     name = "macro_library",
     srcs = ["Empty.swift"],
     plugins = [":plugin"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "label_module_macro_library",
+    srcs = ["Empty.swift"],
+    plugins = [":label_module_plugin"],
     tags = FIXTURE_TAGS,
 )
 

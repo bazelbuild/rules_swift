@@ -207,7 +207,7 @@ def _swift_compiler_plugin_impl(ctx):
         ),
         SwiftCompilerPluginInfo(
             executable = binary_linking_outputs.executable,
-            module_names = depset([module_name]),
+            module_names = depset([module_context.name]),
         ),
     ]
 
