@@ -203,19 +203,25 @@ def label_module_name_test_suite(name, tags = []):
     )
 
     # Verify that the compile command line passes `-module-name` with the
-    # physical name and `-module-alias` flags mapping both the target's own
-    # label and its dependencies' labels to their physical module names.
+    # physical name, `-module-alias` flags mapping both the target's own label
+    # and its dependencies' labels to their physical module names, and
+    # `-Xfrontend -swift-module-file=<physical_name>=<path>` instead of `-I` for
+    # single-file `.swiftmodule` dependencies.
     action_command_line_test(
         name = "{}_compile_flags".format(name),
         expected_argv = [
             "-module-name third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
             "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
             "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name:child=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child",
+            "-Xfrontend -swift-module-file=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child=$(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/label_module_name/third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child.swiftmodule",
         ],
         mnemonic = select({
             "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
             "//conditions:default": "SwiftCompileModule",
         }),
+        not_expected_argv = [
+            "-I$(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/label_module_name",
+        ],
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/label_module_name",
     )
