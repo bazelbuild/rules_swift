@@ -257,6 +257,10 @@ swift = use_extension("//swift:extensions.bzl", "swift", dev_dependency = True)
 swift.toolchain(
     name = "swift_toolchain",
     swift_version = "6.4.0",
+    sysroot = {
+        "ubuntu22.04": "@swift_ubuntu22.04_amd64_sysroot//:root",
+        "ubuntu22.04-aarch64": "@swift_ubuntu22.04_arm64_sysroot//:root",
+    },
 )
 use_repo(
     swift,

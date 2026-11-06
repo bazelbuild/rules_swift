@@ -4,7 +4,10 @@ bzl_library(
     name = "standalone_toolchain",
     srcs = ["standalone_toolchain.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = ["@bazel_skylib//lib:paths"],
+    deps = [
+        "@bazel_skylib//lib:dicts",
+        "@bazel_skylib//lib:paths",
+    ],
 )
 
 bzl_library(

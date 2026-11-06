@@ -184,13 +184,25 @@ def _standalone_toolchain_impl(module_ctx):
             ))
 
         toolchain_releases = toolchain.platform_sha256.items() or swift_releases[swift_version].items()
+        unknown_sysroot_platforms = [
+            platform
+            for platform in toolchain.sysroot
+            if platform not in [p for p, _ in toolchain_releases]
+        ]
+        if unknown_sysroot_platforms:
+            fail("`sysroot` has platforms that this toolchain does not download: {}".format(
+                unknown_sysroot_platforms,
+            ))
+
         for platform, sha256 in toolchain_releases:
             repository_name = toolchain.name + "_{}".format(platform)
             standalone_toolchain(
                 name = repository_name,
+                env = toolchain.env,
                 sha256 = sha256,
                 platform = platform,
                 swift_version = swift_version,
+                sysroot = toolchain.sysroot.get(platform),
             )
             toolchains_build_file_content += toolchains_for_platform(
                 platform = platform,
@@ -253,6 +265,12 @@ and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
 )
 
 _toolchain = tag_class(attrs = {
+    "env": attr.string_dict(
+        doc = """\
+Environment variables for the exec Swift toolchain. `{sysroot}` in a value is
+replaced with the root of that platform's `sysroot`.
+""",
+    ),
     "name": attr.string(
         doc = "Repository name of the generated toolchain",
         mandatory = True,
@@ -266,6 +284,15 @@ their hashes. For instance:
 """,
     ),
     "swift_version": attr.string(doc = "Version of the swift toolchain to be installed. Cannot be used concurrently with `swift_version_file`"),
+    "sysroot": attr.string_keyed_label_dict(
+        doc = """\
+A dictionary of platforms and the sysroot files for their exec Swift toolchain.
+
+The exec Swift toolchain passes the sysroot's root as `-sdk` and adds the files
+to the inputs of its Swift tools. Without it, `-sdk` comes from the C++
+toolchain's sysroot.
+""",
+    ),
     "swift_version_file": attr.label(doc = "A label to the .swift_version file to use. Cannot be used concurrently with `swift_version`"),
 })
 
