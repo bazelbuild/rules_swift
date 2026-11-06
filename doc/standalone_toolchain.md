@@ -245,10 +245,15 @@ See `examples/cross_compilation/wasm` for an end to end example.
 
 ## Using the extension from a non-root module
 
-The extension is intended for the root module — it fails if a non-root
-module tries to declare toolchains. If you depend on `rules_swift` from a
-library module and want the toolchain only when developing that module
-locally, declare it as a dev dependency:
+A non-root module can declare its own toolchain with the `toolchain` tag, for
+example a ruleset that provides a Swift toolchain to its users. Toolchains are
+not registered automatically, so a module only gets the toolchains it
+registers. Each `name` must be unique across all modules. The `android_sdk` and
+`wasm_sdk` tags are only available to the root module.
+
+If you depend on `rules_swift` from a library module and only want the
+toolchain when developing that module locally, declare the extension as a dev
+dependency:
 
 ```bzl
 swift = use_extension(

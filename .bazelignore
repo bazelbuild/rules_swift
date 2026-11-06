@@ -1,1 +1,2 @@
 examples/toolchain
+third_party/rules_swift_non_root_toolchain_test
