@@ -39,6 +39,12 @@ load(
 load(":package_specs.bzl", "label_matches_package_specs")
 load(":target_triples.bzl", "target_triples")
 
+# Test fixture packages inside rules_swift that intentionally set `swift._*`
+# internal features directly on targets to test action command lines.
+_INTERNAL_FEATURE_TEST_PACKAGES = [
+    "test/fixtures/internal_feature_command_lines",
+]
+
 def are_all_features_enabled(feature_configuration, feature_names):
     """Returns `True` if all features are enabled in the feature configuration.
 
@@ -170,6 +176,8 @@ def configure_features(
             requested_features = requested_features,
             unsupported_features = unsupported_features,
         )
+
+    _check_internal_features(ctx = ctx)
 
     all_requestable_features, all_unsupported_features = _compute_features(
         label = ctx.label,
@@ -437,6 +445,42 @@ def _check_allowlists(
                     feature = feature_string,
                     target = str(label),
                 ))
+
+def _check_internal_features(*, ctx):
+    """Checks that internal `swift._*` features are not requested directly.
+
+    Internal features (prefixed with `swift._`) are implementation details of
+    `rules_swift` and its toolchains; they may be enabled by rule
+    implementations via `configure_features(requested_features = ...)` or by
+    the toolchain, but must not be requested or disabled directly on targets,
+    packages, or the command line via `ctx.features` or `ctx.disabled_features`.
+
+    Args:
+        ctx: The rule or aspect context.
+    """
+    if (ctx.label.repo_name == Label("//:BUILD").repo_name and
+        ctx.label.package in _INTERNAL_FEATURE_TEST_PACKAGES):
+        return
+
+    for feature in ctx.features:
+        if feature.startswith("swift._"):
+            fail((
+                "Feature '{feature}' is an internal rules_swift feature and " +
+                "cannot be set directly on target '{target}'."
+            ).format(
+                feature = feature,
+                target = str(ctx.label),
+            ))
+
+    for feature in ctx.disabled_features:
+        if feature.startswith("swift._"):
+            fail((
+                "Feature '-{feature}' is an internal rules_swift feature and " +
+                "cannot be set directly on target '{target}'."
+            ).format(
+                feature = feature,
+                target = str(ctx.label),
+            ))
 
 def _compute_features(
         *,

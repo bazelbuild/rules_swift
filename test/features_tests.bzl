@@ -9,10 +9,12 @@ load(
     "//test/rules:action_inputs_test.bzl",
     "make_action_inputs_test_rule",
 )
+load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
 load(
     "//test/rules:explicit_swift_module_map_test.bzl",
     "make_explicit_swift_module_map_test_rule",
 )
+load("//test/rules:feature_configuration_test.bzl", "feature_configuration_test")
 
 default_test = make_action_command_line_test_rule()
 
@@ -44,14 +46,6 @@ disabled_file_prefix_map_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
             "-swift.file_prefix_map",
-        ],
-    },
-)
-
-unsupported_developer_dir_file_prefix_map_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:features": [
-            "-swift._supports_developer_dir",
         ],
     },
 )
@@ -206,6 +200,30 @@ def features_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
+    # Internal `swift._*` feature validation tests.
+    analysis_failure_test(
+        name = "{}_direct_internal_feature_enable_fails".format(name),
+        expected_message = "Feature 'swift._internal_feature' is an internal rules_swift feature and cannot be set directly on target",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/features:fixture_with_direct_internal_feature",
+    )
+
+    analysis_failure_test(
+        name = "{}_direct_internal_feature_disable_fails".format(name),
+        expected_message = "Feature '-swift._internal_feature' is an internal rules_swift feature and cannot be set directly on target",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/features:fixture_with_direct_disabled_internal_feature",
+    )
+
+    feature_configuration_test(
+        name = "{}_additional_internal_feature_succeeds".format(name),
+        expected_enabled_features = [
+            "swift._internal_feature",
+        ],
+        tags = all_tags,
+        target_under_test = "//test/fixtures/features:fixture_with_additional_internal_feature",
+    )
+
     default_test(
         name = "{}_default_test".format(name),
         tags = all_tags,
@@ -253,7 +271,7 @@ def features_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    unsupported_developer_dir_file_prefix_map_test(
+    default_test(
         name = "{}_file_prefix_xcode_remap_unsupported_developer_dir_test".format(name),
         tags = all_tags,
         not_expected_argv = [
@@ -261,7 +279,7 @@ def features_test_suite(name, tags = []):
         ],
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
-        target_under_test = "//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/internal_feature_command_lines:unsupported_developer_dir",
     )
 
     use_global_index_store_test(

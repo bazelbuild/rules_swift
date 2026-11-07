@@ -101,17 +101,6 @@ xcode_remap_command_line_test = make_action_command_line_test_rule(
     },
 )
 
-unsupported_developer_dir_xcode_remap_command_line_test = make_action_command_line_test_rule(
-    config_settings = {
-        "//command_line_option:compilation_mode": "dbg",
-        "//command_line_option:features": [
-            "-swift._supports_developer_dir",
-            "swift.debug_prefix_map",
-            "swift.remap_xcode_path",
-        ],
-    },
-)
-
 def _debug_module_linking_test_impl(ctx):
     env = analysistest.begin(ctx)
     target = analysistest.target_under_test(env)
@@ -670,7 +659,7 @@ def debug_settings_test_suite(name, tags = []):
         target_under_test = "//test/fixtures/debug_settings:simple",
     )
 
-    unsupported_developer_dir_xcode_remap_command_line_test(
+    xcode_remap_command_line_test(
         name = "{}_remap_xcode_path_unsupported_developer_dir".format(name),
         not_expected_argv = [
             "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR",
@@ -678,7 +667,7 @@ def debug_settings_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
         mnemonic = "SwiftCompile",
         tags = all_tags,
-        target_under_test = "//test/fixtures/debug_settings:simple",
+        target_under_test = "//test/fixtures/internal_feature_command_lines:unsupported_developer_dir",
     )
 
     native.test_suite(
