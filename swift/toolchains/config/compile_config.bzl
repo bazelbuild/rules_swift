@@ -972,14 +972,20 @@ def compile_action_configs(
             not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],  # If this feature is enabled we still use this file just with more contents
         ),
         ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-                SWIFT_ACTION_DUMP_AST,
-            ],
+            actions = all_compile_action_names() + [SWIFT_ACTION_DUMP_AST],
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [
-                [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
+            configurators = [
+                lambda prerequisites, args: _dependencies_swiftmodules_configurator(
+                    prerequisites,
+                    args,
+                    is_frontend = True,
+                ),
             ],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -1022,22 +1028,24 @@ def compile_action_configs(
             configurators = [_plugin_search_paths_configurator],
         ),
 
-        # swift-symbolgraph-extract doesn't yet support explicit Swift module maps.
+        # swift-symbolgraph-extract doesn't yet support explicit Swift module maps
+        # or -swift-module-file=.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
             configurators = [_dependencies_swiftmodules_and_swiftdocs_configurator],
             features = [SWIFT_FEATURE_EMIT_SWIFTDOC],
         ),
 
-        # swift-synthesize-interface doesn't yet support explicit Swift module maps.
+        # swift-synthesize-interface doesn't yet support explicit Swift module maps
+        # or -swift-module-file=.
         ActionConfigInfo(
             actions = [SWIFT_ACTION_SYNTHESIZE_INTERFACE],
-            configurators = [_dependencies_swiftmodules_configurator],
+            configurators = [_dependencies_swiftmodule_search_paths_configurator],
             features = [SWIFT_FEATURE_EMIT_SWIFTDOC],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT],
-            configurators = [_dependencies_swiftmodules_configurator],
+            configurators = [_dependencies_swiftmodule_search_paths_configurator],
             not_features = [SWIFT_FEATURE_EMIT_SWIFTDOC],
         ),
     ])
@@ -2234,6 +2242,55 @@ def _disable_autolink_framework_copts(library_path):
         ],
     )
 
+def _swift_module_file_map_fn(module):
+    """Returns a `-swift-module-file=<name>=<path>` flag for a Swift module.
+
+    This function is intended to be used as a mapping function for modules
+    passed into `Args.add_all`. Directory `.swiftmodule` bundles are skipped
+    here and handled via search paths instead.
+
+    Args:
+        module: The module structure (as returned by
+            `create_swift_module_context`) extracted from the transitive
+            modules of a `SwiftInfo` provider.
+
+    Returns:
+        A `-swift-module-file=<name>=<path>` flag string, or `None` if the
+        module does not have a single-file `.swiftmodule`.
+    """
+
+    # System modules and string paths are handled by explicit module maps.
+    if module.is_system or not module.swift or type(module.swift.swiftmodule) != "File":
+        return None
+
+    if not module.swift.swiftmodule.is_directory:
+        return "-swift-module-file={}={}".format(
+            module.name,
+            module.swift.swiftmodule.path,
+        )
+    else:
+        return None
+
+def _swift_module_directory_search_path_map_fn(module):
+    """Returns the search path for a directory `.swiftmodule` bundle, if any.
+
+    Args:
+        module: The module structure (as returned by
+            `create_swift_module_context`) extracted from the transitive
+            modules of a `SwiftInfo` provider.
+
+    Returns:
+        The dirname of the module's `.swiftmodule` directory, or `None` if the
+        module is not a directory `.swiftmodule`.
+    """
+    if module.is_system or not module.swift or type(module.swift.swiftmodule) != "File":
+        return None
+
+    if module.swift.swiftmodule.is_directory:
+        return _swift_module_search_path_map_fn(module)
+    else:
+        return None
+
 def _swift_module_search_path_map_fn(module):
     """Returns the path to the directory containing a `.swiftmodule` file.
 
@@ -2320,7 +2377,36 @@ def _dependencies_swiftmodules_and_swiftdocs_configurator(prerequisites, args):
                  prerequisites.direct_swiftdocs,
     )
 
-def _dependencies_swiftmodules_configurator(prerequisites, args):
+def _dependencies_swiftmodules_configurator(
+        prerequisites,
+        args,
+        is_frontend = False):
+    """Adds `.swiftmodule` files from deps to the command line and action inputs."""
+    if is_frontend:
+        args.add_all(
+            prerequisites.transitive_modules,
+            map_each = _swift_module_file_map_fn,
+            uniquify = True,
+        )
+    else:
+        args.add_all(
+            prerequisites.transitive_modules,
+            before_each = "-Xfrontend",
+            map_each = _swift_module_file_map_fn,
+            uniquify = True,
+        )
+    args.add_all(
+        prerequisites.transitive_modules,
+        format_each = "-I%s",
+        map_each = _swift_module_directory_search_path_map_fn,
+        uniquify = True,
+    )
+
+    return ConfigResultInfo(
+        inputs = prerequisites.transitive_swift_dependency_inputs,
+    )
+
+def _dependencies_swiftmodule_search_paths_configurator(prerequisites, args):
     """Adds Swift dependency search paths and action inputs."""
     args.add_all(
         prerequisites.transitive_modules,

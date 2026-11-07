@@ -26,6 +26,12 @@ load(
 )
 load("//test/rules:provider_test.bzl", "provider_test")
 
+module_file_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:features": ["-swift.use_explicit_swift_module_map"],
+    },
+)
+
 explicit_interface_indexstore_command_line_test = make_action_command_line_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -149,6 +155,22 @@ def module_interface_test_suite(name, tags = []):
         ],
         mnemonic = "SwiftCompileModuleInterface",
         target_under_test = "//test/fixtures/module_interface:toy_module",
+    )
+
+    # Interface compilation invokes the frontend directly, so dependency
+    # module flags must not be wrapped in -Xfrontend.
+    module_file_test(
+        name = "{}_dependency_module_file".format(name),
+        expected_argv = [
+            "-swift-module-file=ToyModule=$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs/ToyModule.swiftmodule",
+        ],
+        not_expected_argv = [
+            "-Xfrontend",
+            "-I$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
     )
 
     # Test that dependency swiftinterface files are included as action inputs
