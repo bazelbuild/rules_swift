@@ -16,26 +16,6 @@ with; the `swift` module extension enforces this by deriving both from the same
 `swift.toolchain` tag.
 """
 
-def _execroot_relative_path(path):
-    """Returns the execution-root-relative path for an external repository path.
-
-    Args:
-        path: An absolute `path` (or string) below the output base's
-            `external` directory.
-
-    Returns:
-        The same path expressed relative to the execution root, suitable for
-        baking into command line flags.
-    """
-    path_str = str(path)
-
-    # buildifier: disable=external-path
-    if "/external/" not in path_str:
-        fail("Expected a path inside an external repository, got: " + path_str)
-
-    # buildifier: disable=external-path
-    return "external/" + path_str.rsplit("/external/", 1)[1]
-
 def _download_sdk_bundle(repository_ctx):
     """Downloads and extracts the Swift SDK artifact bundle for a repository.
 
@@ -98,14 +78,30 @@ def _swift_android_sdk_impl(repository_ctx):
     if len(clang_versions) != 1:
         fail("Expected exactly one clang version directory in the host " +
              "toolchain, found: " + str(clang_versions))
-    clang_builtin_headers = _execroot_relative_path(clang_versions[0].get_child("include"))
+
+    # The bundle's clang resource directory points into the machine that built
+    # it; give it the paired toolchain's builtin headers instead, as
+    # setup-android-sdk.sh does. Copied, not linked, so that they are among
+    # the SDK's files in a sandbox.
+    clang_dir = sdk_dir_relative + "/swift-resources/usr/lib/swift/clang"
+    repository_ctx.delete(clang_dir)
+    result = repository_ctx.execute(["mkdir", "-p", clang_dir])
+    if result.return_code == 0:
+        result = repository_ctx.execute(["cp", "-R", str(clang_versions[0].get_child("include")), clang_dir + "/include"])
+    if result.return_code != 0:
+        fail("Couldn't copy the clang headers into the Android SDK: " + result.stderr)
+
+    # C++ interop autolinks `c++`, which the NDK's libc++.so linker script
+    # resolves to libc++_shared; this one, searched first, links the static
+    # libc++ the NDK's toolchains link everything else with.
+    repository_ctx.file("cxx/libc++.so", "INPUT(-lc++_static -lc++abi)\n")
 
     repository_ctx.template(
         "BUILD.bazel",
         repository_ctx.attr._build_template,
         substitutions = {
             "{bundle_dir}": bundle_dir,
-            "{clang_builtin_headers}": clang_builtin_headers,
+            "{cxx_dir}": repo_root + "/cxx",
             "{lib_dir}": "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative),
             "{swift_version}": repository_ctx.attr.swift_version,
             "{toolchain_repo}": repository_ctx.attr.toolchain_repo,

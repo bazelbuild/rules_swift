@@ -30,6 +30,7 @@ android_binary(
     manifest = "AndroidManifest.xml",
     deps = [
         ":app_lib",
+        ":cxx_interop",
         ":swift_jni",
     ],
 )
@@ -68,4 +69,36 @@ swift_library(
     name = "Greeter",
     srcs = ["Sources/Greeter/Greeter.swift"],
     module_name = "Greeter",
+)
+
+cc_library(
+    name = "CxxGreeter",
+    hdrs = ["Sources/CxxGreeter/cxx_greeter.h"],
+    aspect_hints = ["//swift:auto_module"],
+    target_compatible_with = ["@platforms//os:android"],
+)
+
+swift_library(
+    name = "CxxGreeting",
+    srcs = ["Sources/CxxGreeter/CxxGreeting.swift"],
+    features = ["swift.enable_cpp20_interop"],
+    module_name = "CxxGreeting",
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [":CxxGreeter"],
+)
+
+# C++ interop, built for Android with the app.
+cc_library(
+    name = "cxx_interop",
+    srcs = [":CxxInterop"],
+    target_compatible_with = ["@platforms//os:android"],
+)
+
+swift_binary(
+    name = "CxxInterop",
+    srcs = ["Sources/CxxGreeter/CxxInterop.swift"],
+    features = ["swift.enable_cpp20_interop"],
+    linkshared = True,
+    target_compatible_with = ["@platforms//os:android"],
+    deps = [":CxxGreeting"],
 )
