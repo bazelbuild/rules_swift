@@ -20,6 +20,7 @@ load(
     "//swift/internal/extensions:swift_sdks.bzl",
     "swift_android_sdk_repository",
     "swift_wasm_sdk_repository",
+    "swift_windows_sdk_repository",
 )
 load(
     "//swift/internal/extensions:toolchains.bzl",
@@ -27,6 +28,7 @@ load(
     "toolchains_for_platform",
     "toolchains_repository",
     "wasm_sdk_toolchains_for_platform",
+    "windows_sdk_toolchains_for_platform",
 )
 load("//tools/explicit_modules:extensions.bzl", _system_sdk = "system_sdk")
 
@@ -118,6 +120,38 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         )
     return build_file_content
 
+def _setup_windows_sdk(*, tag, toolchain_name, swift_version, platforms):
+    """Creates the repositories for a `swift.windows_sdk` tag.
+
+    Args:
+        tag: The `windows_sdk` tag.
+        toolchain_name: The name of the `swift.toolchain` tag the SDK extends.
+        swift_version: The Swift release version of that toolchain.
+        platforms: The host platforms the toolchain was created for.
+
+    Returns:
+        BUILD file content with the `toolchain` declarations to add to the
+        toolchains hub repository.
+    """
+    build_file_content = ""
+    for platform in platforms:
+        repository_name = "{}_windows_sdk_{}".format(toolchain_name, platform)
+        swift_windows_sdk_repository(
+            name = repository_name,
+            msvc_sha256 = tag.msvc_sha256,
+            msvc_url = tag.msvc_url,
+            paired_swiftc = "@{}_{}//:usr/bin/swiftc".format(toolchain_name, platform),
+            sha256 = tag.sha256,
+            swift_version = swift_version,
+            toolchain_repo = "{}_{}".format(toolchain_name, platform),
+            url = tag.url,
+        )
+        build_file_content += windows_sdk_toolchains_for_platform(
+            platform = platform,
+            sdk_repository = repository_name,
+        )
+    return build_file_content
+
 def _single_sdk_tag(tags, kind):
     """Returns the SDK tag if present, rejecting duplicates."""
     sdk_tag = None
@@ -155,6 +189,10 @@ def _standalone_toolchain_impl(module_ctx):
         root_module.tags.wasm_sdk,
         "wasm_sdk",
     )
+    windows_sdk_tag = _single_sdk_tag(
+        root_module.tags.windows_sdk,
+        "windows_sdk",
+    )
 
     if len(root_module.tags.toolchain) > 1:
         fail("swift.toolchain() can currently only be called once. Please file an issue if you need multiple toolchains in a single module.")
@@ -164,6 +202,8 @@ def _standalone_toolchain_impl(module_ctx):
             fail("The `android_sdk` tag requires a `toolchain` tag.")
         if wasm_sdk_tag:
             fail("The `wasm_sdk` tag requires a `toolchain` tag.")
+        if windows_sdk_tag:
+            fail("The `windows_sdk` tag requires a `toolchain` tag.")
 
     toolchains_build_file_content = ""
     for toolchain in root_module.tags.toolchain:
@@ -214,6 +254,13 @@ def _standalone_toolchain_impl(module_ctx):
                 platforms = platforms,
                 swift_sdk_releases = swift_sdk_releases,
             )
+        if windows_sdk_tag:
+            toolchains_build_file_content += _setup_windows_sdk(
+                tag = windows_sdk_tag,
+                toolchain_name = toolchain.name,
+                swift_version = swift_version,
+                platforms = [platform for platform in platforms if platform != "xcode"],
+            )
 
         toolchains_repository(
             name = toolchain.name,
@@ -252,6 +299,41 @@ and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
 """,
 )
 
+_windows_sdk = tag_class(
+    attrs = {
+        "msvc_sha256": attr.string(
+            doc = "The expected SHA-256 of the MSVC sysroot archive.",
+            mandatory = True,
+        ),
+        "msvc_url": attr.string(
+            doc = """\
+The URL of the builder's MSVC sysroot archive: the Windows SDK's and MSVC's
+headers and import libraries, made by `tools/windows_sdk/make_msvc_sysroot.sh`.
+Microsoft's license doesn't allow redistributing them, so each builder makes
+and hosts their own.
+""",
+            mandatory = True,
+        ),
+        "sha256": attr.string(
+            doc = "The expected SHA-256 of the Windows Swift SDK archive.",
+            mandatory = True,
+        ),
+        "url": attr.string(
+            doc = """\
+The URL of a Windows Swift SDK archive for the toolchain's Swift version, made
+from swift.org's Windows toolchain installer by
+`tools/windows_sdk/make_swift_sdk.sh`.
+""",
+            mandatory = True,
+        ),
+    },
+    doc = """\
+Defines Swift and C/C++ toolchains targeting Windows (`aarch64` and `x86_64`)
+from a Linux host, with a Windows Swift SDK and an MSVC sysroot the builder
+supplies (see `tools/windows_sdk/README.md`).
+""",
+)
+
 _toolchain = tag_class(attrs = {
     "name": attr.string(
         doc = "Repository name of the generated toolchain",
@@ -275,5 +357,6 @@ swift = module_extension(
         "android_sdk": _android_sdk,
         "toolchain": _toolchain,
         "wasm_sdk": _wasm_sdk,
+        "windows_sdk": _windows_sdk,
     },
 )
