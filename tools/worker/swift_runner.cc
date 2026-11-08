@@ -445,7 +445,7 @@ std::vector<std::string> FullArgsForDisplay(
 bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
   if (*it == "-emit-module" || *it == "-emit-module-interface" ||
       *it == "-emit-object" || *it == "-emit-objc-header" ||
-      *it == "-whole-module-optimization") {
+      *it == "-whole-module-optimization" || *it == "-incremental") {
     // Skip just this argument.
     return true;
   }
