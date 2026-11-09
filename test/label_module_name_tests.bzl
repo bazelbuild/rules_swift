@@ -213,7 +213,7 @@ def label_module_name_test_suite(name, tags = []):
             "-module-name third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
             "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_label_module_name",
             "-module-alias @build_bazel_rules_swift//test/fixtures/label_module_name:child=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child",
-            "-Xfrontend -swift-module-file=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child=$(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/label_module_name/third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child.swiftmodule",
+            "-Xfrontend -swift-module-file=third_party_bazel_rules_rules_swift_test_fixtures_label_module_name_child=$(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/label_module_name/child.swiftmodule",
         ],
         mnemonic = select({
             "@build_bazel_apple_support//constraints:apple": "SwiftCompile",

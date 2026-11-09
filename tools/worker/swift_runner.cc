@@ -918,6 +918,56 @@ bool SwiftRunner::ProcessArgument(
       return true;
     }
 
+    if (absl::ConsumePrefix(&trimmed_arg, "-swift-module-file=")) {
+      // Auxiliary tools like `swift-symbolgraph-extract`,
+      // `swift-synthesize-interface`, and `swift-api-digester` do not natively
+      // accept `-swift-module-file=<name>=<path>`; they can only discover
+      // modules named `<module_name>.swiftmodule` along `-I` search paths.
+      // Because the build rules name module outputs after the target name
+      // (`<target_name>.swiftmodule`) rather than the module name, we create an
+      // ephemeral directory containing `<module_name>.swiftmodule` (and
+      // companion `.swiftdoc`/`.swiftsourceinfo`) symlinks and pass it via
+      // `-I`.
+      std::pair<absl::string_view, absl::string_view> name_and_path =
+          absl::StrSplit(trimmed_arg, absl::MaxSplits('=', 1));
+      if (!name_and_path.first.empty() && !name_and_path.second.empty()) {
+        if (module_files_dir_ == nullptr) {
+          std::unique_ptr<TempDirectory> dir =
+              TempDirectory::Create("swift_module_files.XXXXXX");
+          module_files_dir_ = dir.get();
+          temp_directories_.push_back(std::move(dir));
+          consumer("-I");
+          consumer(module_files_dir_->GetPath());
+        }
+        std::string module_path(name_and_path.second);
+        bazel_placeholder_substitutions_.Apply(module_path);
+        std::string abs_path =
+            absl::StartsWith(module_path, "/")
+                ? module_path
+                : absl::StrCat(get_current_directory_(), "/", module_path);
+        std::error_code ec;
+        std::filesystem::create_symlink(
+            abs_path,
+            absl::StrCat(module_files_dir_->GetPath(), "/", name_and_path.first,
+                         ".swiftmodule"),
+            ec);
+        absl::string_view abs_stem = abs_path;
+        if (absl::ConsumeSuffix(&abs_stem, ".swiftmodule")) {
+          for (absl::string_view ext : {".swiftdoc", ".swiftsourceinfo"}) {
+            std::string companion_path = absl::StrCat(abs_stem, ext);
+            if (PathExists(companion_path)) {
+              std::filesystem::create_symlink(
+                  companion_path,
+                  absl::StrCat(module_files_dir_->GetPath(), "/",
+                               name_and_path.first, ext),
+                  ec);
+            }
+          }
+        }
+      }
+      return true;
+    }
+
     // TODO(allevato): Report that an unknown wrapper arg was found and give
     // the caller a way to exit gracefully.
     return true;

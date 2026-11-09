@@ -131,7 +131,7 @@ def compiler_plugin_test_suite(name, tags = []):
     provider_test(
         name = "{}_plugin_propagates_swift_binary_info_swiftmodule".format(name),
         expected_files = [
-            "MyPlugin.swiftmodule",
+            "test/fixtures/compiler_plugin/plugin.swiftmodule",
         ],
         field = "swift_info.direct_modules.swift!.swiftmodule",
         provider = "SwiftBinaryInfo",
@@ -146,7 +146,7 @@ def compiler_plugin_test_suite(name, tags = []):
     action_command_line_test(
         name = "{}_plugin_unit_test_compiles_against_plugin_module".format(name),
         expected_inputs = [
-            "MyPlugin.swiftmodule",
+            "test/fixtures/compiler_plugin/plugin.swiftmodule",
             "*",
         ],
         mnemonic = select({

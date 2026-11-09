@@ -792,5 +792,57 @@ TEST(SwiftRunnerTest, RunPerformGeneratedHeaderRewriting) {
                                      " @")));
 }
 
+TEST(SwiftRunnerTest, ArgsProcessingWrappedSwiftModuleFileCreatesSymlinks) {
+  std::unique_ptr<TempDirectory> temp_dir =
+      TempDirectory::Create("wrapped_module_file_test.XXXXXX");
+  ASSERT_NE(temp_dir, nullptr);
+
+  std::string pkg_dir = absl::StrCat(temp_dir->GetPath(), "/pkg");
+  ASSERT_TRUE(MakeDirs(pkg_dir, S_IRWXU).ok());
+
+  std::string mod_a_path = absl::StrCat(pkg_dir, "/target_a.swiftmodule");
+  std::string doc_a_path = absl::StrCat(pkg_dir, "/target_a.swiftdoc");
+  std::string info_a_path = absl::StrCat(pkg_dir, "/target_a.swiftsourceinfo");
+  std::string mod_b_path = absl::StrCat(pkg_dir, "/target_b.swiftmodule");
+  {
+    std::ofstream(mod_a_path) << "mod_a";
+    std::ofstream(doc_a_path) << "doc_a";
+    std::ofstream(info_a_path) << "info_a";
+    std::ofstream(mod_b_path) << "mod_b";
+  }
+
+  std::string symlinks_dir;
+  {
+    SwiftRunner runner(
+        {
+            "swift-symbolgraph-extract",
+            "-Xwrapped-swift=-swift-module-file=ModA=pkg/target_a.swiftmodule",
+            absl::StrCat("-Xwrapped-swift=-swift-module-file=ModB=",
+                         mod_b_path),
+        },
+        /*force_response_file=*/false,
+        /*get_current_directory=*/
+        [&]() { return std::string(temp_dir->GetPath()); },
+        /*job_env=*/GetJobEnvForTest());
+
+    ASSERT_THAT(runner.GetArgs().size(), Eq(2));
+    EXPECT_THAT(runner.GetArgs()[0], Eq("-I"));
+    symlinks_dir = runner.GetArgs()[1];
+    EXPECT_TRUE(PathExists(symlinks_dir));
+
+    EXPECT_EQ(ReadFileContents(absl::StrCat(symlinks_dir, "/ModA.swiftmodule")),
+              "mod_a");
+    EXPECT_EQ(ReadFileContents(absl::StrCat(symlinks_dir, "/ModA.swiftdoc")),
+              "doc_a");
+    EXPECT_EQ(
+        ReadFileContents(absl::StrCat(symlinks_dir, "/ModA.swiftsourceinfo")),
+        "info_a");
+    EXPECT_EQ(ReadFileContents(absl::StrCat(symlinks_dir, "/ModB.swiftmodule")),
+              "mod_b");
+    EXPECT_FALSE(PathExists(absl::StrCat(symlinks_dir, "/ModB.swiftdoc")));
+  }
+  EXPECT_FALSE(PathExists(symlinks_dir));
+}
+
 }  // namespace
 }  // namespace bazel_rules_swift

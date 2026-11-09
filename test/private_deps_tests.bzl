@@ -34,7 +34,7 @@ def private_deps_test_suite(name, tags = []):
     provider_test(
         name = "{}_private_swift_swiftmodules".format(name),
         expected_files = [
-            "test_fixtures_private_deps_private_swift.swiftmodule",
+            "test/fixtures/private_deps/private_swift.swiftmodule",
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
@@ -45,7 +45,7 @@ def private_deps_test_suite(name, tags = []):
     provider_test(
         name = "{}_public_swift_swiftmodules".format(name),
         expected_files = [
-            "test_fixtures_private_deps_public_swift.swiftmodule",
+            "test/fixtures/private_deps/public_swift.swiftmodule",
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
@@ -58,9 +58,9 @@ def private_deps_test_suite(name, tags = []):
     provider_test(
         name = "{}_client_swift_deps_swiftmodules".format(name),
         expected_files = [
-            "test_fixtures_private_deps_client_swift_deps.swiftmodule",
-            "test_fixtures_private_deps_public_swift.swiftmodule",
-            "-test_fixtures_private_deps_private_swift.swiftmodule",
+            "test/fixtures/private_deps/client_swift_deps.swiftmodule",
+            "test/fixtures/private_deps/public_swift.swiftmodule",
+            "-test/fixtures/private_deps/private_swift.swiftmodule",
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",

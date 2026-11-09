@@ -1665,47 +1665,6 @@ def _swift_module_file_map_fn(module):
     """Returns a `-swift-module-file=<name>=<path>` flag for a Swift module.
 
     This function is intended to be used as a mapping function for modules
-    passed into `Args.add_all`. Directory `.swiftmodule` bundles are skipped
-    here and handled via search paths instead.
-
-    Args:
-        module: The module structure (as returned by
-            `create_swift_module_context`) extracted from the transitive
-            modules of a `SwiftInfo` provider.
-
-    Returns:
-        A `-swift-module-file=<name>=<path>` flag string, or `None` if the
-        module does not have a single-file `.swiftmodule`.
-    """
-    if module.swift and not module.swift.swiftmodule.is_directory:
-        return "-swift-module-file={}={}".format(
-            module.name,
-            module.swift.swiftmodule.path,
-        )
-    else:
-        return None
-
-def _swift_module_directory_search_path_map_fn(module):
-    """Returns the search path for a directory `.swiftmodule` bundle, if any.
-
-    Args:
-        module: The module structure (as returned by
-            `create_swift_module_context`) extracted from the transitive
-            modules of a `SwiftInfo` provider.
-
-    Returns:
-        The dirname of the module's `.swiftmodule` directory, or `None` if the
-        module is not a directory `.swiftmodule`.
-    """
-    if module.swift and module.swift.swiftmodule.is_directory:
-        return _swift_module_search_path_map_fn(module)
-    else:
-        return None
-
-def _swift_module_search_path_map_fn(module):
-    """Returns the path to the directory containing a `.swiftmodule` file.
-
-    This function is intended to be used as a mapping function for modules
     passed into `Args.add_all`.
 
     Args:
@@ -1714,17 +1673,14 @@ def _swift_module_search_path_map_fn(module):
             modules of a `SwiftInfo` provider.
 
     Returns:
-        The dirname of the module's `.swiftmodule` file.
+        A `-swift-module-file=<name>=<path>` flag string, or `None` if the
+        module does not have a `.swiftmodule`.
     """
     if module.swift:
-        search_path = module.swift.swiftmodule.dirname
-
-        # If the dirname also ends in .swiftmodule, remove it as well so that
-        # the compiler finds the module *directory*.
-        if search_path.endswith(".swiftmodule"):
-            search_path = paths.dirname(search_path)
-
-        return search_path
+        return "-swift-module-file={}={}".format(
+            module.name,
+            module.swift.swiftmodule.path,
+        )
     else:
         return None
 
@@ -1786,12 +1742,6 @@ def _dependencies_swiftmodules_configurator(
             map_each = _swift_module_file_map_fn,
             uniquify = True,
         )
-    args.add_all(
-        prerequisites.transitive_modules,
-        format_each = "-I%s",
-        map_each = _swift_module_directory_search_path_map_fn,
-        uniquify = True,
-    )
 
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swiftmodules,
@@ -1801,8 +1751,8 @@ def _dependencies_swiftmodule_search_paths_configurator(prerequisites, args):
     """Adds `.swiftmodule` files from deps to search paths and action inputs."""
     args.add_all(
         prerequisites.transitive_modules,
-        format_each = "-I%s",
-        map_each = _swift_module_search_path_map_fn,
+        format_each = "-Xwrapped-swift=%s",
+        map_each = _swift_module_file_map_fn,
         uniquify = True,
     )
 

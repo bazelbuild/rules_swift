@@ -150,8 +150,8 @@ def overlay_test_suite(name, tags = []):
     for mode_name, mode in COMPILATION_MODES.items():
         expected_overlay_inputs = [
             "test/fixtures/overlay/cc_with_overlay.swift.modulemap",
-            "test_fixtures_overlay_public_dep.swiftmodule",
-            "test_fixtures_overlay_private_dep.swiftmodule",
+            "test/fixtures/overlay/public_dep.swiftmodule",
+            "test/fixtures/overlay/private_dep.swiftmodule",
             "*",
         ]
         if mode_name == "implicit_modules":
@@ -190,9 +190,9 @@ def overlay_test_suite(name, tags = []):
         mode.action_command_line_test(
             name = "{}_{}_downstream_compile_inputs".format(name, mode_name),
             expected_inputs = [
-                "test_fixtures_overlay_cc_with_overlay.swiftmodule",
-                "test_fixtures_overlay_public_dep.swiftmodule",
-                "-test_fixtures_overlay_private_dep.swiftmodule",
+                "test/fixtures/overlay/overlay.swiftmodule",
+                "test/fixtures/overlay/public_dep.swiftmodule",
+                "-test/fixtures/overlay/private_dep.swiftmodule",
                 "*",
             ],
             mnemonic = mode.mnemonic,
@@ -233,7 +233,7 @@ def overlay_test_suite(name, tags = []):
     provider_test(
         name = "{}_swift_info_swiftmodule".format(name),
         expected_files = [
-            "test_fixtures_overlay_cc_with_overlay.swiftmodule",
+            "test/fixtures/overlay/overlay.swiftmodule",
         ],
         field = "direct_modules.swift!.swiftmodule",
         provider = "SwiftInfo",
@@ -244,9 +244,9 @@ def overlay_test_suite(name, tags = []):
     provider_test(
         name = "{}_swift_info_transitive_swiftmodules".format(name),
         expected_files = [
-            "test_fixtures_overlay_cc_with_overlay.swiftmodule",
-            "test_fixtures_overlay_public_dep.swiftmodule",
-            "-test_fixtures_overlay_private_dep.swiftmodule",
+            "test/fixtures/overlay/overlay.swiftmodule",
+            "test/fixtures/overlay/public_dep.swiftmodule",
+            "-test/fixtures/overlay/private_dep.swiftmodule",
             "*",
         ],
         field = "transitive_modules.swift!.swiftmodule",
@@ -296,7 +296,7 @@ def overlay_test_suite(name, tags = []):
     provider_test(
         name = "{}_custom_module_name_swift_info_swiftmodule".format(name),
         expected_files = [
-            "test/fixtures/overlay/CustomOverlayMod.swiftmodule",
+            "test/fixtures/overlay/custom_overlay.swiftmodule",
         ],
         field = "direct_modules.swift!.swiftmodule",
         provider = "SwiftInfo",

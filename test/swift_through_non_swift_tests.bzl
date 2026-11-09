@@ -35,8 +35,8 @@ def swift_through_non_swift_test_suite(name, tags = []):
     provider_test(
         name = "{}_swiftmodules_propagate_through_non_swift_targets".format(name),
         expected_files = [
-            "test_fixtures_swift_through_non_swift_lower.swiftmodule",
-            "test_fixtures_swift_through_non_swift_upper.swiftmodule",
+            "test/fixtures/swift_through_non_swift/lower.swiftmodule",
+            "test/fixtures/swift_through_non_swift/upper.swiftmodule",
         ],
         field = "transitive_modules.swift!.swiftmodule",
         provider = "SwiftInfo",

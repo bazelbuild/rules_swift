@@ -1875,16 +1875,16 @@ def _construct_compile_plan(
     # First, declare "constant" outputs (outputs whose nature doesn't change
     # depending on compilation mode, like WMO vs. non-WMO).
     swiftmodule_file = actions.declare_file(
-        "{}.swiftmodule".format(module_name),
+        "{}.swiftmodule".format(target_name),
     )
-    swiftdoc_file = actions.declare_file("{}.swiftdoc".format(module_name))
+    swiftdoc_file = actions.declare_file("{}.swiftdoc".format(target_name))
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO,
     ):
         swiftsourceinfo_file = actions.declare_file(
-            "{}.swiftsourceinfo".format(module_name),
+            "{}.swiftsourceinfo".format(target_name),
         )
     else:
         swiftsourceinfo_file = None

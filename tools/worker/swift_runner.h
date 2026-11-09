@@ -131,6 +131,16 @@ class CompilationPlan {
 //     `-experimental-skip-non-inlinable-function-bodies-without-types` flag
 //     that `swift-driver` unconditionally injects into `EmitModuleJob`
 //     frontend commands during parallel compilation.
+//
+// -Xwrapped-swift=-swift-module-file=<module_name>=<path>
+//     When specified, the spawner will create an ephemeral directory (passed to
+//     the tool via `-I`) containing a `<module_name>.swiftmodule` symlink
+//     pointing to `<path>` (along with companion `.swiftdoc` and
+//     `.swiftsourceinfo` symlinks if present). This allows tools that do not
+//     support `-swift-module-file=` directly (such as
+//     `swift-symbolgraph-extract`, `swift-synthesize-interface`, and
+//     `swift-api-digester`) to resolve modules whose filenames do not match
+//     their module names.
 class SwiftRunner {
  public:
   // Create a new spawner that launches a Swift tool with the given arguments.
@@ -241,6 +251,11 @@ class SwiftRunner {
   // Temporary directories (e.g., ephemeral module cache) that should be cleaned
   // up after the driver has terminated.
   std::vector<std::unique_ptr<TempDirectory>> temp_directories_;
+
+  // Temporary directory holding `<module_name>.swiftmodule` symlinks for
+  // `-Xwrapped-swift=-swift-module-file=<name>=<path>`, owned by
+  // `temp_directories_`.
+  TempDirectory* module_files_dir_ = nullptr;
 
   // Arguments will be unconditionally written into a response file and passed
   // to the tool that way.
