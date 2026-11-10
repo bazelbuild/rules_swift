@@ -271,3 +271,8 @@ SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST = "swift._supports_const_gat
 # If enabled, passes `-Xcc -std=gnu2x` to actions that invoke ClangImporter so
 # C and Objective-C headers are parsed in C23 (`gnu2x`) mode.
 SWIFT_FEATURE_STD_GNU2X = "swift.std_gnu2x"
+
+# If enabled, adds coverage-guided fuzzing instrumentation during compilation
+# without linking a fuzzing engine runtime (matching `-sanitize=fuzzer-no-link`
+# semantics).
+SWIFT_FEATURE_FUZZER_NO_LINK = "swift.fuzzer_no_link"
