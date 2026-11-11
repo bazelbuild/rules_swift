@@ -126,6 +126,7 @@ bzl_library(
         "//swift:swift_common",
         "//swift:swift_module_mapping_test",
         "//swift/internal:package_specs",
+        "//swift/toolchains/config:compile_config",
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//lib:unittest",
         "@bazel_skylib//rules:build_test",

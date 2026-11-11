@@ -234,6 +234,7 @@ def compile_module_interface(
         module_name = module_name,
         source_files = [swiftinterface_file],
         swiftmodule_file = swiftmodule_file,
+        target_label = feature_configuration._label,
         transitive_modules = transitive_modules,
         transitive_swiftmodules = transitive_swiftmodules,
         user_compile_flags = copts,

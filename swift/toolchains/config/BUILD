@@ -27,11 +27,17 @@ bzl_library(
 bzl_library(
     name = "compile_config",
     srcs = ["compile_config.bzl"],
+    visibility = [
+        "//swift/internal:__pkg__",
+        "//swift/toolchains:__pkg__",
+        "//test:__pkg__",
+    ],
     deps = [
         ":action_config",
         "//swift/internal:action_names",
         "//swift/internal:feature_names",
         "//swift/internal:optimization",
+        "//swift/internal:package_specs",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
         "@rules_cc//cc/common",

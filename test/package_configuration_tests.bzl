@@ -35,6 +35,11 @@ load(
     "parse_package_specs",
 )
 load(
+    "@build_bazel_rules_swift//swift/toolchains/config:compile_config.bzl",
+    "banned_copt",
+    "banned_copt_failure_message",
+)
+load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
@@ -302,6 +307,111 @@ def _package_specs_unit_test_impl(ctx):
 
 package_specs_unit_test = unittest.make(_package_specs_unit_test_impl)
 
+def _banned_copts_unit_test_impl(ctx):
+    env = unittest.begin(ctx)
+
+    banned_copts = {
+        "-always-banned": "Do not pass `-always-banned`.",
+        "-no-reason": "",
+        "-restricted-flag": banned_copt(
+            "Only the toolchain may use `-restricted-flag`.",
+            allowed_packages = [
+                "//allowed/exact",
+                "//allowed/tree/...",
+                "-//allowed/tree/excluded/...",
+            ],
+        ),
+    }
+    banned_copt_prefixes = {
+        "-always-prefix=": "Do not pass `-always-prefix=`.",
+        "-restricted-mode=": banned_copt(
+            "Only the toolchain may use `-restricted-mode=`.",
+            allowed_packages = [
+                "//toolchain/...",
+            ],
+        ),
+    }
+
+    def check(copt, label_str = None):
+        return banned_copt_failure_message(
+            copt,
+            banned_copt_prefixes = banned_copt_prefixes,
+            banned_copts = banned_copts,
+            target_label = Label(label_str) if label_str else None,
+        )
+
+    # 1. Unbanned flags return `None`.
+    asserts.equals(env, None, check("-DDEBUG", "//any:target"))
+    asserts.equals(env, None, check("-always-prefix", "//any:target"))
+    asserts.equals(env, None, check("-restricted-mode", "//any:target"))
+
+    # 2. Unconditionally banned exact and prefix flags fail regardless of
+    # target label.
+    asserts.equals(
+        env,
+        "The Swift compiler flag '-always-banned' may not be used. " +
+        "Do not pass `-always-banned`.",
+        check("-always-banned", "//allowed/exact:lib"),
+    )
+    asserts.equals(
+        env,
+        "The Swift compiler flag '-no-reason' may not be used.",
+        check("-no-reason", "//allowed/exact:lib"),
+    )
+    asserts.equals(
+        env,
+        "The Swift compiler flag '-always-prefix=val' may not be used. " +
+        "Do not pass `-always-prefix=`.",
+        check("-always-prefix=val", "//toolchain:lib"),
+    )
+
+    # 3. Package-exempted exact flags succeed in matching packages and fail
+    # elsewhere (including excluded subpackages and `target_label = None`).
+    for allowed_target in [
+        "//allowed/exact:lib",
+        "//allowed/tree:lib",
+        "//allowed/tree/sub:lib",
+    ]:
+        asserts.equals(env, None, check("-restricted-flag", allowed_target))
+
+    expected_restricted_msg = (
+        "The Swift compiler flag '-restricted-flag' may not be used. " +
+        "Only the toolchain may use `-restricted-flag`."
+    )
+    for disallowed_target in [
+        None,
+        "//other:lib",
+        "//allowed/exact/sub:lib",
+        "//allowed/tree/excluded:lib",
+        "//allowed/tree/excluded/sub:lib",
+    ]:
+        asserts.equals(
+            env,
+            expected_restricted_msg,
+            check("-restricted-flag", disallowed_target),
+        )
+
+    # 4. Package-exempted prefix flags succeed in matching packages and fail
+    # elsewhere for any value with that prefix.
+    asserts.equals(env, None, check("-restricted-mode=default", "//toolchain:lib"))
+    asserts.equals(env, None, check("-restricted-mode=off", "//toolchain/sub:lib"))
+    asserts.equals(
+        env,
+        "The Swift compiler flag '-restricted-mode=default' may not be used. " +
+        "Only the toolchain may use `-restricted-mode=`.",
+        check("-restricted-mode=default", "//user/pkg:lib"),
+    )
+    asserts.equals(
+        env,
+        "The Swift compiler flag '-restricted-mode=off' may not be used. " +
+        "Only the toolchain may use `-restricted-mode=`.",
+        check("-restricted-mode=off", None),
+    )
+
+    return unittest.end(env)
+
+banned_copts_unit_test = unittest.make(_banned_copts_unit_test_impl)
+
 per_module_swiftcopt_action_command_line_test = make_action_command_line_test_rule(
     config_settings = {
         "@build_bazel_rules_swift//swift:per_module_swiftcopt": [
@@ -327,9 +437,14 @@ def package_configuration_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
-    # 1. Unit tests for `package_specs.bzl`.
+    # 1. Unit tests for `package_specs.bzl` and banned compiler flag policies.
     package_specs_unit_test(
         name = "{}_package_specs_unit_test".format(name),
+        tags = all_tags,
+    )
+
+    banned_copts_unit_test(
+        name = "{}_banned_copts_unit_test".format(name),
         tags = all_tags,
     )
 

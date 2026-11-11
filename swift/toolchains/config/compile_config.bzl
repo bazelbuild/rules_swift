@@ -73,10 +73,16 @@ load(
     "@build_bazel_rules_swift//swift/internal:optimization.bzl",
     "is_wmo_manually_requested",
 )
+load(
+    "@build_bazel_rules_swift//swift/internal:package_specs.bzl",
+    "label_matches_package_specs",
+    "parse_package_specs",
+)
 load(":action_config.bzl", "ActionConfigInfo", "ConfigResultInfo", "add_arg")
 
 visibility([
     "@build_bazel_rules_swift//swift/toolchains/...",
+    "@build_bazel_rules_swift//test/...",
 ])
 
 # The number of threads to use for WMO builds, using the same number of cores
@@ -1037,9 +1043,10 @@ def compile_action_configs(
                     SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 ],
                 configurators = [
-                    lambda _, args: args.add_all(
+                    lambda prerequisites, args: _add_checked_compile_flags(
+                        prerequisites,
+                        args,
                         additional_swiftc_copts,
-                        map_each = _fail_if_flag_is_banned,
                     ),
                 ],
             ),
@@ -1888,9 +1895,10 @@ def _source_files_as_action_inputs_only_configurator(prerequisites, _args):
 
 def _user_compile_flags_configurator(prerequisites, args):
     """Adds user compile flags to the command line."""
-    args.add_all(
+    _add_checked_compile_flags(
+        prerequisites,
+        args,
         prerequisites.user_compile_flags,
-        map_each = _fail_if_flag_is_banned,
     )
 
 def _make_wmo_thread_count_configurator(should_check_flags):
@@ -2021,8 +2029,34 @@ def _additional_inputs_configurator(prerequisites, _args):
         inputs = prerequisites.additional_inputs,
     )
 
+def banned_copt(reason, *, allowed_packages = []):
+    """Creates a policy entry for `_BANNED_SWIFTCOPTS` or `_BANNED_SWIFTCOPT_PREFIXES`.
+
+    This function is only exposed for unit testing; it should not be called
+    outside of `compile_config.bzl` and its tests.
+
+    Args:
+        reason: A message explaining why the flag is banned or what alternative
+            should be used instead.
+        allowed_packages: An optional list of package specification strings
+            (using the same syntax as `package_group`, such as `"//foo/bar"` or
+            `"//foo/bar/..."`) whose targets are permitted to use the flag.
+
+    Returns:
+        A `struct` describing the banned compiler flag policy.
+    """
+    return struct(
+        allowed_package_specs = parse_package_specs(
+            package_specs = allowed_packages,
+            workspace_name = "",
+        ) if allowed_packages else [],
+        reason = reason,
+    )
+
 # Swift compiler flags that should be banned (in either `copts` on a target or
-# by passing `--swiftcopt` on the command line) should be listed here.
+# by passing `--swiftcopt` on the command line) should be listed here. Each
+# value may be either a `str` message explaining why the flag is banned, or a
+# `struct` created by `banned_copt(...)` to exempt specific packages.
 _BANNED_SWIFTCOPTS = {
 }
 
@@ -2031,30 +2065,116 @@ _BANNED_SWIFTCOPTS = {
 _BANNED_SWIFTCOPT_PREFIXES = {
 }
 
-def _fail_if_flag_is_banned(copt):
+def banned_copt_failure_message(
+        copt,
+        *,
+        target_label = None,
+        banned_copts = _BANNED_SWIFTCOPTS,
+        banned_copt_prefixes = _BANNED_SWIFTCOPT_PREFIXES):
+    """Returns a failure message if `copt` is disallowed for `target_label`.
+
+    This function is only exposed for unit testing; it should not be called
+    outside of `compile_config.bzl` and its tests.
+
+    Args:
+        copt: The compiler flag string to check.
+        target_label: The `Label` of the target being compiled, or `None` if no
+            target label is associated with the action.
+        banned_copts: A dictionary mapping exact banned flags to either a `str`
+            reason or a `struct` created by `banned_copt`.
+        banned_copt_prefixes: A dictionary mapping banned flag prefixes to
+            either a `str` reason or a `struct` created by `banned_copt`.
+
+    Returns:
+        A failure message string if `copt` is banned for `target_label`, or
+        `None` if the flag is permitted.
+    """
+    entry = banned_copts.get(copt)
+    if entry == None:
+        for prefix, candidate in banned_copt_prefixes.items():
+            if copt.startswith(prefix):
+                entry = candidate
+                break
+    if entry == None:
+        return None
+
+    if types.is_string(entry):
+        reason = entry
+    else:
+        if (
+            target_label and
+            entry.allowed_package_specs and
+            label_matches_package_specs(
+                label = target_label,
+                package_specs = entry.allowed_package_specs,
+            )
+        ):
+            return None
+        reason = entry.reason
+
+    if reason:
+        return "The Swift compiler flag '{}' may not be used. {}".format(
+            copt,
+            reason,
+        )
+    return "The Swift compiler flag '{}' may not be used.".format(copt)
+
+def _fail_if_flag_is_banned(copt, *, target_label = None):
     """Fails the build if the given compiler flag matches a banned flag.
 
-    This is meant to be used as a `map_each` argument to `args.add_all`,
-    delaying the check until the action is actually executed and allowing it to
-    happen during the building of the command line (when the flags are already
-    being iterated), instead of doing a less-efficient separate traversal of the
-    list earlier at analysis time.
+    This is meant to be used as a `map_each` argument to `args.add_all`
+    (directly or via `_make_banned_flag_checker`), delaying the check until the
+    action is actually executed and allowing it to happen during the building of
+    the command line (when the flags are already being iterated), instead of
+    doing a less-efficient separate traversal of the list earlier at analysis
+    time.
 
     Args:
         copt: The flag to check.
+        target_label: The optional `Label` of the target being compiled, used to
+            evaluate package-scoped exemptions.
 
     Returns:
         The original flag, if the function didn't fail.
     """
-    reason = _BANNED_SWIFTCOPTS.get(copt)
-    if not reason:
-        for prefix in _BANNED_SWIFTCOPT_PREFIXES:
-            if copt.startswith(prefix):
-                reason = _BANNED_SWIFTCOPT_PREFIXES[prefix]
-                break
-    if reason:
-        fail("The Swift compiler flag '{}' may not be used. {}".format(
-            copt,
-            reason,
-        ))
+    failure_message = banned_copt_failure_message(
+        copt,
+        target_label = target_label,
+    )
+    if failure_message:
+        fail(failure_message)
     return copt
+
+def _make_banned_flag_checker(target_label):
+    """Returns a `map_each` callback that checks banned flags for a target.
+
+    We isolate closure creation in this helper accepting only `target_label`
+    (rather than the full action `prerequisites` struct) so that the closure
+    does not retain large analysis-phase data structures into the execution
+    phase.
+
+    Args:
+        target_label: The `Label` of the target being compiled, or `None`.
+
+    Returns:
+        A unary function suitable for passing as `map_each` in `args.add_all`.
+    """
+    if not target_label:
+        return _fail_if_flag_is_banned
+    return lambda copt: _fail_if_flag_is_banned(
+        copt,
+        target_label = target_label,
+    )
+
+def _add_checked_compile_flags(prerequisites, args, flags):
+    """Appends `flags` to `args`, rejecting any banned compiler flags."""
+    if not _BANNED_SWIFTCOPTS and not _BANNED_SWIFTCOPT_PREFIXES:
+        args.add_all(flags)
+        return
+
+    target_label = getattr(prerequisites, "target_label", None)
+    args.add_all(
+        flags,
+        allow_closure = True,
+        map_each = _make_banned_flag_checker(target_label),
+    )
