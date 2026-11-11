@@ -1,4 +1,5 @@
 load("@apple_support//rules:universal_binary.bzl", "universal_binary")
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("//test:transitions.bzl", "transition_test")
 
@@ -12,12 +13,8 @@ cc_library(
         "work_processor.h",
     ],
     hdrs = ["compile_with_worker.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -37,12 +34,8 @@ cc_library(
     name = "compile_without_worker",
     srcs = ["compile_without_worker.cc"],
     hdrs = ["compile_without_worker.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -58,12 +51,8 @@ cc_library(
     name = "hermetic_symlink",
     srcs = ["hermetic_symlink.cc"],
     hdrs = ["hermetic_symlink.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -76,12 +65,8 @@ cc_library(
     name = "pcm_hermetic_runner",
     srcs = ["pcm_hermetic_runner.cc"],
     hdrs = ["pcm_hermetic_runner.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -102,12 +87,8 @@ cc_library(
         "swift_runner.cc",
     ],
     hdrs = ["swift_runner.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
@@ -143,12 +124,8 @@ cc_library(
     name = "worker_protocol",
     srcs = ["worker_protocol.cc"],
     hdrs = ["worker_protocol.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
