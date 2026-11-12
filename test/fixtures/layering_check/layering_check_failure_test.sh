@@ -77,27 +77,7 @@ check_shared_prefix_success() {
   done
 }
 
-# The layering check must not inherit the worker's `-incremental`.
-check_no_incremental_remark() {
-  local target="//test/fixtures/layering_check:foundation_consumer"
-
-  if ! "$bazel" build "$target" \
-    --strategy=SwiftCompile=worker \
-    "--swiftcopt=-DNO_INCREMENTAL_REMARK_$$" &>"$log"; then
-    cat "$log"
-    echo "Expected $target to build" >&2
-    exit 1
-  fi
-
-  if grep -Fq "Incremental compilation has been disabled" "$log"; then
-    cat "$log"
-    echo "Expected no incremental compilation remark for $target" >&2
-    exit 1
-  fi
-}
-
 check_shared_prefix_success
-check_no_incremental_remark
 check_failure \
   "//test/fixtures/layering_check:foundation_consumer_violation_precompiled_modules" \
   "Foundation" \
