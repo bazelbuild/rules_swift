@@ -1,3 +1,6 @@
+load("@bazel_skylib//rules/directory:directory.bzl", "directory")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains/args:sysroot.bzl", "cc_sysroot")
 load(
     "//swift/toolchains:swift_toolchain.bzl",
     "swift_toolchain",
@@ -17,4 +20,25 @@ toolchain(
     name = "toolchain_macos_arm64_with_sdkroot",
     toolchain = ":_toolchain_macos_arm64_with_sdkroot",
     toolchain_type = "//toolchains:toolchain_type",
+)
+
+directory(
+    name = "other_linux_sysroot",
+    srcs = [],
+)
+
+cc_sysroot(
+    name = "other_linux_sysroot_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    sysroot = ":other_linux_sysroot",
+)
+
+cc_feature(
+    name = "other_linux_sysroot_feature",
+    args = [":other_linux_sysroot_args"],
+    feature_name = "sysroot",
+    visibility = ["//test:__subpackages__"],
 )
