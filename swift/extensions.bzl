@@ -93,7 +93,17 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
         BUILD file content with the `toolchain` declarations to add to the
         toolchains hub repository.
     """
+    threads = tag.threads
+    url = tag.url
     sha256 = tag.sha256
+
+    if threads and not url:
+        fail("`swift.wasm_sdk` with `threads = True` requires `url` and `sha256`.")
+    if url and not sha256:
+        fail("`swift.wasm_sdk` with an explicit `url` also requires `sha256`.")
+
+    if not url:
+        url = swift_sdk_download_url(swift_version, "wasm")
     if not sha256:
         if swift_version not in swift_sdk_releases or "wasm" not in swift_sdk_releases[swift_version]:
             fail("No known WebAssembly Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
@@ -109,8 +119,9 @@ def _setup_wasm_sdk(*, tag, toolchain_name, swift_version, platforms, swift_sdk_
             name = repository_name,
             sha256 = sha256,
             swift_version = swift_version,
+            threads = threads,
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
-            url = swift_sdk_download_url(swift_version, "wasm"),
+            url = url,
         )
         build_file_content += wasm_sdk_toolchains_for_platform(
             platform = platform,
@@ -242,13 +253,26 @@ _wasm_sdk = tag_class(
         "sha256": attr.string(
             doc = """\
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
-versions known to this version of rules_swift.
+versions known to this version of rules_swift, but is required when `url` or
+`threads` is set.
+""",
+        ),
+        "threads": attr.bool(
+            default = False,
+            doc = """\
+If `True`, target `wasm32-unknown-wasip1-threads`. Requires `url` and `sha256`.
+""",
+        ),
+        "url": attr.string(
+            doc = """\
+Overrides the SDK bundle URL derived from the Swift version. Requires `sha256`.
 """,
         ),
     },
     doc = """\
 Downloads the WebAssembly Swift SDK matching a `toolchain` tag's Swift version
-and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1`.
+and defines Swift and C++ toolchains targeting `wasm32-unknown-wasip1` (or
+`wasm32-unknown-wasip1-threads` when `threads = True`).
 """,
 )
 
