@@ -443,16 +443,26 @@ std::vector<std::string> FullArgsForDisplay(
 // also advanced if necessary past any additional flags (e.g., a path following
 // a flag).
 bool SkipLayeringCheckIncompatibleArgs(std::vector<std::string>::iterator& it) {
-  if (*it == "-emit-module" || *it == "-emit-module-interface" ||
-      *it == "-emit-object" || *it == "-emit-objc-header" ||
-      *it == "-whole-module-optimization") {
+  static const absl::flat_hash_set<absl::string_view> kFlagsToSkip = {
+      "-emit-module", "-emit-module-interface", "-emit-objc-header",
+      "-emit-object", "-incremental",           "-whole-module-optimization",
+  };
+  static const absl::flat_hash_set<absl::string_view> kFlagsWithValuesToSkip = {
+      "-o",
+      "-output-file-map",
+      "-emit-module-path",
+      "-emit-module-interface-path",
+      "-emit-objc-header-path",
+      "-emit-clang-header-path",
+      "-emit-const-values-path",
+      "-num-threads",
+  };
+
+  if (kFlagsToSkip.contains(*it)) {
     // Skip just this argument.
     return true;
   }
-  if (*it == "-o" || *it == "-output-file-map" || *it == "-emit-module-path" ||
-      *it == "-emit-module-interface-path" || *it == "-emit-objc-header-path" ||
-      *it == "-emit-clang-header-path" || *it == "-emit-const-values-path" ||
-      *it == "-num-threads") {
+  if (kFlagsWithValuesToSkip.contains(*it)) {
     // This flag has a value after it that we also need to skip.
     ++it;
     return true;
