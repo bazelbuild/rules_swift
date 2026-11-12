@@ -230,6 +230,32 @@ register_toolchains(
 and build with a platform that has the `@platforms//os:wasi` and
 `@platforms//cpu:wasm32` constraints.
 
+### WebAssembly threads
+
+A second `wasm_sdk` tag with `threads = True` (and the SDK's `url` and
+`sha256`) adds toolchains targeting `wasm32-unknown-wasip1-threads` beside the
+single-threaded ones:
+
+```bzl
+swift.wasm_sdk()
+swift.wasm_sdk(
+    threads = True,
+    url = "https://example.com/swift-6.3.2-RELEASE_wasm-threads.artifactbundle.tar.gz",
+    sha256 = "...",
+)
+
+register_toolchains(
+    "@swift_toolchain//:swift_toolchain_wasm32_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_xcode",
+    "@swift_toolchain//:swift_toolchain_wasm32_threads_xcode",
+    "@swift_toolchain//:cc_toolchain_wasm32_threads_xcode",
+)
+```
+
+A platform selects the threads SDK with the
+`@rules_swift//swift/toolchains/wasm:threaded` constraint; wasm platforms
+without it use the single-threaded SDK.
+
 ### WebAssembly reactors
 
 A plain `swift_binary` links a WASI *command* module (with a `main`). To produce
