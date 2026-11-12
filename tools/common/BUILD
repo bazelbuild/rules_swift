@@ -9,12 +9,8 @@ cc_library(
     name = "bazel_substitutions",
     srcs = ["bazel_substitutions.cc"],
     hdrs = ["bazel_substitutions.h"],
-    copts = select({
-        "//tools:clang-cl": [
-            "-Xclang=-fno-split-cold-code",
-            "/std:c++17",
-        ],
-        "//tools:msvc": [
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): [
             "/std:c++17",
         ],
         "//conditions:default": [
