@@ -1,9 +1,35 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//tools/worker:__pkg__"])
 
 licenses(["notice"])
+
+cc_library(
+    name = "xcode_symlink_test_fixture",
+    testonly = True,
+    hdrs = ["xcode_symlink_test_fixture.h"],
+    deps = [
+        ":temp_file",
+        "@googletest//:gtest",
+    ],
+)
+
+cc_test(
+    name = "bazel_substitutions_test",
+    size = "small",
+    srcs = ["bazel_substitutions_test.cc"],
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): ["/std:c++17"],
+        "//conditions:default": ["-std=c++17"],
+    }),
+    deps = [
+        ":bazel_substitutions",
+        ":xcode_symlink_test_fixture",
+        "@googletest//:gtest_main",
+    ],
+)
 
 cc_library(
     name = "bazel_substitutions",
