@@ -41,11 +41,6 @@ bool EnsureDirectorySymlink(const std::filesystem::path& link,
 // where concurrent actions can race to create the same symlink.
 bool EnsureDeveloperDirSymlink(const std::string& developer_dir);
 
-// Ensures that DeveloperDirSymlinkName() in the current working directory
-// points to the current DEVELOPER_DIR. This is a no-op if DEVELOPER_DIR is
-// unavailable, and exits if the symlink cannot be created.
-void EnsureDeveloperDirSymlinkFromEnv();
-
 }  // namespace bazel_rules_swift
 
 #endif  // BUILD_BAZEL_RULES_SWIFT_TOOLS_WORKER_HERMETIC_SYMLINK_H_

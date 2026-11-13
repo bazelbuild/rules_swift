@@ -5,6 +5,22 @@ load("//test:transitions.bzl", "transition_test")
 
 licenses(["notice"])
 
+cc_test(
+    name = "swift_runner_test",
+    size = "small",
+    srcs = ["swift_runner_test.cc"],
+    copts = selects.with_or({
+        ("//tools:clang-cl", "//tools:msvc"): ["/std:c++17"],
+        "//conditions:default": ["-std=c++17"],
+    }),
+    deps = [
+        ":hermetic_symlink",
+        ":swift_runner",
+        "//tools/common:xcode_symlink_test_fixture",
+        "@googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "compile_with_worker",
     srcs = [

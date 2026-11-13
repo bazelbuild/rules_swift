@@ -503,7 +503,28 @@ SwiftRunner::SwiftRunner(const std::vector<std::string>& args,
       file_prefix_pwd_is_dot_(false),
       hermetic_pcm_(false),
       verbose_(false) {
-  EnsureDeveloperDirSymlinkFromEnv();
+  // Canonicalize `DEVELOPER_DIR` and `SDKROOT` in the subprocess environment to
+  // match the symlink-resolved placeholder substitutions, while preserving the
+  // original `DEVELOPER_DIR` spelling so `-file-prefix-map` and
+  // `-debug-prefix-map` can remap both forms if they differ.
+  if (auto it = job_env_.find("DEVELOPER_DIR");
+      it != job_env_.end() && !it->second.empty()) {
+    original_developer_dir_ = it->second;
+    std::string canonical_developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
+    if (bazel_placeholder_substitutions_.Apply(canonical_developer_dir)) {
+      it->second = std::move(canonical_developer_dir);
+    }
+    if (!EnsureDeveloperDirSymlink(it->second)) {
+      std::exit(EXIT_FAILURE);
+    }
+  }
+  if (auto it = job_env_.find("SDKROOT");
+      it != job_env_.end() && !it->second.empty()) {
+    std::string canonical_sdk_root = "__BAZEL_XCODE_SDKROOT__";
+    if (bazel_placeholder_substitutions_.Apply(canonical_sdk_root)) {
+      it->second = std::move(canonical_sdk_root);
+    }
+  }
   ProcessArguments(args);
 }
 
@@ -830,6 +851,33 @@ std::vector<std::string> SwiftRunner::ParseArguments(Iterator itr) {
   return out_args;
 }
 
+void SwiftRunner::AddOriginalDeveloperDirPrefixMaps() {
+  auto developer_dir = job_env_.find("DEVELOPER_DIR");
+  if (developer_dir == job_env_.end() || original_developer_dir_.empty() ||
+      original_developer_dir_ == developer_dir->second) {
+    return;
+  }
+
+  const std::string canonical_map =
+      developer_dir->second + "=/PLACEHOLDER_DEVELOPER_DIR";
+  const std::string original_map =
+      original_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR";
+  std::vector<std::string> rewritten_args;
+  rewritten_args.reserve(args_.size() + 2);
+  for (size_t i = 0; i < args_.size(); ++i) {
+    const std::string& arg = args_[i];
+    rewritten_args.push_back(arg);
+    if ((arg == "-file-prefix-map" || arg == "-debug-prefix-map" ||
+         arg == "-coverage-prefix-map") &&
+        i + 1 < args_.size() && args_[i + 1] == canonical_map) {
+      rewritten_args.push_back(args_[++i]);
+      rewritten_args.push_back(arg);
+      rewritten_args.push_back(original_map);
+    }
+  }
+  args_ = std::move(rewritten_args);
+}
+
 void SwiftRunner::ProcessArguments(const std::vector<std::string>& args) {
 #if __APPLE__
   // On Apple platforms, inject `/usr/bin/xcrun` in front of our command
@@ -848,6 +896,10 @@ void SwiftRunner::ProcessArguments(const std::vector<std::string>& args) {
                     [&](const std::string& arg) { args_.push_back(arg); });
     ++it;
   }
+
+#if __APPLE__
+  AddOriginalDeveloperDirPrefixMaps();
+#endif
 
   if (!module_or_interface_path_.empty()) {
     ExtractFlagsFromInterfaceFile(

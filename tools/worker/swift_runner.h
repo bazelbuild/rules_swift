@@ -83,6 +83,12 @@ class SwiftRunner {
   // stdout_to_stderr is true, then stdout is also redirected to that stream.
   int Run(std::ostream* stderr_stream, bool stdout_to_stderr = false);
 
+  // The following members are only public for testing purposes.
+  const std::vector<std::string>& GetArgs() const { return args_; }
+  const std::map<std::string, std::string>& GetJobEnv() const {
+    return job_env_;
+  }
+
  private:
   // Processes an argument that looks like it might be a response file (i.e., it
   // begins with '@') and returns true if the argument(s) passed to the consumer
@@ -127,6 +133,8 @@ class SwiftRunner {
   // `tool_args_` and `args_` vectors.
   void ProcessArguments(const std::vector<std::string>& args);
 
+  void AddOriginalDeveloperDirPrefixMaps();
+
   // Spawns the generated header rewriter to perform any desired transformations
   // on the Clang header emitted from a Swift compilation.
   int PerformGeneratedHeaderRewriting(std::ostream& stderr_stream,
@@ -156,6 +164,11 @@ class SwiftRunner {
   // jobs spawned by the worker, such as the generated header rewriter or the
   // emit-imports job).
   std::map<std::string, std::string> job_env_;
+
+  // The un-canonicalized `DEVELOPER_DIR` value from the incoming job
+  // environment, preserved so prefix-map flags can remap both the canonical
+  // path and any symlinked spelling when they differ.
+  std::string original_developer_dir_;
 
   // The path to the index-import binary.
   std::string index_import_path_;
