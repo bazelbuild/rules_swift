@@ -244,6 +244,11 @@ class SwiftRunner {
   // emit-imports job).
   absl::flat_hash_map<std::string, std::string> job_env_;
 
+  // The un-canonicalized `DEVELOPER_DIR` value from the incoming job
+  // environment, preserved so prefix-map flags can remap both the canonical
+  // path and any symlinked spelling when they differ.
+  std::string original_developer_dir_;
+
   // Temporary files (e.g., rewritten response files) that should be cleaned up
   // after the driver has terminated.
   std::vector<std::unique_ptr<TempFile>> temp_files_;

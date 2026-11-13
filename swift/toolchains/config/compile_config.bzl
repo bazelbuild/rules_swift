@@ -423,7 +423,6 @@ def compile_action_configs(
             ],
             configurators = [
                 add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
-                add_arg("-file-prefix-map", "__BAZEL_XCODE_DEVELOPER_DIR__=/DEVELOPER_DIR"),
             ],
             features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
         ),

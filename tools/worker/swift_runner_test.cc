@@ -116,6 +116,67 @@ TEST(SwiftRunnerTest, ArgsProcessingFilePrefixPwdIsDot) {
                           ));
 }
 
+TEST(SwiftRunnerTest,
+     CanonicalizesSymlinkedDeveloperDirAndSdkRootInEnvArgsAndPrefixMap) {
+  std::unique_ptr<TempDirectory> temp_dir =
+      TempDirectory::Create("runner_symlink_test.XXXXXX");
+  ASSERT_NE(temp_dir, nullptr);
+
+  std::string real_developer_dir =
+      absl::StrCat(temp_dir->GetPath(), "/Xcode_27.1.0.app/Contents/Developer");
+  std::string real_sdk_root =
+      absl::StrCat(real_developer_dir, "/Platforms/MacOSX.platform/MacOSX.sdk");
+  ASSERT_TRUE(MakeDirs(real_sdk_root, S_IRWXU).ok());
+
+  std::string symlink_xcode_app =
+      absl::StrCat(temp_dir->GetPath(), "/Xcode_27.1.0.27A9275.app");
+  std::filesystem::create_directory_symlink(
+      absl::StrCat(temp_dir->GetPath(), "/Xcode_27.1.0.app"),
+      symlink_xcode_app);
+
+  std::string symlink_developer_dir =
+      absl::StrCat(symlink_xcode_app, "/Contents/Developer");
+  std::string symlink_sdk_root = absl::StrCat(
+      symlink_developer_dir, "/Platforms/MacOSX.platform/MacOSX.sdk");
+
+  std::string canonical_developer_dir =
+      std::filesystem::canonical(real_developer_dir).string();
+  std::string canonical_sdk_root =
+      std::filesystem::canonical(real_sdk_root).string();
+
+  absl::flat_hash_map<std::string, std::string> env = {
+      {"DEVELOPER_DIR", symlink_developer_dir},
+      {"SDKROOT", symlink_sdk_root},
+  };
+  SwiftRunner runner(
+      {
+          "swiftc",
+          "-Xwrapped-swift=-file-prefix-pwd-is-dot",
+          "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains",
+          "-sdk",
+          "__BAZEL_XCODE_SDKROOT__",
+      },
+      /*force_response_file=*/false,
+      /*get_current_directory=*/GetCurrentDirectoryForTest,
+      /*job_env=*/env);
+
+  EXPECT_THAT(runner.GetJobEnv(),
+              Contains(Pair("DEVELOPER_DIR", canonical_developer_dir)));
+  EXPECT_THAT(runner.GetJobEnv(),
+              Contains(Pair("SDKROOT", canonical_sdk_root)));
+  EXPECT_THAT(
+      runner.GetArgs(),
+      ElementsAre("-file-prefix-map", "/execroot=.",
+#if __APPLE__
+                  "-file-prefix-map",
+                  absl::StrCat(canonical_developer_dir, "=/DEVELOPER_DIR"),
+                  "-file-prefix-map",
+                  absl::StrCat(symlink_developer_dir, "=/DEVELOPER_DIR"),
+#endif
+                  absl::StrCat(canonical_developer_dir, "/Toolchains"), "-sdk",
+                  canonical_sdk_root));
+}
+
 TEST(SwiftRunnerTest, ArgsProcessingMacroExpansionDir) {
   SwiftRunner runner(
       {"swiftc", "-Xwrapped-swift=-macro-expansion-dir=some/relative/path"},

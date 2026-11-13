@@ -35,6 +35,22 @@ std::string GetEnvironmentVariable(absl::string_view name) {
   return env_value;
 }
 
+// Resolves symlinks in `path` via `realpath`, or returns `path` unchanged if it
+// does not exist on disk (for example, in unit tests using synthetic paths).
+std::string ResolveSymlinks(absl::string_view path) {
+  if (path.empty()) {
+    return "";
+  }
+  std::string null_terminated_path(path.data(), path.length());
+  char* resolved = realpath(null_terminated_path.c_str(), nullptr);
+  if (resolved == nullptr) {
+    return null_terminated_path;
+  }
+  std::string result(resolved);
+  free(resolved);
+  return result;
+}
+
 }  // namespace
 
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
@@ -45,11 +61,11 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions() {
   // command will presumably fail later.
   if (std::string developer_dir = GetEnvironmentVariable("DEVELOPER_DIR");
       !developer_dir.empty()) {
-    substitutions_[kBazelXcodeDeveloperDir] = developer_dir;
+    substitutions_[kBazelXcodeDeveloperDir] = ResolveSymlinks(developer_dir);
   }
   if (std::string sdk_root = GetEnvironmentVariable("SDKROOT");
       !sdk_root.empty()) {
-    substitutions_[kBazelXcodeSdkRoot] = sdk_root;
+    substitutions_[kBazelXcodeSdkRoot] = ResolveSymlinks(sdk_root);
   }
 }
 
@@ -57,18 +73,19 @@ BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
     const absl::flat_hash_map<std::string, std::string>& env) {
   if (auto developer_dir = env.find("DEVELOPER_DIR");
       developer_dir != env.end() && !developer_dir->second.empty()) {
-    substitutions_[kBazelXcodeDeveloperDir] = developer_dir->second;
+    substitutions_[kBazelXcodeDeveloperDir] =
+        ResolveSymlinks(developer_dir->second);
   }
   if (auto sdk_root = env.find("SDKROOT");
       sdk_root != env.end() && !sdk_root->second.empty()) {
-    substitutions_[kBazelXcodeSdkRoot] = sdk_root->second;
+    substitutions_[kBazelXcodeSdkRoot] = ResolveSymlinks(sdk_root->second);
   }
 }
 
 BazelPlaceholderSubstitutions::BazelPlaceholderSubstitutions(
     absl::string_view developer_dir, absl::string_view sdk_root) {
-  substitutions_[kBazelXcodeDeveloperDir] = std::string(developer_dir);
-  substitutions_[kBazelXcodeSdkRoot] = std::string(sdk_root);
+  substitutions_[kBazelXcodeDeveloperDir] = ResolveSymlinks(developer_dir);
+  substitutions_[kBazelXcodeSdkRoot] = ResolveSymlinks(sdk_root);
 }
 
 bool BazelPlaceholderSubstitutions::Apply(std::string &arg) {

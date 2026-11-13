@@ -646,6 +646,28 @@ SwiftRunner::SwiftRunner(
       last_flag_was_module_alias_(false),
       disable_skip_non_inlinable_function_bodies_(false),
       get_current_directory_(std::move(get_current_directory)) {
+  // Canonicalize `DEVELOPER_DIR` and `SDKROOT` in the subprocess environment to
+  // match the symlink-resolved placeholder substitutions, while preserving the
+  // original `DEVELOPER_DIR` spelling so `-file-prefix-map` and
+  // `-debug-prefix-map` can remap both forms if they differ.
+  if (auto it = job_env_.find("DEVELOPER_DIR");
+      it != job_env_.end() && !it->second.empty()) {
+    original_developer_dir_ = it->second;
+    std::string canonical_developer_dir(
+        BazelPlaceholderSubstitutions::kBazelXcodeDeveloperDir);
+    if (bazel_placeholder_substitutions_.Apply(canonical_developer_dir)) {
+      it->second = std::move(canonical_developer_dir);
+    }
+  }
+  if (auto it = job_env_.find("SDKROOT");
+      it != job_env_.end() && !it->second.empty()) {
+    std::string canonical_sdk_root(
+        BazelPlaceholderSubstitutions::kBazelXcodeSdkRoot);
+    if (bazel_placeholder_substitutions_.Apply(canonical_sdk_root)) {
+      it->second = std::move(canonical_sdk_root);
+    }
+  }
+
   ProcessArguments(args);
 
   // Ensure that `TMPDIR` is always redirected to a deterministic path within
@@ -777,10 +799,16 @@ bool SwiftRunner::ProcessArgument(
     consumer(absl::StrCat(get_current_directory_(), "=."));
 
 #if __APPLE__
-    std::string developer_dir = "__BAZEL_XCODE_DEVELOPER_DIR__";
+    std::string developer_dir(
+        BazelPlaceholderSubstitutions::kBazelXcodeDeveloperDir);
     if (bazel_placeholder_substitutions_.Apply(developer_dir)) {
       consumer(flag);
       consumer(absl::StrCat(developer_dir, "=/DEVELOPER_DIR"));
+      if (!original_developer_dir_.empty() &&
+          original_developer_dir_ != developer_dir) {
+        consumer(flag);
+        consumer(absl::StrCat(original_developer_dir_, "=/DEVELOPER_DIR"));
+      }
     }
 #endif
   };
