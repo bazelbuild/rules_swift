@@ -29,6 +29,7 @@ namespace {
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::Pair;
 using SwiftRunnerTest = XcodeSymlinkTest;
 
@@ -149,15 +150,15 @@ TEST_F(SwiftRunnerTest, ExplicitXcodeMapsDoNotRequireWorkingDirectoryMaps) {
         {"swiftc", flag,
          "__BAZEL_XCODE_DEVELOPER_DIR__=/PLACEHOLDER_DEVELOPER_DIR"},
         "");
-    EXPECT_THAT(
-        runner.GetArgs(),
-        ElementsAre(flag,
-                    canonical_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR"
+    const std::vector<std::string> expected_args = {
+        flag,
+        canonical_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
 #if __APPLE__
-                    ,
-                    flag, symlink_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR"
+        flag,
+        symlink_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
 #endif
-                    ));
+    };
+    EXPECT_THAT(runner.GetArgs(), ElementsAreArray(expected_args));
   }
 }
 
@@ -179,15 +180,15 @@ TEST_F(SwiftRunnerTest, ExplicitXcodeMapsCoverBothPathSpellings) {
         args = {"swiftc", "@compile.params"};
       }
       SwiftRunner runner(args, "");
-      EXPECT_THAT(
-          runner.GetArgs(),
-          ElementsAre(
-              flag, std::filesystem::current_path().string() + "=.", flag,
-              canonical_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
+      const std::vector<std::string> expected_args = {
+          flag, std::filesystem::current_path().string() + "=.",
+          flag, canonical_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
 #if __APPLE__
-              flag, symlink_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
+          flag, symlink_developer_dir_ + "=/PLACEHOLDER_DEVELOPER_DIR",
 #endif
-              flag, "/other=/source"));
+          flag, "/other=/source",
+      };
+      EXPECT_THAT(runner.GetArgs(), ElementsAreArray(expected_args));
     }
   }
 }
