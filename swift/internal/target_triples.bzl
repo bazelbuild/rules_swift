@@ -18,9 +18,26 @@ load("@build_bazel_apple_support//lib:apple_support.bzl", "apple_support")
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
+    "@build_bazel_rules_swift//test/...",
 ])
 
 _IOS_SIM_ARM64_MIN_OS_VERSION = apple_common.dotted_version("14.0")
+
+# Canonical LLVM triple OS names that contain digits as part of the OS
+# identifier itself rather than a trailing version suffix (from LLVM's
+# `llvm/TargetParser/TripleName.def`). Any version suffix on these platforms
+# begins after the OS prefix.
+_OS_PREFIXES_WITH_DIGITS = (
+    "h2",
+    "lv2",
+    "mesa3d",
+    "ps4",
+    "ps5",
+    "wasip1",
+    "wasip2",
+    "wasip3",
+    "win32",
+)
 
 # Maps (operating system, environment) pairs from target triples to
 # `apple_support.platform` values.
@@ -174,6 +191,15 @@ def _parse(triple_string):
             it was present. This component may be `None`.
     """
     components = triple_string.split("-")
+    if len(components) == 2:
+        # Two-component triples such as `wasm32-wasip2` omit the vendor, which
+        # LLVM normalizes to `unknown`.
+        return _make(
+            cpu = components[0],
+            vendor = "unknown",
+            os = components[1],
+            environment = None,
+        )
     return _make(
         cpu = components[0],
         vendor = components[1],
@@ -211,6 +237,11 @@ def _platform_name_for_swift(triple):
         return "watchsimulator" if is_simulator else "watchos"
     if os == "xros":
         return "xrsimulator" if is_simulator else "xros"
+    if os == "wasip1":
+        # Matches `getPlatformNameForTriple` in `lib/Basic/Platform.cpp`, which
+        # maps `WASIp1` to `"wasi"` (whereas `WASIp2` and `WASIp3` remain
+        # `"wasip2"` and `"wasip3"`).
+        return "wasi"
 
     # Fall back to the operating system name if we aren't one of the cases
     # covered above. If more platforms need to be supported in the future, add
@@ -243,7 +274,13 @@ def _split_os_version(os):
         version number. If there was no version number, then the second element
         will be the empty string.
     """
-    for index in range(len(os)):
+    start_index = 0
+    for prefix in _OS_PREFIXES_WITH_DIGITS:
+        if os.startswith(prefix):
+            start_index = len(prefix)
+            break
+
+    for index in range(start_index, len(os)):
         if os[index].isdigit():
             return (os[:index], os[index:])
     return (os, "")

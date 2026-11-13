@@ -89,7 +89,26 @@ def _swift_compiler_plugin_impl(ctx):
             ctx.label,
             feature_configuration = feature_configuration,
         )
-    entry_point_name = entry_point_function_name(module_name)
+    entry_point_linkopts_provider = (
+        toolchains.swift.entry_point_linkopts_provider
+    )
+    if entry_point_linkopts_provider:
+        entry_point_name = entry_point_function_name(module_name)
+        entry_point_copts = [
+            # Use a custom entry point name so that the macro can also be linked
+            # into another process (like a test executable) without having its
+            # main function collide.
+            "-Xfrontend",
+            "-entry-point-function-name",
+            "-Xfrontend",
+            entry_point_name,
+        ]
+        entry_point_linkopts = entry_point_linkopts_provider(
+            entry_point_name = entry_point_name,
+        ).linkopts
+    else:
+        entry_point_copts = []
+        entry_point_linkopts = []
 
     compile_result = compile(
         actions = ctx.actions,
@@ -99,14 +118,7 @@ def _swift_compiler_plugin_impl(ctx):
             # Compiler plugins always define a `CompilerPlugin`-conforming type
             # that is attributed with `@main`.
             "-parse-as-library",
-            # Use a custom entry point name so that the macro can also be linked
-            # into another process (like a test executable) without having its
-            # main function collide.
-            "-Xfrontend",
-            "-entry-point-function-name",
-            "-Xfrontend",
-            entry_point_name,
-        ],
+        ] + entry_point_copts,
         c_copts = c_copts,
         defines = ctx.attr.defines,
         feature_configuration = feature_configuration,
@@ -150,13 +162,7 @@ def _swift_compiler_plugin_impl(ctx):
             ctx,
             ctx.attr.linkopts,
             ctx.attr.swiftc_inputs,
-        ) + ctx.fragments.cpp.linkopts + (
-            # When linking the plugin binary, make sure we use the correct entry
-            # point name.
-            toolchains.swift.entry_point_linkopts_provider(
-                entry_point_name = entry_point_name,
-            ).linkopts
-        ),
+        ) + ctx.fragments.cpp.linkopts + entry_point_linkopts,
         variables_extension = variables_extension,
     )
 

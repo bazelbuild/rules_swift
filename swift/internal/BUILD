@@ -261,6 +261,10 @@ bzl_library(
 bzl_library(
     name = "target_triples",
     srcs = ["target_triples.bzl"],
+    visibility = [
+        "//swift:__subpackages__",
+        "//test:__subpackages__",
+    ],
     deps = [
         "@build_bazel_apple_support//lib:apple_support",
     ],

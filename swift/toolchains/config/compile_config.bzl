@@ -40,6 +40,7 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_ENABLE_V6",
+    "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
@@ -319,15 +320,22 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-disable-cmo")],
-            not_features = [SWIFT_FEATURE_OPT_USES_CMO],
+            not_features = [
+                [SWIFT_FEATURE_OPT_USES_CMO],
+                [SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED],
+            ],
         ),
 
-        # If the `swift.opt_uses_wmo` feature is enabled, opt builds should also
-        # automatically imply whole-module optimization.
+        # Whole-module optimization is implied by `swift.opt` when
+        # `swift.opt_uses_wmo` is enabled, and is required unconditionally by
+        # Embedded Swift.
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-whole-module-optimization")],
-            features = [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+            features = [
+                [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
+                [SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED],
+            ],
         ),
 
         # Improve dead-code stripping.
@@ -829,6 +837,7 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED],
             ],
         ),
 
@@ -846,6 +855,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__WMO_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED],
             ],
             not_features = [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
         ),
@@ -861,6 +871,7 @@ def compile_action_configs(
             not_features = [
                 [SWIFT_FEATURE_OPT, SWIFT_FEATURE_OPT_USES_WMO],
                 [SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS],
+                [SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED],
             ],
         ),
 

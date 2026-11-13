@@ -990,6 +990,12 @@ The label of the `string_list` containing additional flags that should be passed
 to the compiler.
 """,
         ),
+        "_embedded": attr.label(
+            default = Label(
+                "@build_bazel_rules_swift//swift:embedded",
+            ),
+            providers = [BuildSettingInfo],
+        ),
         "_module_mapping": attr.label(
             default = Label(
                 "@build_bazel_rules_swift//swift:module_mapping",

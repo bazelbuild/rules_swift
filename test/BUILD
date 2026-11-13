@@ -2,6 +2,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load(":cc_library_tests.bzl", "cc_library_test_suite")
 load(":compiler_plugin_tests.bzl", "compiler_plugin_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
+load(":embedded_tests.bzl", "embedded_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
 load(":interop_hints_tests.bzl", "interop_hints_test_suite")
@@ -19,6 +20,7 @@ load(":swift_test_and_binary_tests.bzl", "swift_test_and_binary_test_suite")
 load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
 load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
+load(":target_triples_tests.bzl", "target_triples_test_suite")
 load(":tree_artifact_tests.bzl", "tree_artifact_test_suite")
 load(":warnings_as_errors_tests.bzl", "warnings_as_errors_test_suite")
 
@@ -34,6 +36,10 @@ compiler_plugin_test_suite(
 
 debug_settings_test_suite(
     name = "debug_settings",
+)
+
+embedded_test_suite(
+    name = "embedded",
 )
 
 environment_test_suite(
@@ -104,6 +110,10 @@ synthesize_interface_test_suite(
     name = "synthesize_interface",
 )
 
+target_triples_test_suite(
+    name = "target_triples",
+)
+
 tree_artifact_test_suite(
     name = "tree_artifact",
 )
@@ -126,6 +136,7 @@ bzl_library(
         "//swift:swift_common",
         "//swift:swift_module_mapping_test",
         "//swift/internal:package_specs",
+        "//swift/internal:target_triples",
         "//swift/toolchains/config:compile_config",
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//lib:unittest",

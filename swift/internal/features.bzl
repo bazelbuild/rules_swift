@@ -14,12 +14,14 @@
 
 """Helper functions for working with Bazel features."""
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
+    "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
@@ -133,6 +135,7 @@ def configure_features(
     # `exec` configuration. https://github.com/bazelbuild/bazel/issues/14444.
     if "-exec" in ctx.bin_dir.path or "/host/" in ctx.bin_dir.path:
         unsupported_features.append(SWIFT_FEATURE_OPT_USES_CMO)
+        unsupported_features.append(SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED)
     else:
         requested_features = list(requested_features)
         requested_features.append(SWIFT_FEATURE_OPT_USES_CMO)
@@ -287,6 +290,10 @@ def default_features_for_toolchain(ctx, target_triple):
         # `InternalImportsByDefault`.
         "swift.experimental.AccessLevelOnImport",
     ]
+
+    embedded_setting = getattr(ctx.attr, "_embedded", None)
+    if embedded_setting and embedded_setting[BuildSettingInfo].value:
+        features.append(SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED)
 
     return features
 

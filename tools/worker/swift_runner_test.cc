@@ -980,5 +980,94 @@ TEST(SwiftRunnerTest, ArgsProcessingWrappedSwiftModuleFileCreatesSymlinks) {
   EXPECT_FALSE(PathExists(symlinks_dir));
 }
 
+TEST(SwiftRunnerTest,
+     LayeringCheckPreservesWmoForEmbeddedSwiftWhileAstDumpSkipsIt) {
+  std::unique_ptr<TempDirectory> temp_dir =
+      TempDirectory::Create("embedded_wmo_test.XXXXXX");
+  ASSERT_NE(temp_dir, nullptr);
+
+  std::string deps_modules_path =
+      absl::StrCat(temp_dir->GetPath(), "/target.deps-modules");
+  std::string imported_modules_path =
+      absl::StrCat(temp_dir->GetPath(), "/target.imported-modules");
+  std::string ast_path = absl::StrCat(temp_dir->GetPath(), "/target.ast.json");
+  {
+    std::ofstream out(deps_modules_path);
+    out << "AllowedMod\n";
+  }
+
+  std::string mock_swiftc = WriteExecutableScript(
+      temp_dir->GetPath(), "mock_swiftc.sh",
+      absl::StrCat(
+          "params_file=\"${1#@}\"\n"
+          "if grep -q -- '-emit-imported-modules' \"$params_file\"; then\n"
+          "  if grep -q -- '\"Embedded\"' \"$params_file\" && "
+          "     ! grep -q -- '-disable-experimental-feature' \"$params_file\"; "
+          "then\n"
+          "    grep -qE -- '(-wmo|-whole-module-optimization)' \"$params_file\""
+          " || exit 1\n"
+          "  else\n"
+          "    grep -qE -- '(-wmo|-whole-module-optimization)' \"$params_file\""
+          " && exit 1\n"
+          "  fi\n"
+          "  printf 'AllowedMod\\n' > '",
+          imported_modules_path,
+          "'\n"
+          "elif grep -q -- '-dump-ast' \"$params_file\"; then\n"
+          "  grep -qE -- '(-wmo|-whole-module-optimization)' \"$params_file\" "
+          "&& exit 1\n"
+          "  printf '{}\\n' > '",
+          ast_path,
+          "'\n"
+          "fi\n"
+          "exit 0\n"));
+
+  // Embedded Swift enabled: layering check keeps `-whole-module-optimization`,
+  // while `-dump-ast` still strips it to avoid driver warnings.
+  {
+    SwiftRunner embedded_runner(
+        {
+            mock_swiftc,
+            "-enable-experimental-feature",
+            "Embedded",
+            "-whole-module-optimization",
+            "-module-name",
+            "EmbeddedMod",
+            absl::StrCat("-Xwrapped-swift=-layering-check-deps-modules=",
+                         deps_modules_path),
+            absl::StrCat("-Xwrapped-swift=-emit-json-ast=", ast_path),
+            absl::StrCat("-Xwrapped-swift=-macro-expansion-dir=",
+                         temp_dir->GetPath(), "/macros1"),
+        },
+        /*force_response_file=*/false);
+    std::ostringstream stdout_stream;
+    std::ostringstream stderr_stream;
+    EXPECT_THAT(embedded_runner.Run(stdout_stream, stderr_stream), Eq(0));
+  }
+
+  // Embedded Swift enabled then disabled: layering check strips `-wmo` again.
+  {
+    SwiftRunner disabled_runner(
+        {
+            mock_swiftc,
+            "-enable-experimental-feature",
+            "Embedded",
+            "-disable-experimental-feature",
+            "Embedded",
+            "-wmo",
+            "-module-name",
+            "NonEmbeddedMod",
+            absl::StrCat("-Xwrapped-swift=-layering-check-deps-modules=",
+                         deps_modules_path),
+            absl::StrCat("-Xwrapped-swift=-macro-expansion-dir=",
+                         temp_dir->GetPath(), "/macros2"),
+        },
+        /*force_response_file=*/false);
+    std::ostringstream stdout_stream;
+    std::ostringstream stderr_stream;
+    EXPECT_THAT(disabled_runner.Run(stdout_stream, stderr_stream), Eq(0));
+  }
+}
+
 }  // namespace
 }  // namespace bazel_rules_swift

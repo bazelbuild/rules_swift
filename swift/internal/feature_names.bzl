@@ -263,6 +263,12 @@ SWIFT_FEATURE_NO_IMPLICIT_DEPS = "swift.no_implicit_deps"
 # target. This is only supported by Swift 6.2 and above.
 SWIFT_FEATURE_LABEL_AS_MODULE_NAME = "swift.label_as_module_name"
 
+# Enables Embedded Swift (`-enable-experimental-feature Embedded`), along with
+# whole-module optimization across all compilation modes. This can be enabled
+# globally via the `//.../swift:embedded` build setting, by toolchains targeting
+# Embedded-only platforms, or directly via `swift.experimental.Embedded`.
+SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED = "swift.experimental.Embedded"
+
 # A private feature that is set by the toolchain if it supports the
 # `-const-gather-protocols-list` driver flag (Swift 6.4 and above). Users should
 # never manually enable, disable, or query this feature.

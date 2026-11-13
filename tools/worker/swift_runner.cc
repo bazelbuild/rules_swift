@@ -360,18 +360,49 @@ enum class IncompatibleArgMode {
   kJsonAst,
 };
 
+// Returns true if Embedded Swift is enabled in `args`, respecting the last
+// `-enable-experimental-feature` or `-disable-experimental-feature` flag in the
+// same way as the Swift frontend.
+bool IsEmbeddedSwiftEnabled(const std::vector<std::string>& args) {
+  bool is_embedded = false;
+  for (size_t i = 0; i < args.size(); ++i) {
+    if (args[i] != "-enable-experimental-feature" &&
+        args[i] != "-disable-experimental-feature") {
+      continue;
+    }
+    const bool enable = (args[i] == "-enable-experimental-feature");
+    size_t value_index = i + 1;
+    if (value_index < args.size() && args[value_index] == "-Xfrontend") {
+      ++value_index;
+    }
+    if (value_index < args.size()) {
+      absl::string_view feature = args[value_index];
+      if (feature == "Embedded" || absl::StartsWith(feature, "Embedded:")) {
+        is_embedded = enable;
+      }
+      i = value_index;
+    }
+  }
+  return is_embedded;
+}
+
 // Returns a value indicating whether an argument on the Swift command line
 // should be skipped because it is incompatible with specific driver modes that
 // we invoke as additional invocations. The given iterator is also advanced if
 // necessary past any additional flags (e.g., a path following a flag).
-bool SkipIncompatibleArgs(IncompatibleArgMode mode,
+bool SkipIncompatibleArgs(IncompatibleArgMode mode, bool is_embedded,
                           std::vector<std::string>::iterator& it) {
   if (*it == "-emit-module" || *it == "-emit-module-interface" ||
       *it == "-emit-object" || *it == "-emit-objc-header" ||
-      *it == "-emit-const-values" || *it == "-warnings-as-errors" ||
-      *it == "-wmo" || *it == "-whole-module-optimization") {
+      *it == "-emit-const-values" || *it == "-warnings-as-errors") {
     // Skip just this argument.
     return true;
+  }
+  if (*it == "-wmo" || *it == "-whole-module-optimization") {
+    // Embedded Swift requires whole-module optimization during
+    // `-emit-imported-modules` (layering check), whereas `-dump-ast` ignores
+    // `-wmo` with a warning even when Embedded Swift is enabled.
+    return !(mode == IncompatibleArgMode::kLayeringCheck && is_embedded);
   }
   if (*it == "-o" || *it == "-emit-module-path" ||
       *it == "-emit-module-interface-path" ||
@@ -1084,9 +1115,11 @@ int SwiftRunner::PerformLayeringCheck(std::ostream& stdout_stream,
       ReplaceExtension(deps_modules_path_, ".imported-modules",
                        /*all_extensions=*/true);
 
+  const bool is_embedded = IsEmbeddedSwiftEnabled(args_);
   std::vector<std::string> emit_imports_args;
   for (auto it = args_.begin(); it != args_.end(); ++it) {
-    if (!SkipIncompatibleArgs(IncompatibleArgMode::kLayeringCheck, it)) {
+    if (!SkipIncompatibleArgs(IncompatibleArgMode::kLayeringCheck, is_embedded,
+                              it)) {
       emit_imports_args.push_back(*it);
     }
   }
@@ -1161,11 +1194,12 @@ int SwiftRunner::PerformJsonAstDump(JsonAstOptions json_opts,
   // It is assumed that the Bazel caller spawning this action has already
   // populated the output file map with `ast-dump` keys that represent the
   // per-source-file outputs.
+  const bool is_embedded = IsEmbeddedSwiftEnabled(args_);
   std::vector<std::string> ast_dump_args;
   bool last_arg_was_output_file_map = false;
   std::string output_file_map_path;
   for (auto it = args_.begin(); it != args_.end(); ++it) {
-    if (!SkipIncompatibleArgs(IncompatibleArgMode::kJsonAst, it)) {
+    if (!SkipIncompatibleArgs(IncompatibleArgMode::kJsonAst, is_embedded, it)) {
       ast_dump_args.push_back(*it);
 
       if (last_arg_was_output_file_map) {

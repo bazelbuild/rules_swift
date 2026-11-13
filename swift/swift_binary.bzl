@@ -98,13 +98,12 @@ def _swift_binary_impl(ctx):
                 ctx.label,
                 feature_configuration = feature_configuration,
             )
-        entry_point_name = entry_point_function_name(module_name)
-
-        compile_result = compile(
-            actions = ctx.actions,
-            additional_inputs = ctx.files.swiftc_inputs,
-            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
-            copts = copts + [
+        entry_point_linkopts_provider = (
+            toolchains.swift.entry_point_linkopts_provider
+        )
+        if entry_point_linkopts_provider:
+            entry_point_name = entry_point_function_name(module_name)
+            entry_point_copts = [
                 # Use a custom entry point name so that the binary's code can
                 # also be linked into another process (like a test executable)
                 # without having its main function collide.
@@ -112,7 +111,18 @@ def _swift_binary_impl(ctx):
                 "-entry-point-function-name",
                 "-Xfrontend",
                 entry_point_name,
-            ],
+            ]
+        else:
+            # Target linkers without symbol-aliasing flags (such as `wasm-ld`)
+            # emit `main` directly rather than aliasing a module-prefixed symbol.
+            entry_point_name = None
+            entry_point_copts = []
+
+        compile_result = compile(
+            actions = ctx.actions,
+            additional_inputs = ctx.files.swiftc_inputs,
+            compilation_contexts = get_compilation_contexts(ctx.attr.deps),
+            copts = copts + entry_point_copts,
             c_copts = c_copts,
             defines = ctx.attr.defines,
             feature_configuration = feature_configuration,

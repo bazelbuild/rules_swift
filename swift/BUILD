@@ -1,4 +1,5 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
@@ -362,6 +363,18 @@ swift_module_mapping(
     name = "empty_module_mapping",
     aliases = {},
     visibility = ["//visibility:private"],
+)
+
+# Indicates whether targets should be compiled in Embedded Swift mode.
+#
+# Rather than setting a feature on individual `swift_library` targets (which
+# would prevent shared libraries from compiling in both regular and Embedded
+# modes), higher-level binary rules or platform toolchains transition into or
+# select Embedded Swift mode.
+bool_flag(
+    name = "embedded",
+    build_setting_default = False,
+    visibility = ["//visibility:public"],
 )
 
 # Consumed by Bazel integration tests.

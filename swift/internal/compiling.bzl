@@ -46,6 +46,7 @@ load(
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
@@ -776,6 +777,15 @@ def _should_plan_parallel_compilation(
     if not is_feature_enabled(
         feature_configuration = feature_configuration,
         feature_name = SWIFT_FEATURE_COMPILE_IN_PARALLEL,
+    ):
+        return False
+
+    # Embedded Swift unconditionally enables whole-module and cross-module
+    # optimization, so the driver emits a single frontend job rather than
+    # separate module and codegen jobs.
+    if is_feature_enabled(
+        feature_configuration = feature_configuration,
+        feature_name = SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED,
     ):
         return False
 
@@ -2334,6 +2344,10 @@ def _emitted_output_nature(feature_configuration, user_compile_flags):
         *   `is_wmo`: `True` if whole-module-optimization was requested.
     """
     is_wmo = (
+        is_feature_enabled(
+            feature_configuration = feature_configuration,
+            feature_name = SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED,
+        ) or
         is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE__WMO_IN_SWIFTCOPTS,
