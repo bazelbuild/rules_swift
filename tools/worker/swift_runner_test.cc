@@ -823,6 +823,81 @@ TEST(SwiftRunnerTest, RunPerformJsonAstDumpWritesFallbackOnCrash) {
   }
 }
 
+TEST(SwiftRunnerTest, RunPerformJsonAstDumpStripsWarningGroupFlags) {
+  std::unique_ptr<TempDirectory> temp_dir =
+      TempDirectory::Create("ast_dump_args_test.XXXXXX");
+  ASSERT_NE(temp_dir, nullptr);
+
+  // The mock compiler saves the params of the compilation and of the AST dump
+  // to separate files so that each can be inspected.
+  std::string compile_params_path =
+      absl::StrCat(temp_dir->GetPath(), "/compile.params");
+  std::string ast_dump_params_path =
+      absl::StrCat(temp_dir->GetPath(), "/ast_dump.params");
+  std::string mock_swiftc = WriteExecutableScript(
+      temp_dir->GetPath(), "mock_swiftc.sh",
+      absl::StrCat("params_file=\"${1#@}\"\n"
+                   "if grep -q -- '-dump-ast' \"$params_file\"; then\n"
+                   "  cp \"$params_file\" '",
+                   ast_dump_params_path,
+                   "'\n"
+                   "else\n"
+                   "  cp \"$params_file\" '",
+                   compile_params_path,
+                   "'\n"
+                   "fi\n"
+                   "exit 0\n"));
+
+  std::string output_file_map_path =
+      absl::StrCat(temp_dir->GetPath(), "/output_file_map.json");
+  {
+    std::ofstream out(output_file_map_path);
+    out << "{}\n";
+  }
+
+  SwiftRunner runner(
+      {
+          mock_swiftc,
+          "-module-name",
+          "TestMod",
+          "-output-file-map",
+          output_file_map_path,
+          "-Werror",
+          "DeprecatedDeclaration",
+          "-Wwarning",
+          "ImplementationOnlyDeprecated",
+          "main.swift",
+          "-Xwrapped-swift=-emit-json-ast",
+          absl::StrCat("-Xwrapped-swift=-macro-expansion-dir=",
+                       temp_dir->GetPath(), "/macros"),
+      },
+      /*force_response_file=*/false);
+  std::ostringstream stdout_stream;
+  std::ostringstream stderr_stream;
+  EXPECT_THAT(runner.Run(stdout_stream, stderr_stream), Eq(0));
+
+  // The compilation itself keeps the warning group flags.
+  std::string compile_params = ReadFileContents(compile_params_path);
+  EXPECT_THAT(compile_params,
+              HasSubstr("\"-Werror\"\n\"DeprecatedDeclaration\""));
+  EXPECT_THAT(compile_params,
+              HasSubstr("\"-Wwarning\"\n\"ImplementationOnlyDeprecated\""));
+
+  // The AST dump adds `-suppress-warnings`, so it has to drop them.
+  EXPECT_THAT(ReadFileContents(ast_dump_params_path),
+              Eq(absl::StrCat("\"-module-name\"\n"
+                              "\"TestMod\"\n"
+                              "\"-output-file-map\"\n"
+                              "\"",
+                              output_file_map_path,
+                              "\"\n"
+                              "\"main.swift\"\n"
+                              "\"-dump-ast\"\n"
+                              "\"-dump-ast-format\"\n"
+                              "\"json\"\n"
+                              "\"-suppress-warnings\"\n")));
+}
+
 TEST(SwiftRunnerTest, RunPerformGeneratedHeaderRewriting) {
   std::unique_ptr<TempDirectory> temp_dir =
       TempDirectory::Create("header_rewriter_test.XXXXXX");

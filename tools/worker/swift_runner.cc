@@ -384,6 +384,17 @@ bool SkipIncompatibleArgs(IncompatibleArgMode mode,
     return true;
   }
 
+  // Some flags we only want to skip when dumping the JSON AST. That invocation
+  // adds `-suppress-warnings`, which the driver rejects when it is combined
+  // with `-Werror <group>` or `-Wwarning <group>`.
+  if (mode == IncompatibleArgMode::kJsonAst) {
+    if (*it == "-Werror" || *it == "-Wwarning") {
+      // This flag has a value after it that we also need to skip.
+      ++it;
+      return true;
+    }
+  }
+
   // Some flags we only want to skip when doing a layering check, but we still
   // need them for JSON AST dumps.
   if (mode == IncompatibleArgMode::kLayeringCheck) {
