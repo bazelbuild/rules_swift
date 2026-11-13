@@ -18,7 +18,12 @@ load("@build_bazel_rules_swift//swift:providers.bzl", "SwiftInfo")
 load(":action_names.bzl", "SWIFT_ACTION_SYNTHESIZE_INTERFACE")
 load(":actions.bzl", "run_toolchain_action")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
-load(":utils.bzl", "merge_compilation_contexts")
+load(
+    ":utils.bzl",
+    "get_clang_implicit_deps",
+    "get_swift_implicit_deps",
+    "merge_compilation_contexts",
+)
 
 visibility([
     "@build_bazel_rules_swift//swift/...",
@@ -57,15 +62,23 @@ def synthesize_interface(
             used for the proper selection of the execution platform inside
             `run_toolchain_action`.
     """
+    implicit_swift_infos, implicit_cc_infos = get_swift_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
+    clang_implicit_swift_infos, clang_implicit_cc_infos = get_clang_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in toolchains.swift.implicit_deps_providers.cc_infos
+            for cc_info in implicit_cc_infos + clang_implicit_cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
         swift_infos = (
-            swift_infos + toolchains.swift.implicit_deps_providers.swift_infos
+            swift_infos + implicit_swift_infos + clang_implicit_swift_infos
         ),
     )
 

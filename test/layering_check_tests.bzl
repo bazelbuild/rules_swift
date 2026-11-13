@@ -14,12 +14,99 @@
 
 """Tests for Swift layering check command line flags and inputs."""
 
+load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
 load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
     "action_command_line_test",
 )
+load(
+    "@build_bazel_rules_swift//test/rules:expected_files.bzl",
+    "compare_expected_files",
+)
 
 visibility("private")
+
+def _deps_module_mapping_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target_under_test = analysistest.target_under_test(env)
+
+    mapping_actions = [
+        action
+        for action in analysistest.target_actions(env)
+        if action.mnemonic == "FileWrite" and
+           action.outputs.to_list()[0].basename.endswith(".deps-module-mapping")
+    ]
+    if len(mapping_actions) != 1:
+        unittest.fail(
+            env,
+            "Expected exactly one .deps-module-mapping FileWrite action on '{}', found {}.".format(
+                target_under_test.label,
+                len(mapping_actions),
+            ),
+        )
+        return analysistest.end(env)
+
+    modules = mapping_actions[0].content.splitlines()
+    for expected in ctx.attr.expected_modules:
+        if expected not in modules:
+            unittest.fail(
+                env,
+                "Expected .deps-module-mapping for '{}' to contain '{}', actual modules: {}".format(
+                    target_under_test.label,
+                    expected,
+                    modules,
+                ),
+            )
+    for not_expected in ctx.attr.not_expected_modules:
+        if not_expected in modules:
+            unittest.fail(
+                env,
+                "Expected .deps-module-mapping for '{}' not to contain '{}', actual modules: {}".format(
+                    target_under_test.label,
+                    not_expected,
+                    modules,
+                ),
+            )
+
+    if ctx.attr.expected_compile_inputs:
+        compile_actions = [
+            action
+            for action in analysistest.target_actions(env)
+            if action.mnemonic in ("SwiftCompile", "SwiftCompileModule")
+        ]
+        if len(compile_actions) != 1:
+            unittest.fail(
+                env,
+                "Expected exactly one SwiftCompile/SwiftCompileModule action on '{}', found {}.".format(
+                    target_under_test.label,
+                    len(compile_actions),
+                ),
+            )
+            return analysistest.end(env)
+        compare_expected_files(
+            env,
+            "inputs of {} action for target '{}'".format(
+                compile_actions[0].mnemonic,
+                target_under_test.label,
+            ),
+            ctx.attr.expected_compile_inputs,
+            compile_actions[0].inputs,
+        )
+
+    return analysistest.end(env)
+
+def _make_deps_module_mapping_test_rule(config_settings = {}):
+    return analysistest.make(
+        _deps_module_mapping_test_impl,
+        attrs = {
+            "expected_compile_inputs": attr.string_list(),
+            "expected_modules": attr.string_list(),
+            "not_expected_modules": attr.string_list(),
+        },
+        config_settings = config_settings,
+    )
+
+deps_module_mapping_test = _make_deps_module_mapping_test_rule()
 
 def layering_check_test_suite(name, tags = []):
     """Test suite for Swift layering check flags and inputs.
@@ -124,6 +211,15 @@ def layering_check_test_suite(name, tags = []):
         mnemonic = "SwiftCompile",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/layering_check:lib_single",
+    )
+
+    deps_module_mapping_test(
+        name = "{}_lib_parallel_deps_module_mapping_contains_direct_deps".format(name),
+        expected_modules = [
+            "third_party_bazel_rules_rules_swift_test_fixtures_layering_check_dep",
+        ],
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/layering_check:lib_parallel",
     )
 
     native.test_suite(

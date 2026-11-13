@@ -168,14 +168,20 @@ def compile_module_interface(
         feature_configuration = feature_configuration,
         swift_toolchain = toolchains.swift,
     )
+    clang_implicit_swift_infos, clang_implicit_cc_infos = get_clang_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
     merged_compilation_context = merge_compilation_contexts(
         transitive_compilation_contexts = compilation_contexts + [
             cc_info.compilation_context
-            for cc_info in implicit_cc_infos
+            for cc_info in implicit_cc_infos + clang_implicit_cc_infos
         ],
     )
     merged_swift_info = SwiftInfo(
-        swift_infos = swift_infos + implicit_swift_infos,
+        swift_infos = (
+            swift_infos + implicit_swift_infos + clang_implicit_swift_infos
+        ),
     )
 
     # Flattening this `depset` is necessary because we need to extract the
@@ -442,10 +448,16 @@ def compile(
         feature_configuration = feature_configuration,
         swift_toolchain = toolchains.swift,
     )
+    clang_implicit_swift_infos, clang_implicit_cc_infos = get_clang_implicit_deps(
+        feature_configuration = feature_configuration,
+        swift_toolchain = toolchains.swift,
+    )
     all_swift_infos = (
         swift_infos_to_propagate + private_swift_infos + implicit_swift_infos
     )
-    merged_swift_info = SwiftInfo(swift_infos = all_swift_infos)
+    merged_swift_info = SwiftInfo(
+        swift_infos = all_swift_infos + clang_implicit_swift_infos,
+    )
 
     # Flattening this `depset` is necessary because we need to extract the
     # module maps or precompiled modules out of structured values and do so
@@ -602,7 +614,7 @@ def compile(
         transitive_compilation_contexts = (
             private_compilation_contexts + [
                 cc_info.compilation_context
-                for cc_info in implicit_cc_infos
+                for cc_info in implicit_cc_infos + clang_implicit_cc_infos
             ]
         ),
     )

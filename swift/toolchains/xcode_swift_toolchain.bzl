@@ -865,7 +865,7 @@ def _xcode_swift_toolchain_impl(ctx):
             )
         ),
         implicit_deps_providers = collect_implicit_deps_providers(
-            ctx.attr.implicit_deps + ctx.attr.clang_implicit_deps,
+            ctx.attr.implicit_deps,
             additional_cc_infos = [swift_linkopts_cc_info],
         ),
         module_aliases = (
