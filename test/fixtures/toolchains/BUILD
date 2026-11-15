@@ -14,6 +14,7 @@ swift_toolchain(
     root = ".",
     sdkroot = "testpath",
     version_file = ".swift_version",
+    visibility = ["//test:__subpackages__"],
 )
 
 toolchain(
@@ -32,20 +33,6 @@ swift_toolchain(
     root = ".",
     sdkroot = "testpath",
     swift_executable = ":fake_swift_driver.sh",
-    tags = FIXTURE_TAGS,
-    version_file = ".swift_version",
-    visibility = ["//test:__subpackages__"],
-)
-
-# The same toolchain without a custom driver, used to test the
-# `//swift:default_swift_executable` flag.
-swift_toolchain(
-    name = "toolchain_without_custom_driver",
-    arch = "arm64",
-    os = "macos",
-    parsed_version = "6.3",
-    root = ".",
-    sdkroot = "testpath",
     tags = FIXTURE_TAGS,
     version_file = ".swift_version",
     visibility = ["//test:__subpackages__"],

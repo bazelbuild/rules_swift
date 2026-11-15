@@ -19,13 +19,11 @@ def _custom_driver_test_impl(ctx):
     executable = tool_config.executable
     asserts.equals(env, "File", type(executable), "executable type")
     if type(executable) == "File":
-        asserts.true(
+        asserts.equals(
             env,
-            executable.short_path.endswith(_FAKE_DRIVER),
-            "Expected executable to end with '{}', got '{}'.".format(
-                _FAKE_DRIVER,
-                executable.short_path,
-            ),
+            _FAKE_DRIVER,
+            executable.short_path,
+            "executable short_path",
         )
 
     asserts.true(
@@ -69,7 +67,7 @@ def custom_swift_driver_test_suite(name, tags = []):
     custom_driver_from_flag_test(
         name = "{}_swift_toolchain_flag".format(name),
         tags = all_tags,
-        target_under_test = "//test/fixtures/toolchains:toolchain_without_custom_driver",
+        target_under_test = "//test/fixtures/toolchains:_toolchain_macos_arm64_with_sdkroot",
     )
 
     # The `//swift:default_swift_executable` flag on the host toolchain, which
