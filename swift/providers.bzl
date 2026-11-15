@@ -456,6 +456,26 @@ A `CcInfo` that selects the static Swift runtime, or `None` if the toolchain
 does not support static Swift runtime linking. Final links select this provider
 when `swift.static_stdlib` is enabled; it is not propagated by libraries.
 """,
+        "swift_multitool": """\
+A `struct` describing how to run the toolchain's `swift` multi-tool driver
+(the one that dispatches `swift build`, `swift package`, and so on) outside of
+a compile action, or `None` if the toolchain does not provide one. It has the
+following fields:
+
+*   `executable`: A `File` (a hermetic or custom driver) or a `string` (a
+    driver found on the system, such as `"swift"` launched through `xcrun` for
+    Xcode, or an absolute path into an autoconfigured toolchain).
+*   `args`: A `list` of `string`s that must precede the user's arguments, such
+    as `--driver-mode=swift` when `executable` is a custom `swiftc` driver.
+*   `env`: A `dict` of environment variables to set when running it. Values
+    may contain Bazel placeholders (such as `__BAZEL_XCODE_SDKROOT__`) that
+    only the build's worker can fill in; consumers outside of actions should
+    skip them.
+*   `files`: A `list` of `File`s needed to run it, such as the other tools
+    that the driver dispatches to and their runtime libraries.
+
+Use `swift_toolchain_tool` to get a runnable wrapper for it.
+""",
         "swift_worker": """\
 `File`. The executable representing the worker executable used to invoke the
 compiler and other Swift tools (for both incremental and non-incremental
@@ -529,6 +549,16 @@ dependencies, ensuring they are available in the execution environment.
     fields = {
         "additional_inputs": """\
 `List` of `File`s. Additional files to add to the action input root when calling these tools.
+""",
+        "swift": """\
+`File` or `None`. The `swift` multi-tool driver executable (which dispatches
+`swift build`, `swift package`, and similar subcommands), if provided.
+""",
+        "swift_runfiles": """\
+`List` of `File`s. Files needed at runtime to run the `swift` multi-tool, such
+as the `swift-package` and `swift-build` executables it dispatches to and
+SwiftPM's runtime libraries. Unlike `additional_inputs`, these are not added
+to compile actions.
 """,
         "swift_autolink_extract": """\
 `File`. The executable that extracts autolink information from object files.

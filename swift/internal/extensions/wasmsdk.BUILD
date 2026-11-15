@@ -21,8 +21,10 @@ swift_tools(
         ":sdk_files",
         "@{toolchain_repo}//:swift_sdk_compiler_inputs",
     ],
+    swift = "@{toolchain_repo}//:usr/bin/swift",
     swift_autolink_extract = "@{toolchain_repo}//:usr/bin/swift-autolink-extract",
     swift_driver = "@{toolchain_repo}//:usr/bin/swiftc",
+    swift_runfiles = ["@{toolchain_repo}//:swift_multitool_files"],
     swift_symbolgraph_extract = "@{toolchain_repo}//:usr/bin/swift-symbolgraph-extract",
 )
 

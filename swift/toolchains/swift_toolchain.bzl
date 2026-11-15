@@ -209,6 +209,75 @@ def _all_tool_configs(
 
     return tool_configs
 
+def _swift_multitool(
+        *,
+        env,
+        swift_executable,
+        swift_tools,
+        toolchain_root,
+        tool_executable_suffix):
+    """Returns how to run the toolchain's `swift` multi-tool driver.
+
+    This is not tied to a build action; it describes how to run `swift` (e.g.,
+    `swift package dump-package`) using the resolved toolchain, for example
+    under `bazel run`.
+
+    Args:
+        env: A custom environment to execute the tool in.
+        swift_executable: A custom Swift driver executable to be used, if
+            provided. Only used if swift_tools is not used.
+        swift_tools: The `SwiftToolsInfo` of the toolchain, if any. Overrides
+            swift_executable if provided.
+        toolchain_root: The root directory of the toolchain.
+        tool_executable_suffix: The suffix for executable tools to use (e.g.
+            `.exe` on Windows).
+
+    Returns:
+        A `struct` as described by `SwiftToolchainInfo.swift_multitool`.
+    """
+    if swift_tools:
+        files = (
+            swift_tools.additional_inputs +
+            (getattr(swift_tools, "swift_runfiles", None) or [])
+        )
+        swift = getattr(swift_tools, "swift", None)
+        if swift:
+            return struct(
+                args = [],
+                env = env,
+                executable = swift,
+                files = [swift] + files,
+            )
+        return struct(
+            args = ["--driver-mode=swift"],
+            env = env,
+            executable = swift_tools.swift_driver,
+            files = [swift_tools.swift_driver] + files,
+        )
+
+    if swift_executable:
+        return struct(
+            args = ["--driver-mode=swift"],
+            env = env,
+            executable = swift_executable,
+            files = [swift_executable],
+        )
+
+    # Swift.org toolchains found on the system are run in place, so no files
+    # are needed.
+    if toolchain_root:
+        executable = paths.join(toolchain_root, "bin", "swift")
+    else:
+        executable = "swift"
+    if not executable.endswith(tool_executable_suffix):
+        executable += tool_executable_suffix
+    return struct(
+        args = [],
+        env = env,
+        executable = executable,
+        files = [],
+    )
+
 def _all_action_configs(
         os,
         arch,
@@ -883,6 +952,13 @@ def _swift_toolchain_impl(ctx):
         additional_tools = additional_tools,
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
+    swift_multitool = _swift_multitool(
+        env = ctx.attr.env,
+        swift_executable = swift_executable if not ctx.attr.swift_tools else None,
+        swift_tools = ctx.attr.swift_tools[SwiftToolsInfo] if ctx.attr.swift_tools else None,
+        toolchain_root = toolchain_root,
+        tool_executable_suffix = ctx.attr.tool_executable_suffix,
+    )
     all_action_configs = _all_action_configs(
         os = ctx.attr.os,
         arch = ctx.attr.arch,
@@ -966,6 +1042,7 @@ def _swift_toolchain_impl(ctx):
         static_runtime_cc_info = static_runtime_cc_info,
         system_modules = collect_implicit_deps_providers([]),
         implicit_system_modules = collect_implicit_deps_providers([]),
+        swift_multitool = swift_multitool,
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         swift_worker_protocol = "proto" if ctx.attr._use_proto_worker[BuildSettingInfo].value else "json",
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,

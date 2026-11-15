@@ -80,5 +80,6 @@ bzl_library(
     srcs = ["tool_config.bzl"],
     deps = [
         "@bazel_skylib//lib:paths",
+        "@bazel_skylib//lib:types",
     ],
 )

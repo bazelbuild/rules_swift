@@ -84,6 +84,10 @@ load(
     _swift_package_configuration = "swift_package_configuration",
 )
 load("//swift:swift_test.bzl", _swift_test = "swift_test")
+load(
+    "//swift:swift_toolchain_tool.bzl",
+    _swift_toolchain_tool = "swift_toolchain_tool",
+)
 
 mixed_language_library = _mixed_language_library
 swift_binary = _swift_binary
@@ -103,4 +107,5 @@ swift_proto_compiler = _swift_proto_compiler
 swift_proto_library = _swift_proto_library
 swift_proto_library_group = _swift_proto_library_group
 swift_test = _swift_test
+swift_toolchain_tool = _swift_toolchain_tool
 universal_swift_compiler_plugin = _universal_swift_compiler_plugin

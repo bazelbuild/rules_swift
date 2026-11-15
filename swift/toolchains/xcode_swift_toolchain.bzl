@@ -752,6 +752,52 @@ def _all_tool_configs(
 
     return tool_configs
 
+def _swift_multitool(
+        *,
+        custom_toolchain,
+        env,
+        swift_executable,
+        toolchain_root):
+    """Returns how to run the toolchain's `swift` multi-tool driver.
+
+    This is not tied to a build action; it describes how to run `swift` (e.g.,
+    `swift package dump-package`) using the selected Xcode, for example under
+    `bazel run`.
+
+    Args:
+        custom_toolchain: The bundle identifier of a custom Swift toolchain, if
+            one was requested.
+        env: The environment variables to set when launching the driver.
+        swift_executable: A custom Swift driver executable to be used, if
+            provided.
+        toolchain_root: The root directory of the toolchain, if provided.
+
+    Returns:
+        A `struct` as described by `SwiftToolchainInfo.swift_multitool`.
+    """
+    if custom_toolchain:
+        env = dict(env)
+        env["TOOLCHAINS"] = custom_toolchain
+
+    if swift_executable:
+        return struct(
+            args = ["--driver-mode=swift"],
+            env = env,
+            executable = swift_executable,
+            files = [swift_executable],
+        )
+
+    if toolchain_root:
+        executable = paths.join(toolchain_root, "bin", "swift")
+    else:
+        executable = "swift"
+    return struct(
+        args = [],
+        env = env,
+        executable = executable,
+        files = [],
+    )
+
 def _is_xcode_at_least_version(xcode_config, desired_version):
     """Returns True if we are building with at least the given Xcode version.
 
@@ -938,6 +984,12 @@ def _xcode_swift_toolchain_impl(ctx):
         toolchain_root = toolchain_root,
         xcode_config = xcode_config,
     )
+    swift_multitool = _swift_multitool(
+        custom_toolchain = custom_toolchain,
+        env = env,
+        swift_executable = swift_executable,
+        toolchain_root = toolchain_root,
+    )
     all_action_configs = _all_action_configs(
         additional_objc_copts = ctx.attr.objc_copts + command_line_objc_copts(
             ctx.var["COMPILATION_MODE"],
@@ -1019,6 +1071,7 @@ def _xcode_swift_toolchain_impl(ctx):
         implicit_system_modules = collect_implicit_deps_providers(
             [ctx.attr.implicit_system_modules] if ctx.attr.implicit_system_modules else [],
         ),
+        swift_multitool = swift_multitool,
         swift_worker = ctx.attr._worker[DefaultInfo].files_to_run,
         swift_worker_protocol = "proto" if ctx.attr._use_proto_worker[BuildSettingInfo].value else "json",
         const_protocols_to_gather = ctx.file.const_protocols_to_gather,

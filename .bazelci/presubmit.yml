@@ -103,6 +103,9 @@ tasks:
       - "//examples/xplatform/xctest:xctest"
       - "//test/linux_static_stdlib:linux_non_hermetic_dynamic_stdlib_test"
       - "//test/linux_static_stdlib:linux_non_hermetic_linkshared_dynamic_stdlib_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_format_version_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_package_version_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_version_test"
 
   windows:
     name: "Current LTS"

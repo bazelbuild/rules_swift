@@ -40,6 +40,7 @@ _DOC_SRCS = {
             "//swift:swift_overlay",
             "//swift:swift_package_configuration",
             "//swift:swift_test",
+            "//swift:swift_toolchain_tool",
         ],
     ),
 }

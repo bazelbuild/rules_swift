@@ -76,6 +76,10 @@ load(
     _swift_synthesize_interface_aspect = "swift_synthesize_interface_aspect",
 )
 load(":swift_test.bzl", _swift_test = "swift_test")
+load(
+    ":swift_toolchain_tool.bzl",
+    _swift_toolchain_tool = "swift_toolchain_tool",
+)
 
 # Re-export providers.
 SwiftInfo = _SwiftInfo
@@ -101,6 +105,7 @@ swift_library = _swift_library
 swift_library_group = _swift_library_group
 swift_package_configuration = _swift_package_configuration
 swift_test = _swift_test
+swift_toolchain_tool = _swift_toolchain_tool
 system_clang_module = _system_clang_module
 system_module_group = _system_module_group
 system_swiftinterface = _system_swiftinterface
