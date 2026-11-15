@@ -106,10 +106,15 @@ def _tool_config_info_init(
         else:
             executable = driver_mode
 
-        tool_executable_suffix = driver_config.get("tool_executable_suffix", "")
-
-        if not executable.endswith(tool_executable_suffix):
-            executable = "{}{}".format(executable, tool_executable_suffix)
+        # A custom `swift_executable` is a `File` and is used as-is; the suffix
+        # only applies to tool names that are resolved by path.
+        if type(executable) == "string":
+            tool_executable_suffix = driver_config.get(
+                "tool_executable_suffix",
+                "",
+            )
+            if not executable.endswith(tool_executable_suffix):
+                executable = "{}{}".format(executable, tool_executable_suffix)
 
     return {
         "additional_tools": additional_tools,

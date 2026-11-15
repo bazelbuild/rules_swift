@@ -16,6 +16,7 @@
 
 load("//swift:providers.bzl", "SwiftInfo")
 load("//swift:swift_clang_module_aspect.bzl", "swift_clang_module_aspect")
+load("//swift:swift_common.bzl", "swift_common")
 
 # Common tags that prevent the test fixtures from actually being built (i.e.,
 # their actions executed) when running `bazel test` to do analysis testing.
@@ -41,4 +42,16 @@ Applies `swift_clang_module_aspect` to the given target and forwards the
 `SwiftInfo` provider that it attaches to the target, if any.
 """,
     implementation = _forward_swift_info_from_swift_clang_module_aspect_impl,
+)
+
+def _forward_swift_toolchain_info_impl(ctx):
+    return [swift_common.find_all_toolchains(ctx).swift]
+
+forward_swift_toolchain_info = rule(
+    doc = """\
+Resolves the Swift toolchain for the target platform and forwards its
+`SwiftToolchainInfo` provider.
+""",
+    implementation = _forward_swift_toolchain_info_impl,
+    toolchains = swift_common.use_all_toolchains(),
 )
