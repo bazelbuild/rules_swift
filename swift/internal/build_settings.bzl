@@ -14,6 +14,7 @@
 
 """Custom build settings rules for Swift rules."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 def _repeatable_string_flag_impl(ctx):
@@ -32,6 +33,17 @@ of the flags (comma-splitting does not occur).
 """,
     implementation = _repeatable_string_flag_impl,
 )
+
+def universal_label_flag(name, **kwargs):
+    """Declares a `label_flag` whose value also reaches exec-configured deps.
+
+    Args:
+        name: The name of the flag target.
+        **kwargs: Additional arguments passed to `label_flag`.
+    """
+    if bazel_features.rules.label_build_setting_has_scope:
+        kwargs["scope"] = "universal"
+    native.label_flag(name = name, **kwargs)
 
 PerModuleSwiftCoptSettingInfo = provider(
     doc = "A provider for the parsed per-swiftmodule swift copts.",
