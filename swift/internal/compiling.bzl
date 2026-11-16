@@ -1664,10 +1664,18 @@ def _compile_c_inputs(
         if module.clang and type(module.clang.module_map) == "File"
     ]).to_list()
     if module_maps:
+        # Framework module maps are already discoverable through the dependency's
+        # framework search paths. Adding their directory as a header search path
+        # makes Clang also find them as non-framework modules, with a conflicting
+        # module directory. Keep the maps as inputs, but omit those include paths.
         compilation_contexts = compilation_contexts + [
             cc_common.create_compilation_context(
                 headers = depset(module_maps),
-                includes = depset([module_map.dirname for module_map in module_maps]),
+                includes = depset([
+                    module_map.dirname
+                    for module_map in module_maps
+                    if ".framework/Modules" not in module_map.path
+                ]),
             ),
         ]
 

@@ -1,3 +1,4 @@
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//swift:swift_interop_hint.bzl", "swift_interop_hint")
 load(
@@ -5,6 +6,7 @@ load(
     "swift_library",
 )
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+load(":framework_import.bzl", "framework_import")
 
 package(
     default_visibility = ["//test:__subpackages__"],
@@ -151,4 +153,57 @@ objc_library(
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
     deps = [":generated_header_with_headerless_c_dep"],
+)
+
+write_file(
+    name = "framework_header",
+    out = "Frameworks/GeneratedHeaderFramework.framework/Headers/GeneratedHeaderFramework.h",
+    content = [
+        "#import <Foundation/Foundation.h>",
+        "",
+        "@interface GHFrameworkObject : NSObject",
+        "@end",
+        "",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+write_file(
+    name = "framework_module_map",
+    out = "Frameworks/GeneratedHeaderFramework.framework/Modules/module.modulemap",
+    content = [
+        "framework module GeneratedHeaderFramework {",
+        "  umbrella header \"GeneratedHeaderFramework.h\"",
+        "  export *",
+        "  module * { export * }",
+        "}",
+        "",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+framework_import(
+    name = "framework_dependency",
+    hdrs = ["Frameworks/GeneratedHeaderFramework.framework/Headers/GeneratedHeaderFramework.h"],
+    module_map = "Frameworks/GeneratedHeaderFramework.framework/Modules/module.modulemap",
+    module_name = "GeneratedHeaderFramework",
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "generated_header_with_framework_dep",
+    srcs = ["UsesFrameworkDependency.swift"],
+    generates_header = True,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":framework_dependency"],
+)
+
+objc_library(
+    name = "objc_consumer_of_generated_header_with_framework_dep",
+    srcs = ["FrameworkObjcConsumer.m"],
+    enable_modules = True,
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = [":generated_header_with_framework_dep"],
 )
