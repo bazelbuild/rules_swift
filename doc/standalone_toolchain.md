@@ -177,6 +177,15 @@ register_toolchains(
 )
 ```
 
+To use another build of the SDK, pass its `url` and `sha256`:
+
+```bzl
+swift.android_sdk(
+    url = "https://example.com/swift-6.4.0-RELEASE_android.artifactbundle.tar.gz",
+    sha256 = "...",
+)
+```
+
 See `examples/cross_compilation/android_app` for an end to end example.
 
 ### JNI shared libraries

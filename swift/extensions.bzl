@@ -53,7 +53,13 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
         BUILD file content with the `toolchain` declarations to add to the
         toolchains hub repository.
     """
+    url = tag.url
     sha256 = tag.sha256
+    if url and not sha256:
+        fail("`swift.android_sdk` with an explicit `url` also requires `sha256`.")
+
+    if not url:
+        url = swift_sdk_download_url(swift_version, "android")
     if not sha256:
         if swift_version not in swift_sdk_releases or "android" not in swift_sdk_releases[swift_version]:
             fail("No known Android Swift SDK for version `{}`. Please choose one of {}, or provide the SDK's sha256.".format(
@@ -71,7 +77,7 @@ def _setup_android_sdk(*, tag, toolchain_name, swift_version, platforms, swift_s
             sha256 = sha256,
             swift_version = swift_version,
             toolchain_repo = "{}_{}".format(toolchain_name, platform),
-            url = swift_sdk_download_url(swift_version, "android"),
+            url = url,
         )
         build_file_content += android_sdk_toolchains_for_platform(
             platform = platform,
@@ -227,7 +233,13 @@ _android_sdk = tag_class(
         "sha256": attr.string(
             doc = """\
 The expected SHA-256 of the SDK artifact bundle. May be omitted for Swift
-versions known to this version of rules_swift.
+versions known to this version of rules_swift, but is required when `url` is
+set.
+""",
+        ),
+        "url": attr.string(
+            doc = """\
+Overrides the SDK bundle URL derived from the Swift version. Requires `sha256`.
 """,
         ),
     },
