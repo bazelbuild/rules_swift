@@ -136,6 +136,15 @@ def generated_header_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
     )
 
+    build_test(
+        name = "{}_objc_consumer_finds_framework_imports".format(name),
+        targets = [
+            "//test/fixtures/generated_header:objc_consumer_of_generated_header_with_framework_dep",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
     # Assert that the successful typealias re-export doesn't depend on an
     # accidentally generated Objective-C header or Clang module for the relay.
     provider_test(
