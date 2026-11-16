@@ -2040,6 +2040,7 @@ def _construct_compile_plan(
 _OUTPUT_KINDS = struct(
     const_values = "const-values",
     index_unit_output_path = "index-unit-output-path",
+    llvm_bc = "llvm-bc",
     object = "object",
 )
 
@@ -2047,6 +2048,7 @@ _OUTPUT_KINDS = struct(
 _PER_SOURCE_OUTPUT_EXTENSIONS = {
     _OUTPUT_KINDS.const_values: "swiftconstvalues",
     _OUTPUT_KINDS.index_unit_output_path: "o",
+    _OUTPUT_KINDS.llvm_bc: "o",
     _OUTPUT_KINDS.object: "o",
 }
 
@@ -2216,6 +2218,12 @@ def _declare_multiple_outputs_and_write_output_file_map(
             src = src,
             target_name = target_name,
         )
+
+        # When `-lto=llvm-thin` or `-lto=llvm-full` is passed, `swift-driver`
+        # changes the primary output type from `object` to `llvm-bc`. Map
+        # `llvm-bc` to the same declared `.o` path so LTO bitcode outputs land
+        # where Bazel expects them; non-LTO compiles ignore the `llvm-bc` key.
+        file_outputs[_OUTPUT_KINDS.llvm_bc] = obj.path
 
         if include_index_unit_paths:
             file_outputs[_OUTPUT_KINDS.index_unit_output_path] = obj.path

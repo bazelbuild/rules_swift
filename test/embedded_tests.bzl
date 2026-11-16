@@ -107,6 +107,42 @@ def _embedded_compile_test_impl(ctx):
         ),
     )
 
+    output_map_actions = [
+        a
+        for a in actions
+        if a.mnemonic == "FileWrite" and
+           a.outputs.to_list()[0].basename.endswith(".output_file_map.json")
+    ]
+    asserts.equals(
+        env,
+        1,
+        len(output_map_actions),
+        "Expected one `.output_file_map.json` FileWrite action.",
+    )
+    if len(output_map_actions) == 1:
+        output_map = json.decode(output_map_actions[0].content)
+        asserts.equals(
+            env,
+            len(object_outputs),
+            len(output_map),
+            "Expected one output_file_map entry per object file, got: {}".format(output_map),
+        )
+        for src_path, entries in output_map.items():
+            asserts.true(
+                env,
+                "object" in entries and "llvm-bc" in entries,
+                "Expected both `object` and `llvm-bc` entries for `{}` in output_file_map: {}".format(
+                    src_path,
+                    entries,
+                ),
+            )
+            asserts.equals(
+                env,
+                entries.get("object"),
+                entries.get("llvm-bc"),
+                "Expected `llvm-bc` to match `object` path for `{}`.".format(src_path),
+            )
+
     return analysistest.end(env)
 
 _embedded_experimental_feature_test = analysistest.make(
