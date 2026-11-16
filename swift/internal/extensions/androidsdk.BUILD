@@ -68,6 +68,7 @@ swift_tools(
             # TODO: Remove once https://github.com/bazelbuild/rules_android_ndk/commit/efc0c191796477c540e87e0f6bb5d88d6a58cc1f is in a release
             "-Wl,-z,max-page-size=16384",
         ],
+        minimum_os_version = "{minimum_api}",
         os = "android",
         parsed_version = "{swift_version}",
         sdkroot = "",  # Resolved in swift_toolchain.bzl

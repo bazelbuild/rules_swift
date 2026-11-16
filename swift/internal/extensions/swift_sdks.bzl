@@ -92,6 +92,17 @@ def _swift_android_sdk_impl(repository_ctx):
         fail("The Android Swift SDK bundle has an unexpected layout; " +
              "missing {}/{}/swift-sdk.json".format(repo_root, sdk_dir_relative))
 
+    # The lowest Android API level among the SDK's target triples.
+    sdk_json = json.decode(repository_ctx.read(sdk_dir_relative + "/swift-sdk.json"))
+    apis = []
+    for triple in sdk_json.get("targetTriples", {}).keys():
+        api = ""
+        for char in triple.elems():
+            api = api + char if char.isdigit() else ""
+        if api:
+            apis.append(int(api))
+    minimum_api = str(min(apis)) if apis else ""
+
     # The clang headers are provided by the Swift toolchain, not the Android SDK bundle
     paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
     clang_versions = paired_usr.get_child("lib", "clang").readdir()
@@ -107,6 +118,7 @@ def _swift_android_sdk_impl(repository_ctx):
             "{bundle_dir}": bundle_dir,
             "{clang_builtin_headers}": clang_builtin_headers,
             "{lib_dir}": "{}/{}/swift-resources/usr/lib".format(repo_root, sdk_dir_relative),
+            "{minimum_api}": minimum_api,
             "{swift_version}": repository_ctx.attr.swift_version,
             "{toolchain_repo}": repository_ctx.attr.toolchain_repo,
         },
