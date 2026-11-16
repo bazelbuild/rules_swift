@@ -12,6 +12,7 @@ load(":coverage_settings_tests.bzl", "coverage_settings_test_suite")
 load(":custom_swift_driver_tests.bzl", "custom_swift_driver_test_suite")
 load(":custom_toolchain_linking_tests.bzl", "custom_toolchain_linking_test_suite")
 load(":debug_settings_tests.bzl", "debug_settings_test_suite")
+load(":diagnostics_tests.bzl", "diagnostics_test_suite")
 load(":environment_tests.bzl", "environment_test_suite")
 load(":features_tests.bzl", "features_test_suite")
 load(":generated_header_tests.bzl", "generated_header_test_suite")
@@ -87,6 +88,8 @@ custom_swift_driver_test_suite(name = "custom_swift_driver")
 custom_toolchain_linking_test_suite(name = "custom_toolchain_linking")
 
 debug_settings_test_suite(name = "debug_settings")
+
+diagnostics_test_suite(name = "diagnostics")
 
 environment_test_suite(name = "environment")
 

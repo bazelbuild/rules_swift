@@ -82,6 +82,7 @@ load(
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
     "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
+    "SWIFT_FEATURE_SERIALIZED_DIAGNOSTICS_FILE",
     "SWIFT_FEATURE_SPLIT_DERIVED_FILES_GENERATION",
     "SWIFT_FEATURE_SUPPRESS_WARNINGS",
     "SWIFT_FEATURE_SYSTEM_MODULE",
@@ -155,6 +156,13 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_COMPILE],
             configurators = [add_arg("-emit-bc")],
             features = [SWIFT_FEATURE_EMIT_BC],
+        ),
+
+        # Emit serialized diagnostics file(s).
+        ActionConfigInfo(
+            actions = [SWIFT_ACTION_COMPILE],
+            configurators = [add_arg("-serialize-diagnostics")],
+            features = [SWIFT_FEATURE_SERIALIZED_DIAGNOSTICS_FILE],
         ),
 
         # Add the single object file or object file map, whichever is needed.
@@ -1670,7 +1678,7 @@ def _output_swiftmodule_or_file_map_configurator(prerequisites, args):
 def _output_ast_path_or_file_map_configurator(prerequisites, args):
     """Adds the output file map or single AST file to the command line."""
     return _output_or_file_map(
-        output_file_map = prerequisites.output_file_map,
+        output_file_map = prerequisites.ast_output_file_map,
         outputs = prerequisites.ast_files,
         args = args,
     )
