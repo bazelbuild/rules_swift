@@ -58,6 +58,7 @@ load(
     "SWIFT_FEATURE_USE_AUTOLINK_EXTRACT",
     "SWIFT_FEATURE_USE_C_MODULES",
     "SWIFT_FEATURE_USE_GLOBAL_INDEX_STORE",
+    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE_USE_MODULE_WRAP",
     "SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE",
 )
@@ -874,6 +875,10 @@ def _swift_toolchain_impl(ctx):
         unsupported_features.extend([
             SWIFT_FEATURE_EMIT_C_MODULE,
             SWIFT_FEATURE_USE_C_MODULES,
+            # Without explicit modules, Clang modules are built implicitly,
+            # and in the shared cache two builds of one of the SDK's modules
+            # conflict ("module '_Builtin_stddef' is defined in both ...").
+            SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE,
         ])
     if not static_runtime_cc_info:
         unsupported_features.append(SWIFT_FEATURE_STATIC_STDLIB)
