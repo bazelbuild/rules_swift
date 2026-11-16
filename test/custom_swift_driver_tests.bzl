@@ -1,6 +1,6 @@
 """Tests for custom Swift driver executables on Swift toolchains."""
 
-load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts", "unittest")
 load("//swift:providers.bzl", "SwiftToolchainInfo")
 
 _FAKE_DRIVER = "test/fixtures/toolchains/fake_swift_driver.sh"
@@ -13,7 +13,7 @@ def _custom_driver_test_impl(ctx):
         "SwiftCompile",
     )
     if not tool_config:
-        asserts.true(env, False, "Expected a 'SwiftCompile' tool config.")
+        unittest.fail(env, "Expected a 'SwiftCompile' tool config.")
         return analysistest.end(env)
 
     executable = tool_config.executable
@@ -26,12 +26,11 @@ def _custom_driver_test_impl(ctx):
             "executable short_path",
         )
 
-    asserts.true(
+    asserts.equals(
         env,
-        tool_config.args[:1] == ["--driver-mode=swiftc"],
-        "Expected args to start with '--driver-mode=swiftc', got {}.".format(
-            tool_config.args,
-        ),
+        ["--driver-mode=swiftc"],
+        tool_config.args[:1],
+        "driver mode argument",
     )
 
     return analysistest.end(env)
@@ -56,23 +55,21 @@ def custom_swift_driver_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
-    # The `swift_executable` attribute on `swift_toolchain`.
+    # Verify that swift_toolchain uses the driver set by swift_executable.
     custom_driver_test(
         name = "{}_swift_toolchain_attr".format(name),
         tags = all_tags,
         target_under_test = "//test/fixtures/toolchains:toolchain_with_custom_driver",
     )
 
-    # The `//swift:default_swift_executable` flag on `swift_toolchain`.
+    # Verify that swift_toolchain uses the driver set by default_swift_executable.
     custom_driver_from_flag_test(
         name = "{}_swift_toolchain_flag".format(name),
         tags = all_tags,
         target_under_test = "//test/fixtures/toolchains:_toolchain_macos_arm64_with_sdkroot",
     )
 
-    # The `//swift:default_swift_executable` flag on the host toolchain, which
-    # is `xcode_swift_toolchain` on macOS. The Linux host toolchain in this
-    # repo uses `swift_tools`, which takes precedence over the flag.
+    # Verify that xcode_swift_toolchain uses the driver set by default_swift_executable.
     custom_driver_from_flag_test(
         name = "{}_xcode_toolchain_flag".format(name),
         tags = all_tags,

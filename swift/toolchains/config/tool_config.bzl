@@ -106,8 +106,6 @@ def _tool_config_info_init(
         else:
             executable = driver_mode
 
-        # A custom `swift_executable` is a `File` and is used as-is; the suffix
-        # only applies to tool names that are resolved by path.
         if type(executable) == "string":
             tool_executable_suffix = driver_config.get(
                 "tool_executable_suffix",

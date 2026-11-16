@@ -206,7 +206,6 @@ def get_swift_executable_for_toolchain(ctx):
         should be used.
     """
 
-    # If the toolchain target itself specifies a custom driver, use that.
     swift_executable = ctx.file.swift_executable
 
     # If no custom driver was provided by the target, check the value of the

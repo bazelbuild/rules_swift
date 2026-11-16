@@ -422,9 +422,7 @@ config_setting(
 )
 
 # Allows a user to override the default Swift driver during a build, if the
-# toolchain is using the default. The toolchains read this flag through an
-# attribute with `cfg = "exec"`, so it must keep its value across the exec
-# transition; see `universal_label_flag`.
+# toolchain is using the default.
 universal_label_flag(
     name = "default_swift_executable",
     build_setting_default = ":empty",

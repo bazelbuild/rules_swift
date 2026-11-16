@@ -23,8 +23,6 @@ toolchain(
     toolchain_type = "//toolchains:toolchain_type",
 )
 
-# A toolchain that uses a custom Swift driver via the `swift_executable`
-# attribute.
 swift_toolchain(
     name = "toolchain_with_custom_driver",
     arch = "arm64",
@@ -38,8 +36,6 @@ swift_toolchain(
     visibility = ["//test:__subpackages__"],
 )
 
-# Forwards the `SwiftToolchainInfo` of the Swift toolchain resolved for the
-# target platform.
 forward_swift_toolchain_info(
     name = "resolved_swift_toolchain",
     tags = FIXTURE_TAGS,
