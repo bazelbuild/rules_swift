@@ -789,6 +789,7 @@ def _discover_all_modules(
     sdk_path = _resolve_sdk_path(developer_dir=developer_dir, sdk=sdk)
     framework_search_paths = [
         platform_developer_path / "Library/Frameworks",
+        sdk_path / "Developer/Library/Frameworks",
         sdk_path / "System/Library/Frameworks",
     ]
     swift_search_paths = [
@@ -804,6 +805,9 @@ def _discover_all_modules(
     for directory in set(
         framework_search_paths + library_search_paths + swift_search_paths
     ):
+        if not directory.is_dir():
+            continue
+
         for x in directory.iterdir():
             if x.stem in excluded_modules:
                 continue
