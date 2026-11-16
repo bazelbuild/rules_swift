@@ -6,6 +6,15 @@ configurations for Swift compilation, including embedded, exec, and cross-compil
 toolchains with appropriate platform constraints for macOS and Linux.
 """
 
+_LINUX_EXEC_PLATFORMS = (
+    "ubuntu22.04",
+    "ubuntu22.04-aarch64",
+    "ubuntu24.04",
+    "ubuntu24.04-aarch64",
+    "ubuntu26.04",
+    "ubuntu26.04-aarch64",
+)
+
 _TOOLCHAIN_PLATFORM = """
 # Toolchains from repository: `{toolchain_repository}`
 ## Embedded toolchains
@@ -52,7 +61,7 @@ toolchain(
     name = "cc_toolchain_exec_{platform}",
     exec_compatible_with = {exec_compatible_with},
     target_compatible_with = {exec_compatible_with},
-    toolchain = "@{toolchain_repository}//:cc_toolchain_exec",
+    toolchain = "//{platform}:cc_toolchain_exec",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
     visibility = ["//visibility:public"],
 )
@@ -108,6 +117,32 @@ def _exec_compatible_with_for_platform(platform):
         "@platforms//cpu:{}".format("aarch64" if "aarch64" in platform else "x86_64"),
     ]
 
+def linux_cc_toolchain_build_file(platform, toolchain_repository):
+    """Returns a lightweight Linux configuration BUILD file, or None.
+
+    Args:
+        platform: Standalone toolchain's download platform.
+        toolchain_repository: Repository containing the compiler tools.
+
+    Returns:
+        BUILD file content for supported Linux platforms, otherwise None.
+    """
+    if platform not in _LINUX_EXEC_PLATFORMS:
+        return None
+
+    return """\
+load("@rules_swift//swift/internal/extensions:linux_cc_toolchain.bzl", "standalone_linux_cc_toolchain")
+
+standalone_linux_cc_toolchain(
+    name = "cc_toolchain_exec",
+    sysroot_version = "{sysroot_version}",
+    tool_map = "@{toolchain_repository}//:all_tools",
+)
+""".format(
+        sysroot_version = platform.removeprefix("ubuntu").removesuffix("-aarch64"),
+        toolchain_repository = toolchain_repository,
+    )
+
 def toolchains_for_platform(platform, toolchain_repository):
     """Returns `toolchain` declarations for a standalone Swift toolchain.
 
@@ -132,14 +167,7 @@ def toolchains_for_platform(platform, toolchain_repository):
             toolchain_repository = toolchain_repository,
         )
 
-    if platform in (
-        "ubuntu22.04",
-        "ubuntu22.04-aarch64",
-        "ubuntu24.04",
-        "ubuntu24.04-aarch64",
-        "ubuntu26.04",
-        "ubuntu26.04-aarch64",
-    ):
+    if platform in _LINUX_EXEC_PLATFORMS:
         content += _CC_EXEC_TOOLCHAIN_PLATFORM.format(
             exec_compatible_with = _exec_compatible_with_for_platform(platform),
             platform = platform,
@@ -209,6 +237,8 @@ def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
 
 def _toolchains_impl(repository_ctx):
     repository_ctx.file("BUILD.bazel", repository_ctx.attr.build_file_content)
+    for platform, content in repository_ctx.attr.linux_configuration_build_files.items():
+        repository_ctx.file(platform + "/BUILD.bazel", content)
     if hasattr(repository_ctx, "repo_metadata"):
         return repository_ctx.repo_metadata(reproducible = True)
     return None
@@ -216,6 +246,7 @@ def _toolchains_impl(repository_ctx):
 toolchains_repository = repository_rule(
     implementation = _toolchains_impl,
     attrs = {
+        "linux_configuration_build_files": attr.string_dict(),
         "build_file_content": attr.string(
             mandatory = True,
         ),

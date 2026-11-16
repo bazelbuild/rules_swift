@@ -24,6 +24,7 @@ load(
 load(
     "//swift/internal/extensions:toolchains.bzl",
     "android_sdk_toolchains_for_platform",
+    "linux_cc_toolchain_build_file",
     "toolchains_for_platform",
     "toolchains_repository",
     "wasm_sdk_toolchains_for_platform",
@@ -166,6 +167,7 @@ def _standalone_toolchain_impl(module_ctx):
             fail("The `wasm_sdk` tag requires a `toolchain` tag.")
 
     toolchains_build_file_content = ""
+    linux_configuration_build_files = {}
     for toolchain in root_module.tags.toolchain:
         if toolchain.swift_version and toolchain.swift_version_file:
             fail("Cannot use both swift_version and swift_version_file together. Please choose one.")
@@ -196,6 +198,9 @@ def _standalone_toolchain_impl(module_ctx):
                 platform = platform,
                 toolchain_repository = repository_name,
             )
+            configuration = linux_cc_toolchain_build_file(platform, repository_name)
+            if configuration != None:
+                linux_configuration_build_files[platform] = configuration
 
         platforms = [platform for platform, _ in toolchain_releases]
         if android_sdk_tag:
@@ -218,6 +223,7 @@ def _standalone_toolchain_impl(module_ctx):
         toolchains_repository(
             name = toolchain.name,
             build_file_content = toolchains_build_file_content,
+            linux_configuration_build_files = linux_configuration_build_files,
         )
 
     return module_ctx.extension_metadata(reproducible = True)

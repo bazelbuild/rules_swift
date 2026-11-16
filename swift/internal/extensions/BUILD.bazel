@@ -24,3 +24,6 @@ bzl_library(
     srcs = ["toolchains.bzl"],
     visibility = ["//swift:__subpackages__"],
 )
+
+# Loaded by the BUILD files in generated standalone toolchain repositories.
+exports_files(["linux_cc_toolchain.bzl"])
