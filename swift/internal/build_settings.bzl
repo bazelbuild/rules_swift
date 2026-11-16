@@ -33,6 +33,31 @@ of the flags (comma-splitting does not occur).
     implementation = _repeatable_string_flag_impl,
 )
 
+def _label_flag_supports_scope():
+    """Returns `True` if the native `label_flag` rule accepts `scope`.
+
+    The `scope` attribute arrived in Bazel 9. Starlark cannot read the Bazel
+    version directly, so probe for `native.package_default_visibility`, which
+    was added in the same release. Remove this once Bazel 8 support is dropped.
+    """
+    return hasattr(native, "package_default_visibility")
+
+def universal_label_flag(name, **kwargs):
+    """Declares a `label_flag` whose value also reaches exec-configured deps.
+
+    Starting with Bazel 10, Starlark flags reset to their default when they
+    cross the exec transition unless they are scoped `"universal"`. On Bazel 8,
+    which has no `scope` attribute, flags always propagate, so the attribute is
+    omitted there.
+
+    Args:
+        name: The name of the flag target.
+        **kwargs: Additional arguments passed to `label_flag`.
+    """
+    if _label_flag_supports_scope():
+        kwargs["scope"] = "universal"
+    native.label_flag(name = name, **kwargs)
+
 PerModuleSwiftCoptSettingInfo = provider(
     doc = "A provider for the parsed per-swiftmodule swift copts.",
     fields = {

@@ -4,6 +4,7 @@ load(
     "//swift/internal:build_settings.bzl",
     "per_module_swiftcopt_flag",
     "repeatable_string_flag",
+    "universal_label_flag",
 )
 load(":swift_interop_hint.bzl", "swift_interop_hint")
 load(":swift_module_mapping.bzl", "swift_module_mapping")
@@ -421,8 +422,10 @@ config_setting(
 )
 
 # Allows a user to override the default Swift driver during a build, if the
-# toolchain is using the default.
-label_flag(
+# toolchain is using the default. The toolchains read this flag through an
+# attribute with `cfg = "exec"`, so it must keep its value across the exec
+# transition; see `universal_label_flag`.
+universal_label_flag(
     name = "default_swift_executable",
     build_setting_default = ":empty",
     visibility = ["//visibility:public"],
