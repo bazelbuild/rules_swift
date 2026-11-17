@@ -24,6 +24,25 @@ toolchain(
 )
 
 swift_toolchain(
+    name = "_toolchain_windows_x86_64_with_xctest",
+    arch = "x86_64",
+    env = {"Path": ""},
+    os = "windows",
+    parsed_version = "6.3",
+    root = ".",
+    sdkroot = "Platforms/Windows.platform/Developer/SDKs/Windows.sdk",
+    version_file = ".swift_version",
+    visibility = ["//test:__subpackages__"],
+    xctest_version = "development",
+)
+
+toolchain(
+    name = "toolchain_windows_x86_64_with_xctest",
+    toolchain = ":_toolchain_windows_x86_64_with_xctest",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+swift_toolchain(
     name = "toolchain_with_custom_driver",
     arch = "arm64",
     os = "macos",

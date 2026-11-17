@@ -12,6 +12,12 @@ toolchain_macos_arm64_with_sdkroot_test = make_action_command_line_test_rule(
     },
 )
 
+toolchain_windows_x86_64_with_xctest_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:extra_toolchains": ["//test/fixtures/toolchains:toolchain_windows_x86_64_with_xctest"],
+    },
+)
+
 def swift_toolchain_test_suite(name, tags = []):
     """Test suite for swift_toolchain's provider.
 
@@ -40,6 +46,28 @@ def swift_toolchain_test_suite(name, tags = []):
             "@platforms//os:linux",
         ],
         target_under_test = "//test/fixtures/basic:first",
+    )
+
+    # swift-testing lives next to XCTest in the Windows platform's `Library`.
+    toolchain_windows_x86_64_with_xctest_test(
+        name = "{}_windows_swift_testing_search_paths".format(name),
+        expected_argv = [
+            "-IPlatforms/Windows.platform/Developer/SDKs/Windows.sdk/../../Library/Testing-development/usr/lib/swift/windows",
+            "-IPlatforms/Windows.platform/Developer/SDKs/Windows.sdk/../../Library/Testing-development/usr/lib/swift/windows/x86_64",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    toolchain_windows_x86_64_with_xctest_test(
+        name = "{}_windows_swift_testing_libpath".format(name),
+        expected_argv = [
+            "-LIBPATH:Platforms/Windows.platform/Developer/SDKs/Windows.sdk/../../Library/Testing-development/usr/lib/swift/windows/x86_64",
+        ],
+        mnemonic = "CppLink",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/linking:bin",
     )
 
     native.test_suite(

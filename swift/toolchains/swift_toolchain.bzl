@@ -322,6 +322,36 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                     ),
                 )
 
+        # On Windows, swift-testing ships next to XCTest in the platform's
+        # `Library/Testing-<version>` directory rather than in the SDK.
+        if os == "windows" and xctest_version:
+            testing_dir = paths.join(
+                sdkroot,
+                "..",
+                "..",
+                "Library",
+                "Testing-{}".format(xctest_version),
+                "usr",
+                "lib",
+                "swift",
+                os,
+            )
+            testing_configurators = [add_arg(testing_dir, format = "-I%s")]
+            if arch:
+                testing_configurators.append(
+                    add_arg(paths.join(testing_dir, arch), format = "-I%s"),
+                )
+            action_configs.append(
+                ActionConfigInfo(
+                    actions = all_compile_action_names() + [
+                        SWIFT_ACTION_DUMP_AST,
+                        SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    ],
+                    configurators = testing_configurators,
+                ),
+            )
+
     action_configs.extend(all_actions_action_configs())
     action_configs.extend(
         compile_action_configs(
@@ -370,6 +400,7 @@ def _swift_windows_linkopts_cc_info(
     linkopts = [
         "-LIBPATH:{}".format(platform_lib_dir),
         "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "XCTest-{}".format(xctest_version), "usr", "lib", "swift", "windows", arch)),
+        "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "Testing-{}".format(xctest_version), "usr", "lib", "swift", "windows", arch)),
         runtime_object_path,
         # Swift marks references to symbols in other modules (for example the
         # type metadata accessors a generated test runner references via
