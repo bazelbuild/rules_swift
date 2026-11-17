@@ -318,6 +318,12 @@ Swift toolchain.
         "import plistlib; " +
         "print(plistlib.load(open(r'{}', 'rb'))['DefaultProperties']['XCTEST_VERSION'])".format(info_plist),
     ])
+    swift_testing_version = repository_ctx.execute([
+        python_bin,
+        "-c",
+        "import plistlib; " +
+        "print(plistlib.load(open(r'{}', 'rb'))['DefaultProperties'].get('SWIFT_TESTING_VERSION', ''))".format(info_plist),
+    ])
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
@@ -337,6 +343,7 @@ swift_toolchain(
   sdkroot = "{sdkroot}",
   tool_executable_suffix = ".exe",
   xctest_version = "{xctest_version}",
+  swift_testing_version = "{swift_testing_version}",
 )
 """.format(
         arch = arch,
@@ -346,6 +353,7 @@ swift_toolchain(
         parsed_version = parsed_version,
         sdkroot = sdkroot,
         xctest_version = xctest_version.stdout.rstrip(),
+        swift_testing_version = swift_testing_version.stdout.rstrip(),
         version_file = version_file,
     )
 

@@ -209,7 +209,14 @@ def _all_tool_configs(
 
     return tool_configs
 
-def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additional_swiftc_copts):
+def _all_action_configs(
+        os,
+        arch,
+        target_triple,
+        sdkroot,
+        xctest_version,
+        swift_testing_version,
+        additional_swiftc_copts):
     """Returns the action configurations for the Swift toolchain.
 
     Args:
@@ -218,6 +225,7 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
         target_triple: The triple of the platform being targeted.
         sdkroot: The path to the SDK that we should use to build against.
         xctest_version: The version of XCTest to use.
+        swift_testing_version: The version of Swift Testing to use.
         additional_swiftc_copts: Additional Swift compiler flags obtained from
             the `.../swift:copt` build setting.
 
@@ -322,6 +330,33 @@ def _all_action_configs(os, arch, target_triple, sdkroot, xctest_version, additi
                     ),
                 )
 
+        if os and swift_testing_version:
+            action_configs.append(
+                ActionConfigInfo(
+                    actions = all_compile_action_names() + [
+                        SWIFT_ACTION_DUMP_AST,
+                        SWIFT_ACTION_PRECOMPILE_C_MODULE,
+                        SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                    ],
+                    configurators = [
+                        add_arg(
+                            paths.join(
+                                sdkroot,
+                                "..",
+                                "..",
+                                "Library",
+                                "Testing-{}".format(swift_testing_version),
+                                "usr",
+                                "lib",
+                                "swift",
+                                os,
+                            ),
+                            format = "-I%s",
+                        ),
+                    ],
+                ),
+            )
+
     action_configs.extend(all_actions_action_configs())
     action_configs.extend(
         compile_action_configs(
@@ -339,6 +374,7 @@ def _swift_windows_linkopts_cc_info(
         arch,
         sdkroot,
         xctest_version,
+        swift_testing_version,
         toolchain_label):
     """Returns a `CcInfo` containing flags that should be passed to the linker.
 
@@ -350,6 +386,8 @@ def _swift_windows_linkopts_cc_info(
         arch: The CPU architecture, which is used as part of the library path.
         sdkroot: The path to the root of the SDK that we are building against.
         xctest_version: The version of XCTest that we are building against.
+        swift_testing_version: The version of Swift Testing that we are
+            building against.
         toolchain_label: The label of the Swift toolchain that will act as the
             owner of the linker input propagating the flags.
 
@@ -379,6 +417,10 @@ def _swift_windows_linkopts_cc_info(
         # under `/WX` (treat-warnings-as-errors).
         "-IGNORE:4217",
     ]
+    if swift_testing_version:
+        linkopts.append(
+            "-LIBPATH:{}".format(paths.join(sdkroot, "..", "..", "Library", "Testing-{}".format(swift_testing_version), "usr", "lib", "swift", "windows", arch)),
+        )
 
     return CcInfo(
         linking_context = cc_common.create_linking_context(
@@ -744,6 +786,7 @@ def _swift_toolchain_impl(ctx):
             ctx.attr.arch,
             ctx.attr.sdkroot,
             ctx.attr.xctest_version,
+            ctx.attr.swift_testing_version,
             ctx.label,
         )
     elif ctx.attr.os == "none":
@@ -844,6 +887,7 @@ def _swift_toolchain_impl(ctx):
         target_triple = target_triple,
         sdkroot = sdkroot,
         xctest_version = ctx.attr.xctest_version,
+        swift_testing_version = ctx.attr.swift_testing_version,
         additional_swiftc_copts = ctx.attr.copts + swiftcopts,
     )
 
@@ -858,10 +902,12 @@ def _swift_toolchain_impl(ctx):
             fail("unsupported arch `{}`".format(ctx.attr.arch))
 
         xctest = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "XCTest-{}".format(ctx.attr.xctest_version), "usr", bindir))
-        env = dicts.add(
-            ctx.attr.env,
-            {"Path": xctest + ";" + ctx.attr.env["Path"]},
-        )
+        path = xctest + ";" + ctx.attr.env["Path"]
+        if ctx.attr.swift_testing_version:
+            # Installers put Testing's DLLs in usr/<bindir> or plain usr/bin.
+            testing = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "Testing-{}".format(ctx.attr.swift_testing_version), "usr"))
+            path = paths.join(testing, bindir) + ";" + paths.join(testing, "bin") + ";" + path
+        env = dicts.add(ctx.attr.env, {"Path": path})
     else:
         env = ctx.attr.env
 
@@ -1073,6 +1119,12 @@ dependent value (e.g. `.exe` on Window).
             "version_file": attr.label(
                 mandatory = True,
                 allow_single_file = True,
+            ),
+            "swift_testing_version": attr.string(
+                doc = """\
+The version of Swift Testing that the toolchain packages.
+""",
+                mandatory = False,
             ),
             "xctest_version": attr.string(
                 doc = """\
