@@ -32,10 +32,6 @@ universal_binary(
     name = "universal_ProtoCompilerPlugin",
     binary = "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
     tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
-    }),
 )
 
 alias(
@@ -43,9 +39,5 @@ alias(
     actual = select({
         "//swift:universal_tools_config": ":universal_ProtoCompilerPlugin",
         "//conditions:default": "@com_github_apple_swift_protobuf//:ProtoCompilerPlugin",
-    }),
-    target_compatible_with = select({
-        "@platforms//os:windows": ["@platforms//:incompatible"],
-        "//conditions:default": [],
     }),
 )
