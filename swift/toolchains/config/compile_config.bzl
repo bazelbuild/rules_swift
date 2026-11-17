@@ -50,6 +50,8 @@ load(
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_LTO_FULL",
+    "SWIFT_FEATURE_LTO_THIN",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
@@ -343,6 +345,21 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
             features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
+        ),
+
+        # Emit LLVM bitcode for Link-Time Optimization (LTO). If both features
+        # are enabled, `swift.lto_thin` takes precedence so a target or command
+        # line can override a toolchain-defaulted `swift.lto_full`.
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-lto=llvm-full")],
+            features = [SWIFT_FEATURE_LTO_FULL],
+            not_features = [SWIFT_FEATURE_LTO_THIN],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-lto=llvm-thin")],
+            features = [SWIFT_FEATURE_LTO_THIN],
         ),
 
         # Control serialization of debugging options into `.swiftmodules`. Even

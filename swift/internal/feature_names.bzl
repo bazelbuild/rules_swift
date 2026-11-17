@@ -282,3 +282,12 @@ SWIFT_FEATURE_STD_GNU2X = "swift.std_gnu2x"
 # without linking a fuzzing engine runtime (matching `-sanitize=fuzzer-no-link`
 # semantics).
 SWIFT_FEATURE_FUZZER_NO_LINK = "swift.fuzzer_no_link"
+
+# If enabled, emits LLVM bitcode for Full Link-Time Optimization
+# (`-lto=llvm-full`). If `swift.lto_thin` is also enabled, `swift.lto_thin`
+# takes precedence.
+SWIFT_FEATURE_LTO_FULL = "swift.lto_full"
+
+# If enabled, emits LLVM bitcode for Thin Link-Time Optimization
+# (`-lto=llvm-thin`).
+SWIFT_FEATURE_LTO_THIN = "swift.lto_thin"

@@ -9,6 +9,7 @@ load(":interop_hints_tests.bzl", "interop_hints_test_suite")
 load(":label_module_name_tests.bzl", "label_module_name_test_suite")
 load(":layering_check_tests.bzl", "layering_check_test_suite")
 load(":local_defines_tests.bzl", "local_defines_test_suite")
+load(":lto_tests.bzl", "lto_test_suite")
 load(":module_interface_tests.bzl", "module_interface_test_suite")
 load(":module_mapping_tests.bzl", "module_mapping_test_suite")
 load(":overlay_tests.bzl", "overlay_test_suite")
@@ -64,6 +65,10 @@ layering_check_test_suite(
 
 local_defines_test_suite(
     name = "local_defines",
+)
+
+lto_test_suite(
+    name = "lto",
 )
 
 module_interface_test_suite(
