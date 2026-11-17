@@ -30,6 +30,7 @@ load(
     "register_module_mapping_write_action",
 )
 load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
+load("//swift:swift_common.bzl", "swift_common")
 
 PROTOC_TOOLCHAIN = Label("@protobuf//bazel/private:proto_toolchain_type")
 
@@ -212,8 +213,7 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         executable = swift_proto_compiler_info.internal.protoc,
         arguments = [arguments],
         tools = [swift_proto_compiler_info.internal.plugin],
-        # protoc-gen-swift needs the Swift runtime on PATH on Windows.
-        use_default_shell_env = True,
+        env = swift_proto_compiler_info.internal.env,
     )
 
     # Expand the copy Swift sources template:
@@ -260,6 +260,12 @@ def _protoc_executable(ctx):
     return ctx.executable.protoc or _find_protoc_toolchain(ctx).proto_compiler.executable
 
 def _swift_proto_compiler_impl(ctx):
+    # On Windows the plugin needs the Swift runtime DLLs, which are on the
+    # toolchain's Path but not on Bazel's default action PATH.
+    swift_toolchain = swift_common.get_toolchain(ctx, mandatory = False)
+    toolchain_env = swift_toolchain.test_configuration.env if swift_toolchain else {}
+    env = {"Path": toolchain_env["Path"]} if "Path" in toolchain_env else {}
+
     return [
         SwiftProtoCompilerInfo(
             bundled_proto_paths = ctx.attr.bundled_proto_paths,
@@ -274,6 +280,7 @@ def _swift_proto_compiler_impl(ctx):
                 suffixes = ctx.attr.suffixes,
                 copy_swift_sources_template = ctx.file._copy_swift_sources_template,
                 path_separator = ctx.configuration.host_path_separator,
+                env = env,
             ),
         ),
     ]
@@ -405,5 +412,5 @@ Each compiler target should configure this based on the suffix applied to the ge
     },
     fragments = ["proto"],
     implementation = _swift_proto_compiler_impl,
-    toolchains = [PROTOC_TOOLCHAIN],
+    toolchains = [PROTOC_TOOLCHAIN] + swift_common.use_toolchain(mandatory = False),
 )
