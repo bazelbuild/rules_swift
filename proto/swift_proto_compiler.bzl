@@ -191,8 +191,9 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
     )
     arguments.add(output_directory_argument)
 
-    # Join the transitive descriptor sets into a single argument separated by colons:
-    formatted_descriptor_set_paths = ":".join([f.path for f in transitive_descriptor_sets.to_list()])
+    # Join the transitive descriptor sets into a single argument, separated the
+    # way protoc expects on the host (";" on Windows, ":" elsewhere):
+    formatted_descriptor_set_paths = swift_proto_compiler_info.internal.path_separator.join([f.path for f in transitive_descriptor_sets.to_list()])
     descriptor_set_in_argument = "--descriptor_set_in={}".format(formatted_descriptor_set_paths)
     arguments.add(descriptor_set_in_argument)
 
@@ -211,6 +212,8 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         executable = swift_proto_compiler_info.internal.protoc,
         arguments = [arguments],
         tools = [swift_proto_compiler_info.internal.plugin],
+        # protoc-gen-swift needs the Swift runtime on PATH on Windows.
+        use_default_shell_env = True,
     )
 
     # Expand the copy Swift sources template:
@@ -227,13 +230,15 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         is_executable = True,
     )
 
-    # Run the copy swift sources action:
-    actions.run(
-        inputs = depset([temporary_output_directory]),
+    # Run the copy swift sources action, through the shell so it also works on
+    # Windows, which can't execute a .sh directly:
+    actions.run_shell(
+        inputs = depset([temporary_output_directory, copy_swift_sources_file]),
         outputs = swift_srcs,
         progress_message = "Copying protos into %s" % permanent_output_directory_path,
         mnemonic = "CopySwiftSources",
-        executable = copy_swift_sources_file,
+        command = copy_swift_sources_file.path,
+        use_default_shell_env = True,
     )
 
     return swift_srcs
@@ -268,6 +273,7 @@ def _swift_proto_compiler_impl(ctx):
                 plugin_options = ctx.attr.plugin_options,
                 suffixes = ctx.attr.suffixes,
                 copy_swift_sources_template = ctx.file._copy_swift_sources_template,
+                path_separator = ctx.configuration.host_path_separator,
             ),
         ),
     ]
