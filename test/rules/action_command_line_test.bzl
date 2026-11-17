@@ -16,13 +16,31 @@
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "unittest")
+load("//swift:providers.bzl", "SwiftSymbolGraphInfo", "SwiftSynthesizedInterfaceInfo")
+
+_AspectActionInfo = provider(
+    doc = "Contains actions registered on a target including by aspects.",
+    fields = ["actions"],
+)
+
+def _aspect_action_retrieving_aspect_impl(target, _ctx):
+    return [_AspectActionInfo(actions = target.actions)]
+
+_aspect_action_retrieving_aspect = aspect(
+    implementation = _aspect_action_retrieving_aspect_impl,
+    required_aspect_providers = [
+        [SwiftSymbolGraphInfo],
+        [SwiftSynthesizedInterfaceInfo],
+    ],
+)
 
 def _action_command_line_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)
 
-    # Find the desired action and verify that there is exactly one.
-    actions = analysistest.target_actions(env)
+    actions = (
+        target_under_test[_AspectActionInfo].actions if _AspectActionInfo in target_under_test else analysistest.target_actions(env)
+    )
     mnemonic = ctx.attr.mnemonic
     matching_actions = [
         action
@@ -60,10 +78,6 @@ def _action_command_line_test_impl(ctx):
         str(target_under_test.label),
     )
 
-    # Concatenate the arguments into a single string so that we can easily look
-    # for subsequences of arguments. Note that we append an extra space to the
-    # end and look for arguments followed by a trailing space so that having
-    # `-foo` in the expected list doesn't match `-foobar`, for example.
     concatenated_args = " ".join(action.argv) + " "
     bin_dir = analysistest.target_bin_dir_path(env)
     for expected in ctx.attr.expected_argv:
@@ -91,17 +105,22 @@ def _action_command_line_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_action_command_line_test_rule(config_settings = {}):
+def make_action_command_line_test_rule(config_settings = {}, extra_target_under_test_aspects = []):
     """Returns a new `action_command_line_test`-like rule with custom configs.
 
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
+        extra_target_under_test_aspects: Aspects whose actions should be inspected.
 
     Returns:
         A rule returned by `analysistest.make` that has the
         `action_command_line_test` interface and the given config settings.
     """
+    aspects = list(extra_target_under_test_aspects)
+    if aspects:
+        aspects.append(_aspect_action_retrieving_aspect)
+
     return analysistest.make(
         _action_command_line_test_impl,
         attrs = {
@@ -130,7 +149,7 @@ space-delimited string.
             ),
         },
         config_settings = config_settings,
+        extra_target_under_test_aspects = aspects,
     )
 
-# A default instantiation of the rule when no custom config settings are needed.
 action_command_line_test = make_action_command_line_test_rule()
