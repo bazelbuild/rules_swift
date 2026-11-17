@@ -904,8 +904,9 @@ def _swift_toolchain_impl(ctx):
         xctest = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "XCTest-{}".format(ctx.attr.xctest_version), "usr", bindir))
         path = xctest + ";" + ctx.attr.env["Path"]
         if ctx.attr.swift_testing_version:
-            testing = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "Testing-{}".format(ctx.attr.swift_testing_version), "usr", bindir))
-            path = testing + ";" + path
+            # Installers put Testing's DLLs in usr/<bindir> or plain usr/bin.
+            testing = paths.normalize(paths.join(ctx.attr.sdkroot, "..", "..", "Library", "Testing-{}".format(ctx.attr.swift_testing_version), "usr"))
+            path = paths.join(testing, bindir) + ";" + paths.join(testing, "bin") + ";" + path
         env = dicts.add(ctx.attr.env, {"Path": path})
     else:
         env = ctx.attr.env
