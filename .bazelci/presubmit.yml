@@ -26,8 +26,6 @@ x_defaults:
       # a `swift_binary` executable and a `linkshared` Windows DLL.
       - "//examples/xplatform/hello_world"
       - "//examples/xplatform/shared_library"
-      # swift_proto_library: protoc and protoc-gen-swift on Windows.
-      - "//examples/xplatform/proto"
     test_targets:
       # Exercises XCTest discovery, the test runner, and `swift_test` execution
       # on Windows.
