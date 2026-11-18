@@ -30,6 +30,7 @@ load(
     "register_module_mapping_write_action",
 )
 load("//swift:providers.bzl", "SwiftInfo", "SwiftProtoCompilerInfo")
+load("//swift:swift_common.bzl", "swift_common")
 
 PROTOC_TOOLCHAIN = Label("@protobuf//bazel/private:proto_toolchain_type")
 
@@ -191,8 +192,9 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
     )
     arguments.add(output_directory_argument)
 
-    # Join the transitive descriptor sets into a single argument separated by colons:
-    formatted_descriptor_set_paths = ":".join([f.path for f in transitive_descriptor_sets.to_list()])
+    # Join the transitive descriptor sets into a single argument, separated the
+    # way protoc expects on the host (";" on Windows, ":" elsewhere):
+    formatted_descriptor_set_paths = swift_proto_compiler_info.internal.path_separator.join([f.path for f in transitive_descriptor_sets.to_list()])
     descriptor_set_in_argument = "--descriptor_set_in={}".format(formatted_descriptor_set_paths)
     arguments.add(descriptor_set_in_argument)
 
@@ -211,6 +213,8 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         executable = swift_proto_compiler_info.internal.protoc,
         arguments = [arguments],
         tools = [swift_proto_compiler_info.internal.plugin],
+        env = swift_proto_compiler_info.internal.env,
+        use_default_shell_env = True,
     )
 
     # Expand the copy Swift sources template:
@@ -227,13 +231,15 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         is_executable = True,
     )
 
-    # Run the copy swift sources action:
-    actions.run(
-        inputs = depset([temporary_output_directory]),
+    # Run the copy swift sources action, through the shell so it also works on
+    # Windows, which can't execute a .sh directly:
+    actions.run_shell(
+        inputs = depset([temporary_output_directory, copy_swift_sources_file]),
         outputs = swift_srcs,
         progress_message = "Copying protos into %s" % permanent_output_directory_path,
         mnemonic = "CopySwiftSources",
-        executable = copy_swift_sources_file,
+        command = copy_swift_sources_file.path,
+        use_default_shell_env = True,
     )
 
     return swift_srcs
@@ -255,6 +261,12 @@ def _protoc_executable(ctx):
     return ctx.executable.protoc or _find_protoc_toolchain(ctx).proto_compiler.executable
 
 def _swift_proto_compiler_impl(ctx):
+    # On Windows the plugin needs the Swift runtime DLLs, which are on the
+    # toolchain's Path but not on Bazel's default action PATH.
+    swift_toolchain = swift_common.get_toolchain(ctx, mandatory = False)
+    toolchain_env = swift_toolchain.test_configuration.env if swift_toolchain else {}
+    env = {"Path": toolchain_env["Path"]} if "Path" in toolchain_env else {}
+
     return [
         SwiftProtoCompilerInfo(
             bundled_proto_paths = ctx.attr.bundled_proto_paths,
@@ -268,6 +280,8 @@ def _swift_proto_compiler_impl(ctx):
                 plugin_options = ctx.attr.plugin_options,
                 suffixes = ctx.attr.suffixes,
                 copy_swift_sources_template = ctx.file._copy_swift_sources_template,
+                path_separator = ctx.configuration.host_path_separator,
+                env = env,
             ),
         ),
     ]
@@ -399,5 +413,5 @@ Each compiler target should configure this based on the suffix applied to the ge
     },
     fragments = ["proto"],
     implementation = _swift_proto_compiler_impl,
-    toolchains = [PROTOC_TOOLCHAIN],
+    toolchains = [PROTOC_TOOLCHAIN] + swift_common.use_toolchain(mandatory = False),
 )
