@@ -19,6 +19,20 @@ load(
     "//swift:swift_module_mapping_test.bzl",
     "swift_module_mapping_test",
 )
+load(
+    "//test/rules:action_command_line_test.bzl",
+    "make_action_command_line_test_rule",
+)
+
+module_file_test = make_action_command_line_test_rule(
+    config_settings = {
+        str(Label("//swift:module_mapping")): str(Label("//test/fixtures/module_mapping:MySDK_module_mapping")),
+        "//command_line_option:features": [
+            "-swift.use_explicit_swift_module_map",
+            "swift.split_derived_files_generation",
+        ],
+    },
+)
 
 def module_mapping_test_suite(name, tags = []):
     """Tests for Swift module aliases using the `:module_mapping` flag.
@@ -28,6 +42,24 @@ def module_mapping_test_suite(name, tags = []):
         tags: Additional tags to apply to each test.
     """
     all_tags = [name] + tags
+
+    # Use the physical module name when passing dependency files to both
+    # compilation actions, while preserving aliases used by source imports.
+    for suffix, mnemonic in [("compile", "SwiftCompile"), ("derive", "SwiftDeriveFiles")]:
+        module_file_test(
+            name = "{}_{}_module_file".format(name, suffix),
+            expected_argv = [
+                "-module-alias Common=MySDKInternal_Common",
+                "-Xfrontend -swift-module-file=MySDKInternal_Common=$(BIN_DIR)/test/fixtures/module_mapping/MySDKInternal_Common.swiftmodule",
+            ],
+            not_expected_argv = [
+                "-I$(BIN_DIR)/test/fixtures/module_mapping",
+                "-swift-module-file=Common",
+            ],
+            mnemonic = mnemonic,
+            tags = all_tags,
+            target_under_test = "//test/fixtures/module_mapping:MySDK",
+        )
 
     # Verify that a `swift_binary` builds properly when depending on a
     # `swift_import` target that references a `.swiftinterface` file.
