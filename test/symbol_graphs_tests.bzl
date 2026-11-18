@@ -23,10 +23,9 @@ ios_simulator_symbol_graph_test = make_action_command_line_test_rule(
         "//command_line_option:platforms": [
             str(Label("@apple_support//platforms:ios_sim_arm64")),
         ],
-        "//command_line_option:ios_sdk_version": "18.4",
         "//command_line_option:ios_minimum_os": "16.0",
-        "//command_line_option:macos_sdk_version": "15.3",
     },
+    sdk_platform = "ios_simulator",
     extra_target_under_test_aspects = [
         swift_symbol_graph_aspect,
     ],
@@ -124,7 +123,7 @@ def symbol_graphs_test_suite(name, tags = []):
         name = "{}_versioned_prebuilt_module_search_path".format(name),
         expected_argv = [
             "-I__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/" +
-            "usr/lib/swift/iphonesimulator/prebuilt-modules/18.4",
+            "usr/lib/swift/iphonesimulator/prebuilt-modules/$(SDK_VERSION)",
         ],
         mnemonic = "SwiftSymbolGraphExtract",
         tags = all_tags,

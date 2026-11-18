@@ -80,8 +80,16 @@ def _action_command_line_test_impl(ctx):
 
     concatenated_args = " ".join(action.argv) + " "
     bin_dir = analysistest.target_bin_dir_path(env)
+    sdk_version = None
+    if hasattr(ctx.attr, "_sdk_platform"):
+        xcode_config = ctx.attr._xcode_config[apple_common.XcodeVersionConfig]
+        sdk_version = str(xcode_config.sdk_version_for_platform(
+            getattr(apple_common.platform, ctx.attr._sdk_platform),
+        ))
     for expected in ctx.attr.expected_argv:
         expected = expected.replace("$(BIN_DIR)", bin_dir).replace("$(WORKSPACE_NAME)", ctx.workspace_name)
+        if sdk_version:
+            expected = expected.replace("$(SDK_VERSION)", sdk_version)
         if expected + " " not in concatenated_args and expected + "=" not in concatenated_args:
             unittest.fail(
                 env,
@@ -93,6 +101,8 @@ def _action_command_line_test_impl(ctx):
             )
     for not_expected in ctx.attr.not_expected_argv:
         not_expected = not_expected.replace("$(BIN_DIR)", bin_dir).replace("$(WORKSPACE_NAME)", ctx.workspace_name)
+        if sdk_version:
+            not_expected = not_expected.replace("$(SDK_VERSION)", sdk_version)
         if not_expected + " " in concatenated_args or not_expected + "=" in concatenated_args:
             unittest.fail(
                 env,
@@ -105,13 +115,15 @@ def _action_command_line_test_impl(ctx):
 
     return analysistest.end(env)
 
-def make_action_command_line_test_rule(config_settings = {}, extra_target_under_test_aspects = []):
+def make_action_command_line_test_rule(config_settings = {}, extra_target_under_test_aspects = [], sdk_platform = None):
     """Returns a new `action_command_line_test`-like rule with custom configs.
 
     Args:
         config_settings: A dictionary of configuration settings and their values
             that should be applied during tests.
         extra_target_under_test_aspects: Aspects whose actions should be inspected.
+        sdk_platform: Optional apple_common.platform field name whose SDK version
+            replaces $(SDK_VERSION) in expected and unexpected arguments.
 
     Returns:
         A rule returned by `analysistest.make` that has the
@@ -121,9 +133,19 @@ def make_action_command_line_test_rule(config_settings = {}, extra_target_under_
     if aspects:
         aspects.append(_aspect_action_retrieving_aspect)
 
+    sdk_attrs = {}
+    if sdk_platform:
+        sdk_attrs = {
+            "_sdk_platform": attr.string(default = sdk_platform),
+            "_xcode_config": attr.label(default = configuration_field(
+                fragment = "apple",
+                name = "xcode_config_label",
+            )),
+        }
+
     return analysistest.make(
         _action_command_line_test_impl,
-        attrs = {
+        attrs = sdk_attrs | {
             "expected_argv": attr.string_list(
                 mandatory = False,
                 doc = """\
@@ -148,6 +170,7 @@ space-delimited string.
 """,
             ),
         },
+        fragments = ["apple"] if sdk_platform else [],
         config_settings = config_settings,
         extra_target_under_test_aspects = aspects,
     )
