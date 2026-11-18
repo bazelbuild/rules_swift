@@ -46,7 +46,7 @@ def _vendored_xcode_tags_by_version(vendored_xcode_tags):
 
 def _default_xcode_path(module_ctx):
     result = module_ctx.execute(
-        ["xcode-select", "-p"],
+        ["/usr/bin/xcode-select", "-p"],
         environment = {"DEVELOPER_DIR": module_ctx.os.environ.get("DEVELOPER_DIR", "")},
     )
     output = result.stdout.strip()

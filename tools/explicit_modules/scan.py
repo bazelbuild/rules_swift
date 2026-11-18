@@ -153,7 +153,7 @@ def _get_full_xcode_version(developer_dir: Path) -> str:
     env = dict(os.environ)
     env["DEVELOPER_DIR"] = developer_dir.as_posix()
     output = subprocess.check_output(
-        ["xcodebuild", "-version"],
+        ["/usr/bin/xcodebuild", "-version"],
         env=env,
         text=True,
     )
@@ -709,7 +709,7 @@ def _scan(
         )
         cmd = (
             [
-                "xcrun",
+                "/usr/bin/xcrun",
                 "swiftc",
                 "-scan-dependencies",
                 str(stub),
@@ -759,7 +759,7 @@ def _resolve_sdk_path(*, developer_dir: Path, sdk: str) -> Path:
     env["DEVELOPER_DIR"] = developer_dir.as_posix()
     try:
         output = subprocess.check_output(
-            ["xcrun", "--sdk", sdk.lower(), "--show-sdk-path"],
+            ["/usr/bin/xcrun", "--sdk", sdk.lower(), "--show-sdk-path"],
             env=env,
             text=True,
             stderr=subprocess.PIPE,
