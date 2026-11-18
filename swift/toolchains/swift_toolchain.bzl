@@ -270,7 +270,9 @@ def _all_action_configs(
                     SWIFT_ACTION_PRECOMPILE_C_MODULE,
                     SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
                 ],
-                configurators = [add_arg("-sdk", sdkroot)],
+                configurators = [
+                    add_arg("-Xwrapped-swift=-sdk=" + sdkroot) if os == "windows" else add_arg("-sdk", sdkroot),
+                ],
             ),
         )
 
