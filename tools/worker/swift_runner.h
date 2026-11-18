@@ -59,6 +59,10 @@ extern bool ArgumentEnablesWMO(const std::string& arg);
 //     execution root, to work around
 //     https://github.com/swiftlang/swift/pull/92879
 //
+// -Xwrapped-swift=-sdk=<path>
+//     Passes the SDK root as an absolute path, resolved against the execution
+//     root, after applying placeholder substitutions.
+//
 // -Xwrapped-swift=-ephemeral-module-cache
 //     When specified, the spawner will create a new temporary directory, pass
 //     that to the Swift compiler using `-module-cache-path`, and then delete

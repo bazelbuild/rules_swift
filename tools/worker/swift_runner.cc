@@ -694,6 +694,13 @@ bool SwiftRunner::ProcessArgument(
       consumer(std::filesystem::absolute(resource_dir).string());
       return true;
     }
+    if (absl::ConsumePrefix(&wrapped_arg, "-sdk=")) {
+      std::string sdk(wrapped_arg);
+      bazel_placeholder_substitutions_.Apply(sdk);
+      consumer("-sdk");
+      consumer(std::filesystem::absolute(sdk).string());
+      return true;
+    }
     if (absl::ConsumePrefix(&wrapped_arg, "-macro-expansion-dir=")) {
       std::string macro_expansion_dir(wrapped_arg);
       std::filesystem::create_directories(macro_expansion_dir);
