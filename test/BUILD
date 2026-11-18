@@ -41,6 +41,7 @@ load(":swift_through_non_swift_tests.bzl", "swift_through_non_swift_test_suite")
 load(":swift_toolchain_tests.bzl", "swift_toolchain_test_suite")
 load(":symbol_graphs_tests.bzl", "symbol_graphs_test_suite")
 load(":synthesize_interface_tests.bzl", "synthesize_interface_test_suite")
+load(":target_triples_tests.bzl", "target_triples_test_suite")
 load(":tree_artifact_tests.bzl", "tree_artifact_test_suite")
 load(":utils_tests.bzl", "utils_test_suite")
 load(":warnings_as_errors_tests.bzl", "warnings_as_errors_test_suite")
@@ -149,6 +150,8 @@ pch_output_dir_test_suite(name = "pch_output_dir_settings")
 precompiled_modules_test_suite(name = "precompiled_modules")
 
 private_swiftinterface_test_suite(name = "private_swiftinterface")
+
+target_triples_test_suite(name = "target_triples")
 
 tree_artifact_test_suite(name = "tree_artifact")
 
