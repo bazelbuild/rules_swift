@@ -25,8 +25,29 @@ def _normalize_windows_vendor_test(ctx):
 
 normalize_windows_vendor_test = unittest.make(_normalize_windows_vendor_test)
 
+def _normalize_android_arm_test(ctx):
+    env = unittest.begin(ctx)
+
+    for triple, expected in (
+        ("arm-unknown-linux-android21", "armv7-unknown-linux-android21"),
+        ("arm-linux-androideabi", "armv7-linux-androideabi"),
+        ("armv7a-unknown-linux-androideabi21", "armv7a-unknown-linux-androideabi21"),
+        ("aarch64-unknown-linux-android28", "aarch64-unknown-linux-android28"),
+        ("arm-unknown-linux-gnueabihf", "arm-unknown-linux-gnueabihf"),
+    ):
+        asserts.equals(
+            env,
+            expected,
+            target_triples.str(target_triples.normalize_for_swift(target_triples.parse(triple))),
+        )
+
+    return unittest.end(env)
+
+normalize_android_arm_test = unittest.make(_normalize_android_arm_test)
+
 def target_triples_test_suite(name):
     return unittest.suite(
         name,
         normalize_windows_vendor_test,
+        normalize_android_arm_test,
     )

@@ -142,6 +142,17 @@ def _normalize_for_swift(triple, *, unversioned = False):
             environment = triple.environment,
         )
 
+    # The NDK calls 32-bit ARM `arm`, but Swift's Android SDK keeps its modules
+    # under `armv7` (Android's lowest ARM target), which Swift only picks for an
+    # `armv7` triple.
+    if triple.cpu == "arm" and (triple.environment or triple.os).startswith("android"):
+        return _make(
+            cpu = "armv7",
+            vendor = triple.vendor,
+            os = triple.os,
+            environment = triple.environment,
+        )
+
     return triple
 
 def _parse(triple_string):
