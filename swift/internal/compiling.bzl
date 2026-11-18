@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
+    "SWIFT_FEATURE_LTO_THIN",
     "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
@@ -746,12 +747,49 @@ def compile(
         ),
     )
 
+    if (
+        compile_outputs.object_files and
+        are_all_features_enabled(
+            feature_configuration = feature_configuration,
+            feature_names = [SWIFT_FEATURE_LTO_THIN, "thin_lto"],
+        )
+    ):
+        # Register Swift's ThinLTO bitcode objects in `LtoCompilationContext`
+        # so Bazel's distributed ThinLTO pipeline creates `CppLTOIndexing` and
+        # `CcLtoBackendCompile` actions for them. We create distinct
+        # `.pic.<ext>` symlinks for `pic_objects` so `rules_cc`'s
+        # `create_shared_non_lto_artifacts` doesn't collide on
+        # `shared.nonlto/<obj>` when archiving both non-PIC and PIC static
+        # libraries.
+        pic_objects = []
+        lto_objects = {}
+        for obj in compile_outputs.object_files:
+            base, ext = paths.split_extension(obj.basename)
+            pic_obj = actions.declare_file(
+                "{}.pic{}".format(base, ext),
+                sibling = obj,
+            )
+            actions.symlink(output = pic_obj, target_file = obj)
+            pic_objects.append(pic_obj)
+            lto_objects[obj] = (None, [])
+            lto_objects[pic_obj] = (None, [])
+
+        swift_compilation_outputs = cc_common.create_compilation_outputs(
+            objects = depset(compile_outputs.object_files),
+            pic_objects = depset(pic_objects),
+            lto_compilation_context = cc_common.create_lto_compilation_context(
+                objects = lto_objects,
+            ),
+        )
+    else:
+        swift_compilation_outputs = cc_common.create_compilation_outputs(
+            objects = depset(compile_outputs.object_files),
+            pic_objects = depset(compile_outputs.object_files),
+        )
+
     compilation_outputs = cc_common.merge_compilation_outputs(
         compilation_outputs = [
-            cc_common.create_compilation_outputs(
-                objects = depset(compile_outputs.object_files),
-                pic_objects = depset(compile_outputs.object_files),
-            ),
+            swift_compilation_outputs,
             c_compilation_outputs,
         ],
     )
