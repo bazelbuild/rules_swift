@@ -302,8 +302,7 @@ Swift toolchain.
     version_file, parsed_version = _write_swift_version(repository_ctx, path_to_swiftc)
 
     # Normalize SDKROOT to forward slashes with no trailing separator: the raw
-    # environment value typically ends in a backslash, which is both invalid at
-    # the end of a Python raw-string literal (used below) and produces doubled
+    # environment value typically ends in a backslash, which produces doubled
     # separators when joined.
     sdkroot = repository_ctx.os.environ["SDKROOT"].replace("\\", "/").rstrip("/")
 
@@ -312,12 +311,16 @@ Swift toolchain.
     if not python_bin:
         fail("Could not find a working Python 3 interpreter on PATH; it is " +
              "required to read the XCTest version from the Swift SDK's Info.plist.")
-    xctest_version = repository_ctx.execute([
+    plist_result = repository_ctx.execute([
         python_bin,
         "-c",
-        "import plistlib; " +
-        "print(plistlib.load(open(r'{}', 'rb'))['DefaultProperties']['XCTEST_VERSION'])".format(info_plist),
+        "import json, plistlib, sys; " +
+        "print(json.dumps(plistlib.load(open(sys.argv[1], 'rb'))))",
+        info_plist,
     ])
+    if plist_result.return_code != 0:
+        fail("Could not read Swift SDK Info.plist: " + plist_result.stderr)
+    default_properties = json.decode(plist_result.stdout)["DefaultProperties"]
 
     env = {
         "Path": repository_ctx.os.environ["Path"] if "Path" in repository_ctx.os.environ else repository_ctx.os.environ["PATH"],
@@ -337,6 +340,7 @@ swift_toolchain(
   sdkroot = "{sdkroot}",
   tool_executable_suffix = ".exe",
   xctest_version = "{xctest_version}",
+  swift_testing_version = "{swift_testing_version}",
 )
 """.format(
         arch = arch,
@@ -345,7 +349,8 @@ swift_toolchain(
         env = env,
         parsed_version = parsed_version,
         sdkroot = sdkroot,
-        xctest_version = xctest_version.stdout.rstrip(),
+        xctest_version = default_properties["XCTEST_VERSION"],
+        swift_testing_version = default_properties.get("SWIFT_TESTING_VERSION", ""),
         version_file = version_file,
     )
 

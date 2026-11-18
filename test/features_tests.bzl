@@ -229,9 +229,10 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-emit-object",
-            "-I$(BIN_DIR)/test/fixtures/basic",
+            "-Xfrontend -swift-module-file=first=$(BIN_DIR)/test/fixtures/basic/first.swiftmodule",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
+        not_expected_argv = ["-I$(BIN_DIR)/test/fixtures/basic"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",
     )
@@ -241,9 +242,10 @@ def features_test_suite(name, tags = []):
         tags = all_tags,
         expected_argv = [
             "-emit-object",
-            "-I$(BIN_DIR)/test/fixtures/basic/first",
+            "-Xfrontend -swift-module-file=first=$(BIN_DIR)/test/fixtures/basic/first/first.swiftmodule",
             "-Xwrapped-swift=-file-prefix-pwd-is-dot",
         ],
+        not_expected_argv = ["-I$(BIN_DIR)/test/fixtures/basic/first"],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",
     )
@@ -355,6 +357,7 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic",
+            "-swift-module-file",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",
@@ -502,6 +505,7 @@ def features_test_suite(name, tags = []):
         ],
         not_expected_argv = [
             "-I$(BIN_DIR)/test/fixtures/basic/second",
+            "-swift-module-file",
         ],
         mnemonic = "SwiftCompile",
         target_under_test = "//test/fixtures/basic:second",
