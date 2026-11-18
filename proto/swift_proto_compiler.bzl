@@ -214,6 +214,7 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
         arguments = [arguments],
         tools = [swift_proto_compiler_info.internal.plugin],
         env = swift_proto_compiler_info.internal.env,
+        use_default_shell_env = True,
     )
 
     # Expand the copy Swift sources template:
