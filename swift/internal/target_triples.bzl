@@ -134,6 +134,13 @@ def _normalize_for_swift(triple, *, unversioned = False):
             os = os,
             environment = environment,
         )
+    if os == "windows":
+        return _make(
+            cpu = triple.cpu,
+            vendor = "unknown",
+            os = os,
+            environment = triple.environment,
+        )
 
     return triple
 
