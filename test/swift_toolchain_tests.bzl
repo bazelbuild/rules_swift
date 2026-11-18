@@ -12,6 +12,12 @@ toolchain_macos_arm64_with_sdkroot_test = make_action_command_line_test_rule(
     },
 )
 
+toolchain_windows_x86_64_with_sdkroot_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:extra_toolchains": ["//test/fixtures/toolchains:toolchain_windows_x86_64_with_sdkroot"],
+    },
+)
+
 def swift_toolchain_test_suite(name, tags = []):
     """Test suite for swift_toolchain's provider.
 
@@ -26,6 +32,16 @@ def swift_toolchain_test_suite(name, tags = []):
         name = "{}_with_sdkroot".format(name),
         expected_argv = ["-target", "-sdk", "testpath"],
         mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/basic:first",
+    )
+
+    # On Windows the SDK path goes through the worker, which makes it absolute
+    toolchain_windows_x86_64_with_sdkroot_test(
+        name = "{}_windows_with_sdkroot".format(name),
+        expected_argv = ["-Xwrapped-swift=-sdk=testpath"],
+        mnemonic = "SwiftCompile",
+        not_expected_argv = ["-sdk testpath"],
         tags = all_tags,
         target_under_test = "//test/fixtures/basic:first",
     )
