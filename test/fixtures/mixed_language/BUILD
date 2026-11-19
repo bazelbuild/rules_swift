@@ -34,6 +34,18 @@ mixed_language_library(
     deps = [":TestOnlyDep"],
 )
 
+mixed_language_library(
+    name = "MixedLibraryWithCommonAttrs",
+    hdrs = ["MixedLibrary.h"],
+    clang_srcs = ["MixedLibrary.m"],
+    deprecation = "Used only to test attribute forwarding.",
+    exec_compatible_with = ["@platforms//os:macos"],
+    module_name = "MixedLibraryWithCommonAttrs",
+    swift_srcs = ["MixedLibrary.swift"],
+    tags = FIXTURE_TAGS,
+    target_compatible_with = ["@platforms//os:macos"],
+)
+
 strict_include_module(
     name = "StrictTransitive",
     strict_includes = ["strict/transitive"],

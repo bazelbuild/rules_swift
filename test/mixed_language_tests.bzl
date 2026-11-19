@@ -85,6 +85,50 @@ mixed_language_module_label_test = analysistest.make(
     _mixed_language_module_label_test_impl,
 )
 
+_ForwardedAttrsInfo = provider(
+    doc = "Common attributes that `mixed_language_library` forwards.",
+    fields = ["deprecation", "exec_compatible_with", "target_compatible_with"],
+)
+
+def _forwarded_attrs_aspect_impl(_target, ctx):
+    return [_ForwardedAttrsInfo(
+        deprecation = ctx.rule.attr.deprecation,
+        exec_compatible_with = [
+            dep.label
+            for dep in ctx.rule.attr.exec_compatible_with
+        ],
+        target_compatible_with = [
+            dep.label
+            for dep in ctx.rule.attr.target_compatible_with
+        ],
+    )]
+
+# An incompatible target skips the test instead of failing it, so read the
+# attributes.
+_forwarded_attrs_aspect = aspect(
+    implementation = _forwarded_attrs_aspect_impl,
+)
+
+def _mixed_language_forwarded_attrs_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    info = analysistest.target_under_test(env)[_ForwardedAttrsInfo]
+    constraint = ctx.attr.expected_constraint.label
+
+    asserts.equals(env, ctx.attr.expected_deprecation, info.deprecation)
+    asserts.equals(env, [constraint], info.exec_compatible_with)
+    asserts.equals(env, [constraint], info.target_compatible_with)
+
+    return analysistest.end(env)
+
+mixed_language_forwarded_attrs_test = analysistest.make(
+    _mixed_language_forwarded_attrs_test_impl,
+    attrs = {
+        "expected_constraint": attr.label(mandatory = True),
+        "expected_deprecation": attr.string(mandatory = True),
+    },
+    extra_target_under_test_aspects = [_forwarded_attrs_aspect],
+)
+
 def mixed_language_test_suite(name, tags = []):
     """Test suite for mixed-language library behavior.
 
@@ -116,6 +160,15 @@ def mixed_language_test_suite(name, tags = []):
         name = "{}_module_label_test".format(name),
         target_under_test = "//test/fixtures/mixed_language:MixedLibraryWithTestOnlyDeps",
         tags = all_tags,
+    )
+
+    mixed_language_forwarded_attrs_test(
+        name = "{}_forwarded_attrs_test".format(name),
+        expected_constraint = "@platforms//os:macos",
+        expected_deprecation = "Used only to test attribute forwarding.",
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "//test/fixtures/mixed_language:MixedLibraryWithCommonAttrs",
     )
 
     _explicit_command_line_test(
