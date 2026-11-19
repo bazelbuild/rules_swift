@@ -45,8 +45,6 @@ static const char kBazelXcodeSdkRoot[] = "__BAZEL_XCODE_SDKROOT__";
 // etc...
 static const char kBazelSwiftToolchainPath[] = "__BAZEL_SWIFT_TOOLCHAIN_PATH__";
 
-// Returns the value of the given environment variable, or the empty string if
-// it wasn't set.
 std::string GetAppleEnvironmentVariable(const char* name) {
   char* env_value = getenv(name);
   if (env_value == nullptr) {
@@ -55,7 +53,9 @@ std::string GetAppleEnvironmentVariable(const char* name) {
         << "' was not set. Please file an issue on bazelbuild/rules_swift.\n";
     exit(EXIT_FAILURE);
   }
-  return env_value;
+  std::error_code ec;
+  auto canonical_path = std::filesystem::canonical(env_value, ec);
+  return ec ? std::string(env_value) : canonical_path.string();
 }
 
 std::string GetToolchainPath() {

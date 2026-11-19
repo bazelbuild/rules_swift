@@ -67,8 +67,17 @@ bool EnsureDirectorySymlink(const std::filesystem::path& link,
   if (ec == std::errc::file_exists) {
     std::error_code read_ec;
     auto existing = std::filesystem::read_symlink(link, read_ec);
-    if (!read_ec && existing == target) {
-      return true;
+    if (!read_ec) {
+      if (existing == target) {
+        return true;
+      }
+      auto requested_target =
+          target.is_absolute() ? target : link.parent_path() / target;
+      std::error_code equivalent_ec;
+      if (std::filesystem::equivalent(link, requested_target, equivalent_ec) &&
+          !equivalent_ec) {
+        return true;
+      }
     }
     std::cerr << "error: symlink " << link << " already exists but points to '"
               << (read_ec ? std::string("<unreadable>") : existing.string())
@@ -86,16 +95,6 @@ bool EnsureDeveloperDirSymlink(const std::string& developer_dir) {
       std::filesystem::current_path() / DeveloperDirSymlinkName();
   std::filesystem::path developer_path = NormalizeDeveloperDir(developer_dir);
   return EnsureDirectorySymlink(link, developer_path);
-}
-
-void EnsureDeveloperDirSymlinkFromEnv() {
-  const char* developer_dir = std::getenv("DEVELOPER_DIR");
-  if (developer_dir == nullptr || developer_dir[0] == '\0') {
-    return;
-  }
-  if (!EnsureDeveloperDirSymlink(developer_dir)) {
-    std::exit(EXIT_FAILURE);
-  }
 }
 
 }  // namespace bazel_rules_swift

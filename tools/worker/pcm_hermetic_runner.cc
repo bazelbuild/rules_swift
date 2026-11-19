@@ -150,12 +150,12 @@ std::string ResourceDirFromFrontend(const std::string& frontend_binary) {
 int RunHermeticPcm(const std::vector<std::string>& args,
                    std::map<std::string, std::string>* env,
                    std::ostream* stderr_stream) {
-  std::string developer_dir = GetEnv("DEVELOPER_DIR");
-  if (developer_dir.empty()) {
+  auto developer_dir_it = env->find("DEVELOPER_DIR");
+  if (developer_dir_it == env->end() || developer_dir_it->second.empty()) {
     (*stderr_stream) << "error: hermetic-pcm: DEVELOPER_DIR is not set\n";
     return 1;
   }
-  developer_dir = bazel_rules_swift::NormalizeDeveloperDir(developer_dir);
+  const std::string& developer_dir = developer_dir_it->second;
 
   std::string captured;
   int rc = CaptureFrontendCommand(args, env, stderr_stream, &captured);
@@ -181,7 +181,9 @@ int RunHermeticPcm(const std::vector<std::string>& args,
                      << "'\n";
     return 1;
   }
-  bazel_rules_swift::EnsureDeveloperDirSymlinkFromEnv();
+  if (!bazel_rules_swift::EnsureDeveloperDirSymlink(developer_dir)) {
+    return 1;
+  }
 
   std::string developer_dir_symlink_name =
       bazel_rules_swift::DeveloperDirSymlinkName();

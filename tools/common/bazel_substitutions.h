@@ -23,7 +23,10 @@ namespace bazel_rules_swift {
 
 // Manages the substitution of special Bazel placeholder strings in command line
 // arguments that are used to defer the determination of Apple developer and SDK
-// paths until execution time.
+// paths until execution time. Symlinks in `DEVELOPER_DIR` and `SDKROOT` are
+// resolved when the path exists on disk so that compiler command lines, prefix
+// maps, and precompiled modules use canonical paths matching those resolved
+// internally by `swift-driver` and Clang.
 class BazelPlaceholderSubstitutions {
  public:
   // Initializes the substitutions by looking them up in the process's
