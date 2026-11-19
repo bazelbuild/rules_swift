@@ -14,12 +14,27 @@
 
 """Tests for synthesizing Swift interfaces for modules."""
 
+load("//swift:swift_synthesize_interface_aspect.bzl", "swift_synthesize_interface_aspect")
+load("//test/rules:action_command_line_test.bzl", "make_action_command_line_test_rule")
 load(
     "//test/rules:provider_test.bzl",
     "provider_test",
 )
 
 visibility("private")
+
+ios_simulator_synthesize_interface_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": [
+            str(Label("@apple_support//platforms:ios_sim_arm64")),
+        ],
+        "//command_line_option:ios_minimum_os": "16.0",
+    },
+    sdk_platform = "ios_simulator",
+    extra_target_under_test_aspects = [
+        swift_synthesize_interface_aspect,
+    ],
+)
 
 def synthesize_interface_test_suite(name, tags = []):
     """Test suite for synthesizing Swift interfaces for modules.
@@ -42,6 +57,23 @@ def synthesize_interface_test_suite(name, tags = []):
         provider = "DefaultInfo",
         tags = all_tags,
         target_under_test = "//test/fixtures/synthesize_interface:synthesized_interface",
+    )
+
+    # Verify that interface synthesis receives the versioned prebuilt module
+    # search path to avoid recompiling SDK interfaces.
+    ios_simulator_synthesize_interface_test(
+        name = "{}_versioned_prebuilt_module_search_path".format(name),
+        expected_argv = [
+            "-I__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/" +
+            "usr/lib/swift/iphonesimulator/prebuilt-modules/$(SDK_VERSION)",
+        ],
+        mnemonic = "SwiftSynthesizeInterface",
+        tags = all_tags,
+        target_compatible_with = select({
+            "//test:apple_build_tests_enabled": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        target_under_test = "//test/fixtures/synthesize_interface:c_module",
     )
 
     native.test_suite(
