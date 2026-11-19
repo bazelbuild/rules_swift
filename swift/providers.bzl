@@ -599,6 +599,7 @@ def create_swift_module_inputs(
     Returns:
         A `struct` containing the values provided as arguments.
     """
+
     return struct(
         defines = defines,
         package_swiftinterface = package_swiftinterface,
