@@ -183,7 +183,7 @@ def android_sdk_toolchains_for_platform(platform, sdk_repository):
         )
     return content
 
-def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
+def wasm_sdk_toolchains_for_platform(platform, sdk_repository, threads = None):
     """Returns `toolchain` declarations for a WebAssembly Swift SDK.
 
     Args:
@@ -191,19 +191,31 @@ def wasm_sdk_toolchains_for_platform(platform, sdk_repository):
             standalone toolchain the SDK is paired with.
         sdk_repository: The name of the repository created by
             `swift_wasm_sdk_repository`.
+        threads: `None` if this is the module's only WebAssembly SDK;
+            otherwise whether it is the threads SDK, whose toolchains are
+            named `*_wasm32_threads_*` and require
+            `@rules_swift//swift/toolchains/wasm:threaded` (the other's
+            require `:single_threaded`).
 
     Returns:
         BUILD file content declaring the Swift and C++ toolchains.
     """
+    target_compatible_with = [
+        "@platforms//os:wasi",
+        "@platforms//cpu:wasm32",
+    ]
+    target = "wasm32"
+    if threads == True:
+        target = "wasm32_threads"
+        target_compatible_with.append("@rules_swift//swift/toolchains/wasm:threaded")
+    elif threads == False:
+        target_compatible_with.append("@rules_swift//swift/toolchains/wasm:single_threaded")
     return _WASM_SDK_TOOLCHAIN_PLATFORM.format(
         exec_compatible_with = _exec_compatible_with_for_platform(platform),
         platform = platform,
         sdk_repository = sdk_repository,
-        target = "wasm32",
-        target_compatible_with = [
-            "@platforms//os:wasi",
-            "@platforms//cpu:wasm32",
-        ],
+        target = target,
+        target_compatible_with = target_compatible_with,
         target_suffix = "wasm32",
     )
 

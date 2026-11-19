@@ -14,6 +14,16 @@ load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
 # buildifier: disable=bzl-visibility
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
 
+# buildifier: disable=bzl-visibility
+load(
+    "//swift/internal/extensions:swift_sdks.bzl",
+    "linker_options_to_clang_args",
+    "merged_toolset_options",
+)
+
+# buildifier: disable=bzl-visibility
+load("//swift/internal/extensions:toolchains.bzl", "wasm_sdk_toolchains_for_platform")
+
 def _include_developer_search_paths_test(ctx):
     env = unittest.begin(ctx)
 
@@ -193,6 +203,121 @@ def _swift_sdk_download_url_test(ctx):
 
 swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 
+def _merged_toolset_options_test(ctx):
+    env = unittest.begin(ctx)
+
+    merged = merged_toolset_options(
+        [
+            {
+                "rootPath": "swift.xctoolchain/usr/bin",
+                "schemaVersion": "1.0",
+                "swiftCompiler": {
+                    "extraCLIOptions": ["-static-stdlib"],
+                },
+            },
+        ],
+        "test",
+    )
+    asserts.equals(env, [], merged.c_compiler)
+    asserts.equals(env, [], merged.cxx_compiler)
+    asserts.equals(env, [], merged.linker)
+    asserts.equals(env, ["-static-stdlib"], merged.swift_compiler)
+
+    merged = merged_toolset_options(
+        [
+            {
+                "cCompiler": {
+                    "extraCLIOptions": ["-matomics", "-mbulk-memory"],
+                },
+                "cxxCompiler": {
+                    "extraCLIOptions": ["-matomics", "-mbulk-memory"],
+                },
+                "linker": {
+                    "extraCLIOptions": ["--import-memory"],
+                },
+            },
+            {
+                "cCompiler": {
+                    "extraCLIOptions": ["-pthread"],
+                },
+                "linker": {
+                    "extraCLIOptions": ["--shared-memory"],
+                },
+                "swiftCompiler": {
+                    "extraCLIOptions": ["-static-stdlib"],
+                },
+            },
+        ],
+        "test",
+    )
+    asserts.equals(
+        env,
+        ["-matomics", "-mbulk-memory", "-pthread"],
+        merged.c_compiler,
+    )
+    asserts.equals(env, ["-matomics", "-mbulk-memory"], merged.cxx_compiler)
+    asserts.equals(env, ["--import-memory", "--shared-memory"], merged.linker)
+    asserts.equals(env, ["-static-stdlib"], merged.swift_compiler)
+
+    return unittest.end(env)
+
+merged_toolset_options_test = unittest.make(_merged_toolset_options_test)
+
+def _linker_options_to_clang_args_test(ctx):
+    env = unittest.begin(ctx)
+
+    asserts.equals(
+        env,
+        [
+            "-Wl,--import-memory",
+            "-Wl,--shared-memory",
+            "-Wl,--max-memory=1073741824",
+        ],
+        linker_options_to_clang_args(
+            ["--import-memory", "--shared-memory", "--max-memory=1073741824"],
+            "test",
+        ),
+    )
+
+    return unittest.end(env)
+
+linker_options_to_clang_args_test = unittest.make(_linker_options_to_clang_args_test)
+
+def _wasm_sdk_toolchains_for_platform_test(ctx):
+    env = unittest.begin(ctx)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_sdk_xcode",
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_xcode"' in content)
+    asserts.true(env, 'name = "cc_toolchain_wasm32_xcode"' in content)
+    asserts.false(env, "swift/toolchains/wasm:" in content)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_sdk_xcode",
+        threads = False,
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_xcode"' in content)
+    asserts.true(env, "@rules_swift//swift/toolchains/wasm:single_threaded" in content)
+    asserts.false(env, "@rules_swift//swift/toolchains/wasm:threaded" in content)
+
+    content = wasm_sdk_toolchains_for_platform(
+        platform = "xcode",
+        sdk_repository = "swift_toolchain_wasm_threads_sdk_xcode",
+        threads = True,
+    )
+    asserts.true(env, 'name = "swift_toolchain_wasm32_threads_xcode"' in content)
+    asserts.true(env, 'name = "cc_toolchain_wasm32_threads_xcode"' in content)
+    asserts.true(env, "@swift_toolchain_wasm_threads_sdk_xcode//:swift_toolchain_wasm32" in content)
+    asserts.true(env, "@rules_swift//swift/toolchains/wasm:threaded" in content)
+    asserts.false(env, "@rules_swift//swift/toolchains/wasm:single_threaded" in content)
+
+    return unittest.end(env)
+
+wasm_sdk_toolchains_for_platform_test = unittest.make(_wasm_sdk_toolchains_for_platform_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
@@ -200,4 +325,7 @@ def utils_test_suite(name):
         include_developer_search_paths_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
+        merged_toolset_options_test,
+        linker_options_to_clang_args_test,
+        wasm_sdk_toolchains_for_platform_test,
     )
