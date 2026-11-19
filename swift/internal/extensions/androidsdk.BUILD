@@ -14,7 +14,10 @@ _RESOURCE_DIRS = {
 
 filegroup(
     name = "sdk_files",
-    srcs = glob(["{bundle_dir}/**"]),
+    srcs = glob([
+        "{bundle_dir}/**",
+        "cxx/**",
+    ]),
 )
 
 swift_tools(
@@ -34,8 +37,6 @@ swift_tools(
         arch = arch,
         copts = [
             "-Xwrapped-swift=-resource-dir=" + _RESOURCE_DIRS[arch],
-            "-Xcc",
-            "-I{clang_builtin_headers}",
         ],
         features = [
             "swift.lld_gc_workaround",
@@ -51,6 +52,10 @@ swift_tools(
         linkopts = [
             _RESOURCE_DIRS[arch] + "/android/" + arch + "/swiftrt.o",
             "-L" + _RESOURCE_DIRS[arch] + "/android",
+            # C++ interop's archives (swiftCxx, swiftCxxStdlib) ship beside
+            # the shared runtime, searched after the static one.
+            "-L{lib_dir}/swift-" + arch + "/android",
+            "-L{cxx_dir}",
             "-llog",
             "-lswiftCore",
             # Swift Concurrency's global executor lives on libdispatch, but the
