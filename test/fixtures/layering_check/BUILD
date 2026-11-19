@@ -65,3 +65,14 @@ swift_library(
     tags = ["manual"],
     deps = [":dep"],
 )
+
+swift_binary(
+    name = "bin_single",
+    srcs = ["main.swift"],
+    features = [
+        "-swift.compile_in_parallel",
+        "swift.layering_check_swift",
+    ],
+    tags = ["manual"],
+    deps = [":dep"],
+)

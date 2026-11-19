@@ -200,10 +200,19 @@ def compile_action_configs(
             configurators = [_emit_objc_header_path_configurator],
         ),
 
-        # Emit the list of imported modules for layering checks.
+        # Emit the list of imported modules for layering checks. In
+        # single-action mode (`SwiftCompile`), layering checks always run on
+        # that action even if `swift._layering_check_on_codegen` is enabled,
+        # since there is no separate `SwiftCompileCodegen` action.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_COMPILE,
+            ],
+            configurators = [_swift_layering_check_configurator],
+            features = [SWIFT_FEATURE_LAYERING_CHECK_SWIFT],
+        ),
+        ActionConfigInfo(
+            actions = [
                 SWIFT_ACTION_COMPILE_MODULE,
             ],
             configurators = [_swift_layering_check_configurator],

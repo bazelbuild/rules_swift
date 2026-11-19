@@ -213,6 +213,25 @@ def layering_check_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/layering_check:lib_single",
     )
 
+    # Verify that `swift_binary` (which automatically enables
+    # `swift._layering_check_on_codegen`) still places the
+    # `.deps-module-mapping` flag and input on `SwiftCompile` when compiling in
+    # single-action mode (for example, when `-swift.compile_in_parallel` is set,
+    # in Embedded Swift, or under WMO+CMO).
+    action_command_line_test(
+        name = "{}_bin_single_has_layering_check".format(name),
+        expected_argv = [
+            "bin_single.deps-module-mapping",
+        ],
+        expected_inputs = [
+            "*",
+            "bin_single.deps-module-mapping",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/layering_check:bin_single",
+    )
+
     deps_module_mapping_test(
         name = "{}_lib_parallel_deps_module_mapping_contains_direct_deps".format(name),
         expected_modules = [
