@@ -505,9 +505,18 @@ def compile_action_configs(
 
         # Pass `-F` for the framework modules of dependencies before the
         # developer framework paths, so that a dependency's module takes
-        # precedence over a developer framework with the same name. Keep this
-        # before `_non_pcm_developer_framework_paths_configurator`. These tools
-        # don't support explicit Swift module maps.
+        # precedence over a developer framework with the same name. Keep these
+        # before `_non_pcm_developer_framework_paths_configurator`.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [_dependencies_framework_modules_configurator],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+
+        # These tools don't support explicit Swift module maps.
         ActionConfigInfo(
             actions = [
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -2277,6 +2286,11 @@ def _swift_module_file_map_fn(module):
     if module.is_system or not module.swift or type(module.swift.swiftmodule) != "File":
         return None
 
+    # The compiler emits a `-framework` autolink entry only for a module that
+    # it finds through `-F`, so framework modules must not use this flag.
+    if _swift_framework_search_path_map_fn(module):
+        return None
+
     if not module.swift.swiftmodule.is_directory:
         return "-swift-module-file={}={}".format(
             module.name,
@@ -2325,7 +2339,7 @@ def _swift_module_search_path_map_fn(module):
     if module.is_system:
         return None
 
-    if module.swift:
+    if module.swift and not _swift_framework_search_path_map_fn(module):
         swiftmodule = module.swift.swiftmodule
         if type(swiftmodule) == "File":
             search_path = swiftmodule.dirname

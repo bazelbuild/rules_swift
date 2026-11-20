@@ -173,11 +173,10 @@ target.
                 default = False,
                 doc = """\
 Whether the module is an Apple framework module. If `True`, the interface
-compiles into a `<module_name>.framework` directory, and the explicit Swift
-module map marks the module as a framework. The compiler then emits a
-`-framework` autolink entry for the module. This needs the
-`swift.use_explicit_swift_module_map` feature. The linker must find the
-framework binary elsewhere, for example in the SDK. Requires `swiftinterface`.
+compiles into a `<module_name>.framework` directory, and dependents find the
+module through a framework search path. The compiler then emits a `-framework`
+autolink entry for the module. The linker must find the framework binary
+elsewhere, for example in the SDK. Requires `swiftinterface`.
 """,
             ),
             "module_name": attr.string(

@@ -215,7 +215,37 @@ def module_interface_test_suite(name, tags = []):
         target_compatible_with = ["@platforms//os:macos"],
     )
 
-    # Explicit module builds read `isFramework` from the module map, not `-F`.
+    macos_arm64_command_line_test(
+        name = "{}_framework_module_dependent_search_path".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-F$(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs/ToyModule.framework/Modules",
+            "-swift-module-file=ToyModule",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:dependent_framework_toy_module",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    macos_arm64_command_line_test(
+        name = "{}_framework_module_swift_library_search_path".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-F$(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs",
+        ],
+        not_expected_argv = [
+            "-I$(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs/ToyModule.framework/Modules",
+            "-swift-module-file=ToyModule",
+        ],
+        mnemonic = "SwiftCompile",
+        target_under_test = "//test/fixtures/module_interface:framework_client",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    # Explicit module builds read `isFramework` from the module map instead.
     explicit_swift_module_map_test(
         name = "{}_framework_module_explicit_module_map_search_path".format(name),
         tags = all_tags,
