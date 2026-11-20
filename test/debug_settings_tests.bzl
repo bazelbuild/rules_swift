@@ -79,6 +79,13 @@ OPT_EMBED_MODULE_CONFIG_SETTINGS = {
     ],
 }
 
+OPT_FULL_DI_CONFIG_SETTINGS = {
+    "//command_line_option:compilation_mode": "opt",
+    "//command_line_option:features": [
+        "swift.full_debug_info",
+    ],
+}
+
 dbg_action_command_line_test = make_action_command_line_test_rule(
     config_settings = DBG_CONFIG_SETTINGS,
 )
@@ -133,6 +140,10 @@ opt_embed_module_action_command_line_test = make_action_command_line_test_rule(
 
 opt_embed_module_provider_test = make_provider_test_rule(
     config_settings = OPT_EMBED_MODULE_CONFIG_SETTINGS,
+)
+
+opt_full_di_action_command_line_test = make_action_command_line_test_rule(
+    config_settings = OPT_FULL_DI_CONFIG_SETTINGS,
 )
 
 def debug_settings_test_suite(name, tags = []):
@@ -385,6 +396,69 @@ def debug_settings_test_suite(name, tags = []):
         mnemonic = "CppLink",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:binary",
+    )
+
+    # -------------------------------------------------------------------------
+    # Debug module path tests
+    # -------------------------------------------------------------------------
+
+    # Verify that `-debug-module-path` is emitted in `dbg` mode when supported.
+    dbg_action_command_line_test(
+        name = "{}_dbg_debug_module_path".format(name),
+        expected_argv = [
+            "-debug-module-path $(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/debug_settings/simple_with_debug_module_path.swiftmodule",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple_with_debug_module_path",
+    )
+
+    # Verify that `-debug-module-path` is omitted when the toolchain feature is
+    # disabled.
+    dbg_action_command_line_test(
+        name = "{}_dbg_no_debug_module_path".format(name),
+        not_expected_argv = [
+            "-debug-module-path",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple_without_debug_module_path",
+    )
+
+    # Verify that `-debug-module-path` is emitted in `fastbuild` mode when
+    # supported.
+    fastbuild_action_command_line_test(
+        name = "{}_fastbuild_debug_module_path".format(name),
+        expected_argv = [
+            "-debug-module-path $(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/debug_settings/simple_with_debug_module_path.swiftmodule",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple_with_debug_module_path",
+    )
+
+    # Verify that `-debug-module-path` is omitted in `opt` mode without
+    # `swift.full_debug_info`.
+    opt_action_command_line_test(
+        name = "{}_opt_no_debug_module_path".format(name),
+        not_expected_argv = [
+            "-debug-module-path",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple_with_debug_module_path",
+    )
+
+    # Verify that `-debug-module-path` is emitted in `opt` mode when
+    # `swift.full_debug_info` is enabled.
+    opt_full_di_action_command_line_test(
+        name = "{}_opt_full_di_debug_module_path".format(name),
+        expected_argv = [
+            "-debug-module-path $(BIN_DIR)/third_party/bazel_rules/rules_swift/test/fixtures/debug_settings/simple_with_debug_module_path.swiftmodule",
+        ],
+        mnemonic = "SwiftCompileModule",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple_with_debug_module_path",
     )
 
     native.test_suite(

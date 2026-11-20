@@ -28,6 +28,26 @@ swift_library(
     tags = FIXTURE_TAGS,
 )
 
+swift_library(
+    name = "simple_with_debug_module_path",
+    srcs = ["Empty.swift"],
+    features = [
+        "swift.compile_in_parallel",
+        "swift._supports_debug_module_path",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "simple_without_debug_module_path",
+    srcs = ["Empty.swift"],
+    features = [
+        "swift.compile_in_parallel",
+        "-swift._supports_debug_module_path",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
 swift_binary(
     name = "binary",
     tags = FIXTURE_TAGS,

@@ -274,6 +274,11 @@ SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED = "swift.experimental.Embedded"
 # never manually enable, disable, or query this feature.
 SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST = "swift._supports_const_gather_protocols_list"
 
+# A private feature that is set by the toolchain if it supports the
+# `-debug-module-path` driver flag (Swift 6.4 and above). Users should never
+# manually enable, disable, or query this feature.
+SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH = "swift._supports_debug_module_path"
+
 # If enabled, passes `-Xcc -std=gnu2x` to actions that invoke ClangImporter so
 # C and Objective-C headers are parsed in C23 (`gnu2x`) mode.
 SWIFT_FEATURE_STD_GNU2X = "swift.std_gnu2x"

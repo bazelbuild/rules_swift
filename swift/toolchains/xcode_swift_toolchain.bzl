@@ -53,6 +53,7 @@ load(
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
+    "SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -798,9 +799,10 @@ def _xcode_swift_toolchain_impl(ctx):
     ])
 
     if _is_xcode_at_least_version(xcode_config, "27.0"):
-        requested_features.append(
+        requested_features.extend([
             SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST,
-        )
+            SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH,
+        ])
 
     unsupported_features.extend(build_mode_unsupported_features)
     unsupported_features.extend(ctx.attr.default_unsupported_features)

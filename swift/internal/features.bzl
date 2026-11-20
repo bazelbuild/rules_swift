@@ -37,6 +37,7 @@ visibility([
 # Test fixture packages inside rules_swift that intentionally set `swift._*`
 # internal features directly on targets to test action command lines.
 _INTERNAL_FEATURE_TEST_PACKAGES = [
+    "test/fixtures/debug_settings",
     "test/fixtures/layering_check",
     "test/fixtures/parallel_compilation",
 ]

@@ -70,6 +70,7 @@ load(
     "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
+    "SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -433,6 +434,18 @@ def compile_action_configs(
             configurators = [add_arg("-gline-tables-only")],
             features = [SWIFT_FEATURE_FASTBUILD],
             not_features = [SWIFT_FEATURE_FULL_DEBUG_INFO],
+        ),
+
+        # Emit the path to this module's `.swiftmodule` in debug info so LLDB
+        # can locate it directly without `-add_ast_path` or `-modulewrap`.
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [_debug_module_path_configurator],
+            features = [
+                [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_DBG],
+                [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_FASTBUILD],
+                [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_FULL_DEBUG_INFO],
+            ],
         ),
 
         # Make paths written into debug info workspace-relative.
@@ -1232,6 +1245,10 @@ def _output_pcm_file_configurator(prerequisites, args):
 def _emit_module_path_configurator(prerequisites, args):
     """Adds the `.swiftmodule` output path to the command line."""
     args.add("-emit-module-path", prerequisites.swiftmodule_file)
+
+def _debug_module_path_configurator(prerequisites, args):
+    """Adds the `.swiftmodule` path for debug info module tracking."""
+    args.add("-debug-module-path", prerequisites.swiftmodule_file)
 
 def _emit_module_interface_path_configurator(prerequisites, args):
     """Adds the `.swiftinterface` output paths to the command line."""
