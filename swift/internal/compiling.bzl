@@ -14,6 +14,7 @@
 
 """Implementation of compilation logic for Swift."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:sets.bzl", "sets")
@@ -92,6 +93,10 @@ load(
     "struct_fields",
 )
 load(":wmo.bzl", "find_num_threads_flag_value", "is_wmo_manually_requested")
+
+_OUTPUT_FILE_MAP_WRITE_KWARGS = {
+    "mnemonic": "SwiftWriteOutputFileMap",
+} if bazel_features.rules.write_action_has_mnemonic else {}
 
 def transitive_swift_dependency_inputs(
         transitive_modules,
@@ -2264,6 +2269,7 @@ def _write_output_file_map(actions, map_entries, output_map_file, srcs):
     actions.write(
         content = output_map_args,
         output = output_map_file,
+        **_OUTPUT_FILE_MAP_WRITE_KWARGS
     )
 
 def _declare_multiple_outputs_and_write_output_file_map(

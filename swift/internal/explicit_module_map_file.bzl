@@ -14,7 +14,12 @@
 
 """Generates the JSON manifest used to pass Swift modules to the compiler."""
 
+load("@bazel_features//:features.bzl", "bazel_features")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+
+_EXPLICIT_MODULE_MAP_WRITE_KWARGS = {
+    "mnemonic": "SwiftWriteExplicitModuleMap",
+} if bazel_features.rules.write_action_has_mnemonic else {}
 
 def write_explicit_swift_module_map_file(
         *,
@@ -76,4 +81,5 @@ def write_explicit_swift_module_map_file(
     actions.write(
         content = json.encode(module_descriptions.values()),
         output = explicit_swift_module_map_file,
+        **_EXPLICIT_MODULE_MAP_WRITE_KWARGS
     )
