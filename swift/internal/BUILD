@@ -94,6 +94,7 @@ bzl_library(
         ":feature_names",
         ":features",
         ":module_maps",
+        ":target_triples",
         ":utils",
         ":wmo",
         "//swift:providers",

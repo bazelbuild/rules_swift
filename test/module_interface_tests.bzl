@@ -64,6 +64,14 @@ explicit_swift_module_map_inputs_test = make_action_inputs_test_rule(
     },
 )
 
+macos_arm64_command_line_test = make_action_command_line_test_rule(
+    config_settings = {
+        "//command_line_option:platforms": [
+            str(Label("@apple_support//platforms:macos_arm64")),
+        ],
+    },
+)
+
 def module_interface_test_suite(name, tags = []):
     """Test suite for features that compile Swift module interfaces.
 
@@ -193,6 +201,58 @@ def module_interface_test_suite(name, tags = []):
             "DependentToyModule.swiftinterface",
         ],
         target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+    )
+
+    macos_arm64_command_line_test(
+        name = "{}_framework_module_layout".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-module-name ToyModule",
+            "-o $(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs/ToyModule.framework/Modules/ToyModule.swiftmodule/arm64.swiftmodule",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:framework_toy_module",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    # Explicit module builds read `isFramework` from the module map, not `-F`.
+    explicit_swift_module_map_test(
+        name = "{}_framework_module_explicit_module_map_search_path".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-explicit-swift-module-map-file $(BIN_DIR)/test/fixtures/module_interface/dependent_framework_toy_module.swift-explicit-module-map.json",
+        ],
+        not_expected_argv = [
+            "-F$(BIN_DIR)/test/fixtures/module_interface/framework_toy_module_outs",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:dependent_framework_toy_module",
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    # Verify that symbol graph extraction, which always uses search paths,
+    # finds a framework module dependency.
+    build_test(
+        name = "{}_framework_module_symbol_graph".format(name),
+        targets = [
+            "//test/fixtures/module_interface:framework_client_symbol_graph",
+        ],
+        tags = all_tags,
+        target_compatible_with = ["@platforms//os:macos"],
+    )
+
+    macos_arm64_command_line_test(
+        name = "{}_module_dependent_search_path".format(name),
+        tags = all_tags,
+        expected_argv = [
+            "-swift-module-file=ToyModule=$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs/ToyModule.swiftmodule",
+        ],
+        not_expected_argv = [
+            "-F$(BIN_DIR)/test/fixtures/module_interface/toy_module_outs",
+        ],
+        mnemonic = "SwiftCompileModuleInterface",
+        target_under_test = "//test/fixtures/module_interface:dependent_toy_module",
+        target_compatible_with = ["@platforms//os:macos"],
     )
 
     explicit_interface_indexstore_command_line_test(
