@@ -3,6 +3,7 @@ load(
     "APPLE_PLATFORMS_CONSTRAINTS",
 )
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl", "xcode_swift_toolchain")
 load(
@@ -31,6 +32,22 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+# Whether the toolchains autoconfigured from the host (`@rules_swift_local_config`, which
+# finds `swiftc` on the host's PATH at fetch time) take part in toolchain resolution. A build that
+# registers its own Swift toolchain for Linux or Windows, and must not fall back to whatever the
+# host has, sets `--@rules_swift//swift/toolchains:local_toolchains=false`.
+bool_flag(
+    name = "local_toolchains",
+    build_setting_default = True,
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "local_toolchains_enabled",
+    flag_values = {":local_toolchains": "true"},
+    visibility = ["//visibility:public"],
+)
+
 toolchain(
     name = "linux-swift-toolchain_x86_64",
     exec_compatible_with = [
@@ -41,6 +58,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
     ],
+    target_settings = [":local_toolchains_enabled"],
     toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
@@ -56,6 +74,7 @@ toolchain(
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
     ],
+    target_settings = [":local_toolchains_enabled"],
     toolchain = "@rules_swift_local_config//:linux-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
@@ -121,6 +140,7 @@ toolchain(
         "@platforms//os:windows",
         "@platforms//cpu:x86_64",
     ],
+    target_settings = [":local_toolchains_enabled"],
     toolchain = "@rules_swift_local_config//:windows-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
@@ -136,6 +156,7 @@ toolchain(
         "@platforms//os:windows",
         "@platforms//cpu:aarch64",
     ],
+    target_settings = [":local_toolchains_enabled"],
     toolchain = "@rules_swift_local_config//:windows-toolchain",
     toolchain_type = "//toolchains:toolchain_type",
     visibility = ["//visibility:public"],
