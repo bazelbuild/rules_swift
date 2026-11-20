@@ -194,9 +194,12 @@ def _swift_proto_compile(label, actions, swift_proto_compiler_info, additional_c
 
     # Join the transitive descriptor sets into a single argument, separated the
     # way protoc expects on the host (";" on Windows, ":" elsewhere):
-    formatted_descriptor_set_paths = swift_proto_compiler_info.internal.path_separator.join([f.path for f in transitive_descriptor_sets.to_list()])
-    descriptor_set_in_argument = "--descriptor_set_in={}".format(formatted_descriptor_set_paths)
-    arguments.add(descriptor_set_in_argument)
+    arguments.add_joined(
+        transitive_descriptor_sets,
+        join_with = swift_proto_compiler_info.internal.path_separator,
+        format_joined = "--descriptor_set_in=%s",
+        omit_if_empty = False,
+    )
 
     # Finally, add the proto paths:
     arguments.add_all(proto_paths.keys())
