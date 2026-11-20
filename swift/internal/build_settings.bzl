@@ -41,6 +41,12 @@ def universal_label_flag(name, **kwargs):
         name: The name of the flag target.
         **kwargs: Additional arguments passed to `label_flag`.
     """
+
+    # An override can hold bazel_features below what we depend on; say so
+    # instead of failing on a missing field.
+    if not hasattr(bazel_features.rules, "label_build_setting_has_scope"):
+        fail("rules_swift needs bazel_features 1.54.0 or later; check for a " +
+             "single_version_override of bazel_features in the root module.")
     if bazel_features.rules.label_build_setting_has_scope:
         kwargs["scope"] = "universal"
     native.label_flag(name = name, **kwargs)
