@@ -303,6 +303,12 @@ local_path_override(
     path = "third_party/rules_swift_layering_check_external_test",
 )
 
+bazel_dep(name = "rules_swift_non_root_toolchain_test", version = "0.0.0", dev_dependency = True)
+local_path_override(
+    module_name = "rules_swift_non_root_toolchain_test",
+    path = "third_party/rules_swift_non_root_toolchain_test",
+)
+
 # TODO: Use a release once platforms_contrib includes host libc detection.
 archive_override(
     module_name = "platforms_contrib",
