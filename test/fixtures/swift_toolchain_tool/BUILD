@@ -1,5 +1,6 @@
 load("//swift:swift_toolchain_tool.bzl", "swift_toolchain_tool")
 load("//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
+load("//swift/toolchains:swift_tools.bzl", "swift_tools")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
 load(":swift_multitool_info.bzl", "swift_multitool_info")
 
@@ -27,6 +28,13 @@ swift_toolchain_tool(
     tool = "swift-format",
 )
 
+# Fails analysis: `tool` must be a bare name, not a path.
+swift_toolchain_tool(
+    name = "invalid_tool",
+    tags = FIXTURE_TAGS,
+    tool = "a/b",
+)
+
 # Exposes the resolved toolchain's `SwiftToolchainInfo.swift_multitool`.
 swift_multitool_info(
     name = "multitool_info",
@@ -45,9 +53,7 @@ _TEST_ENV = {
 }
 
 # Runs a custom driver `File` with `--driver-mode=swift` when the tests set
-# `--@rules_swift//swift:default_swift_executable`. (The `swift_executable`
-# attribute is not used because `get_swift_executable_for_toolchain` returns it
-# as a `Target`, not a `File`.)
+# `--@rules_swift//swift:default_swift_executable`.
 swift_toolchain(
     name = "_file_driver_toolchain",
     arch = "arm64",
@@ -84,5 +90,110 @@ toolchain(
     name = "string_driver_toolchain",
     tags = FIXTURE_TAGS,
     toolchain = ":_string_driver_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# Runs a custom driver `File` with `--driver-mode=swift`, set with the
+# `swift_executable` attribute.
+swift_toolchain(
+    name = "_attr_file_driver_toolchain",
+    arch = "arm64",
+    env = _TEST_ENV,
+    os = "macos",
+    parsed_version = "6.3",
+    root = "/opt/swift/usr",
+    sdkroot = "testpath",
+    swift_executable = ":bin/swift",
+    tags = FIXTURE_TAGS,
+    version_file = ".swift_version",
+)
+
+toolchain(
+    name = "attr_file_driver_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_attr_file_driver_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# A toolchain found on the system with a relative root, which is not valid
+# under `bazel run`, so `swift` is found on `PATH`.
+swift_toolchain(
+    name = "_relative_root_toolchain",
+    arch = "arm64",
+    env = _TEST_ENV,
+    os = "macos",
+    parsed_version = "6.3",
+    root = "relative/usr",
+    sdkroot = "testpath",
+    tags = FIXTURE_TAGS,
+    version_file = ".swift_version",
+)
+
+toolchain(
+    name = "relative_root_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_relative_root_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# A hermetic toolchain that provides a `swift` multi-tool and the files that it
+# needs at runtime.
+swift_tools(
+    name = "_hermetic_swift_tools",
+    additional_inputs = [],
+    swift = ":hermetic/usr/bin/swift",
+    swift_autolink_extract = ":hermetic/usr/bin/swiftc",
+    swift_driver = ":hermetic/usr/bin/swiftc",
+    swift_runfiles = [":hermetic/usr/bin/swift-package"],
+    swift_symbolgraph_extract = ":hermetic/usr/bin/swiftc",
+    tags = FIXTURE_TAGS,
+)
+
+swift_toolchain(
+    name = "_hermetic_swift_toolchain",
+    arch = "arm64",
+    env = _TEST_ENV,
+    os = "macos",
+    parsed_version = "6.3",
+    sdkroot = "testpath",
+    swift_tools = ":_hermetic_swift_tools",
+    tags = FIXTURE_TAGS,
+    version_file = ".swift_version",
+)
+
+toolchain(
+    name = "hermetic_swift_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_hermetic_swift_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# A hermetic toolchain without a `swift` multi-tool, so its `swiftc` driver is
+# run with `--driver-mode=swift`.
+swift_tools(
+    name = "_hermetic_driver_only_swift_tools",
+    additional_inputs = [],
+    swift_autolink_extract = ":hermetic/usr/bin/swiftc",
+    swift_driver = ":hermetic/usr/bin/swiftc",
+    swift_symbolgraph_extract = ":hermetic/usr/bin/swiftc",
+    tags = FIXTURE_TAGS,
+)
+
+swift_toolchain(
+    name = "_hermetic_driver_only_toolchain",
+    arch = "arm64",
+    env = _TEST_ENV,
+    os = "macos",
+    parsed_version = "6.3",
+    sdkroot = "testpath",
+    swift_tools = ":_hermetic_driver_only_swift_tools",
+    tags = FIXTURE_TAGS,
+    version_file = ".swift_version",
+)
+
+toolchain(
+    name = "hermetic_driver_only_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_hermetic_driver_only_toolchain",
     toolchain_type = "//toolchains:toolchain_type",
 )

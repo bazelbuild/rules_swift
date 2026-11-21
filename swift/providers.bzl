@@ -464,7 +464,8 @@ following fields:
 
 *   `executable`: A `File` (a hermetic or custom driver) or a `string` (a
     driver found on the system, such as `"swift"` launched through `xcrun` for
-    Xcode, or an absolute path into an autoconfigured toolchain).
+    Xcode, or an absolute path into an autoconfigured toolchain). A toolchain
+    whose root is a relative path falls back to `"swift"`, found on `PATH`.
 *   `args`: A `list` of `string`s that must precede the user's arguments, such
     as `--driver-mode=swift` when `executable` is a custom `swiftc` driver.
 *   `env`: A `dict` of environment variables to set when running it. Values

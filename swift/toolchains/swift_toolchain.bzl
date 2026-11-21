@@ -228,7 +228,8 @@ def _swift_multitool(
             provided. Only used if swift_tools is not used.
         swift_tools: The `SwiftToolsInfo` of the toolchain, if any. Overrides
             swift_executable if provided.
-        toolchain_root: The root directory of the toolchain.
+        toolchain_root: The root directory of the toolchain. Only used if it
+            is absolute.
         tool_executable_suffix: The suffix for executable tools to use (e.g.
             `.exe` on Windows).
 
@@ -264,8 +265,10 @@ def _swift_multitool(
         )
 
     # Swift.org toolchains found on the system are run in place, so no files
-    # are needed.
-    if toolchain_root:
+    # are needed. A relative root is relative to the execution root, which is
+    # not the working directory under `bazel run`, so fall back to finding
+    # `swift` on `PATH`.
+    if toolchain_root and paths.is_absolute(toolchain_root):
         executable = paths.join(toolchain_root, "bin", "swift")
     else:
         executable = "swift"

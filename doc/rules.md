@@ -1087,7 +1087,7 @@ bazel run //:swift -- --version
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_toolchain_tool-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_toolchain_tool-tool"></a>tool |  The name of the toolchain tool to run, such as `swift` (the default), `swift-format`, or `swift-build`.<br><br>`swift` runs the toolchain's `swift` driver. Any other value runs the tool with that name from the same directory as the driver for toolchains that provide one (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH` otherwise.   | String | optional |  `"swift"`  |
+| <a id="swift_toolchain_tool-tool"></a>tool |  The name of the toolchain tool to run, such as `swift` (the default), `swift-format`, or `swift-build`.<br><br>`swift` runs the toolchain's `swift` driver. Any other value runs the tool with that name from the same directory as the driver for toolchains that provide one (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH` otherwise.<br><br>It must be a bare tool name: an empty value or one that contains `/` or `\` fails the build.   | String | optional |  `"swift"`  |
 
 
 <a id="universal_swift_compiler_plugin"></a>

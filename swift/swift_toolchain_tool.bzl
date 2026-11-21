@@ -28,6 +28,13 @@ def _rlocationpath(ctx, file):
     return "{}/{}".format(ctx.workspace_name, file.short_path)
 
 def _swift_toolchain_tool_impl(ctx):
+    tool = ctx.attr.tool
+    if not tool or "/" in tool or "\\" in tool:
+        fail(
+            "`tool` must be the bare name of a toolchain tool, such as " +
+            "`swift-format`, not empty or a path; got '{}'.".format(tool),
+        )
+
     swift_toolchain = get_swift_toolchain(ctx)
     multitool = getattr(swift_toolchain, "swift_multitool", None)
     if not multitool:
@@ -69,7 +76,7 @@ def _swift_toolchain_tool_impl(ctx):
             ]),
             "%swift_rlocationpath%": shell.quote(swift_rlocationpath),
             "%swift_string%": shell.quote(swift_string),
-            "%tool%": shell.quote(ctx.attr.tool),
+            "%tool%": shell.quote(tool),
             "%xcode_locator_rlocationpath%": shell.quote(
                 _rlocationpath(ctx, xcode_locator),
             ),
@@ -101,6 +108,9 @@ The name of the toolchain tool to run, such as `swift` (the default),
 that name from the same directory as the driver for toolchains that provide one
 (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH`
 otherwise.
+
+It must be a bare tool name: an empty value or one that contains `/` or `\\`
+fails the build.
 """,
         ),
         "_runfiles_lib": attr.label(

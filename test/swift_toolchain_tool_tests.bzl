@@ -20,6 +20,7 @@ load(
     "//test/fixtures/swift_toolchain_tool:swift_multitool_info.bzl",
     "SwiftMultitoolTestInfo",
 )
+load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
 load(
     "//test/rules:provider_test.bzl",
     "make_provider_test_rule",
@@ -32,6 +33,8 @@ _EXTRA_TOOLCHAINS = "//command_line_option:extra_toolchains"
 _FIXTURES = "//test/fixtures/swift_toolchain_tool"
 
 _FIXTURE_DRIVER = "test/fixtures/swift_toolchain_tool/bin/swift"
+
+_HERMETIC_BIN = "test/fixtures/swift_toolchain_tool/hermetic/usr/bin"
 
 # Points the toolchain at a `File` driver. Xcode (and autoconfigured Linux)
 # toolchains honor it; the hermetic standalone toolchain ignores it and keeps
@@ -151,9 +154,29 @@ _FILE_DRIVER_CONFIG = _CUSTOM_DRIVER_CONFIG | {
 
 _file_driver_script_test = _make_script_test(_FILE_DRIVER_CONFIG)
 
+_ATTR_FILE_DRIVER_CONFIG = {
+    _EXTRA_TOOLCHAINS: ["{}:attr_file_driver_toolchain".format(_FIXTURES)],
+}
+
+_attr_file_driver_script_test = _make_script_test(_ATTR_FILE_DRIVER_CONFIG)
+
 _string_driver_script_test = _make_script_test({
     _EXTRA_TOOLCHAINS: ["{}:string_driver_toolchain".format(_FIXTURES)],
 })
+
+_relative_root_script_test = _make_script_test({
+    _EXTRA_TOOLCHAINS: ["{}:relative_root_toolchain".format(_FIXTURES)],
+})
+
+_HERMETIC_CONFIG = {
+    _EXTRA_TOOLCHAINS: ["{}:hermetic_swift_toolchain".format(_FIXTURES)],
+}
+
+_HERMETIC_DRIVER_ONLY_CONFIG = {
+    _EXTRA_TOOLCHAINS: [
+        "{}:hermetic_driver_only_toolchain".format(_FIXTURES),
+    ],
+}
 
 _xcode_custom_toolchain_script_test = _make_script_test({
     "//command_line_option:action_env": ["TOOLCHAINS=com.example.swift"],
@@ -161,6 +184,10 @@ _xcode_custom_toolchain_script_test = _make_script_test({
 
 _file_driver_provider_test = make_provider_test_rule(
     config_settings = _FILE_DRIVER_CONFIG,
+)
+
+_hermetic_provider_test = make_provider_test_rule(
+    config_settings = _HERMETIC_CONFIG,
 )
 
 def _multitool_test_impl(ctx):
@@ -204,13 +231,26 @@ def _multitool_test_impl(ctx):
 
     return analysistest.end(env)
 
-_custom_driver_multitool_test = analysistest.make(
-    _multitool_test_impl,
-    attrs = {
-        "expected_args": attr.string_list(),
-        "expected_executable_suffix": attr.string(mandatory = True),
-    },
-    config_settings = _CUSTOM_DRIVER_CONFIG,
+def _make_multitool_test(config_settings):
+    return analysistest.make(
+        _multitool_test_impl,
+        attrs = {
+            "expected_args": attr.string_list(),
+            "expected_executable_suffix": attr.string(mandatory = True),
+        },
+        config_settings = config_settings,
+    )
+
+_custom_driver_multitool_test = _make_multitool_test(_CUSTOM_DRIVER_CONFIG)
+
+_attr_file_driver_multitool_test = _make_multitool_test(
+    _ATTR_FILE_DRIVER_CONFIG,
+)
+
+_hermetic_multitool_test = _make_multitool_test(_HERMETIC_CONFIG)
+
+_hermetic_driver_only_multitool_test = _make_multitool_test(
+    _HERMETIC_DRIVER_ONLY_CONFIG,
 )
 
 def swift_toolchain_tool_test_suite(name, tags = []):
@@ -277,6 +317,29 @@ def swift_toolchain_tool_test_suite(name, tags = []):
         target_under_test = "{}:swift".format(_FIXTURES),
     )
 
+    # A driver set with the toolchain's `swift_executable` attribute is run
+    # from the runfiles with `--driver-mode=swift`.
+    _attr_file_driver_script_test(
+        name = "{}_attr_file_driver_script".format(name),
+        expected_substitutions = {
+            "%swift_args%": shell.quote("--driver-mode=swift"),
+            "%swift_string%": shell.quote(""),
+        },
+        substitutions_contain = {
+            "%swift_rlocationpath%": [_FIXTURE_DRIVER],
+        },
+        tags = all_tags,
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    _attr_file_driver_multitool_test(
+        name = "{}_attr_file_driver_multitool".format(name),
+        expected_args = ["--driver-mode=swift"],
+        expected_executable_suffix = _FIXTURE_DRIVER,
+        tags = all_tags,
+        target_under_test = "{}:multitool_info".format(_FIXTURES),
+    )
+
     # A driver found on the system is run by path, without driver flags.
     _string_driver_script_test(
         name = "{}_string_driver_script".format(name),
@@ -290,6 +353,60 @@ def swift_toolchain_tool_test_suite(name, tags = []):
         },
         tags = all_tags,
         target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # A relative toolchain root is relative to the execution root, so `swift`
+    # is found on `PATH` instead.
+    _relative_root_script_test(
+        name = "{}_relative_root_script".format(name),
+        expected_substitutions = {
+            "%swift_args%": "",
+            "%swift_rlocationpath%": shell.quote(""),
+            "%swift_string%": shell.quote("swift"),
+        },
+        tags = all_tags,
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # A hermetic toolchain runs its `swift` multi-tool as is, with its
+    # `swift_runfiles` in the runfiles.
+    _hermetic_multitool_test(
+        name = "{}_hermetic_multitool".format(name),
+        expected_args = [],
+        expected_executable_suffix = "{}/swift".format(_HERMETIC_BIN),
+        tags = all_tags,
+        target_under_test = "{}:multitool_info".format(_FIXTURES),
+    )
+
+    _hermetic_provider_test(
+        name = "{}_hermetic_runfiles".format(name),
+        expected_files = [
+            "{}/swift".format(_HERMETIC_BIN),
+            "{}/swift-package".format(_HERMETIC_BIN),
+            "*",
+        ],
+        field = "default_runfiles.files",
+        provider = "DefaultInfo",
+        tags = all_tags,
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # A hermetic toolchain without a `swift` multi-tool runs its driver with
+    # `--driver-mode=swift`.
+    _hermetic_driver_only_multitool_test(
+        name = "{}_hermetic_driver_only_multitool".format(name),
+        expected_args = ["--driver-mode=swift"],
+        expected_executable_suffix = "{}/swiftc".format(_HERMETIC_BIN),
+        tags = all_tags,
+        target_under_test = "{}:multitool_info".format(_FIXTURES),
+    )
+
+    # `tool` must be a bare name.
+    analysis_failure_test(
+        name = "{}_invalid_tool".format(name),
+        expected_message = "`tool` must be the bare name of a toolchain tool",
+        tags = all_tags,
+        target_under_test = "{}:invalid_tool".format(_FIXTURES),
     )
 
     # The host toolchain under `--default_swift_executable`. Xcode runs the

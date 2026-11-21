@@ -150,12 +150,12 @@ else
   tool_path="${tool}"
 fi
 
-if [[ "${tool}" == "swift" ]]; then
-  run "${tool_path}" ${swift_args[@]+"${swift_args[@]}"} "${@}"
-fi
-
 if [[ "${use_xcrun}" != "true" && "${tool_path}" != */* ]] &&
   ! command -v "${tool_path}" >/dev/null 2>&1; then
   fail "cannot find '${tool_path}' on PATH"
+fi
+
+if [[ "${tool}" == "swift" ]]; then
+  run "${tool_path}" ${swift_args[@]+"${swift_args[@]}"} "${@}"
 fi
 run "${tool_path}" "${@}"
