@@ -63,6 +63,10 @@ def _swift_import_impl(ctx):
         fail("'swiftinterface' may not be specified when " +
              "'swiftmodule' is specified.")
 
+    if ctx.attr.is_framework and not swiftinterface:
+        fail("'is_framework' may only be specified when " +
+             "'swiftinterface' is specified.")
+
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(
         ctx = ctx,
@@ -102,6 +106,7 @@ def _swift_import_impl(ctx):
             actions = ctx.actions,
             compilation_contexts = get_compilation_contexts(ctx.attr.deps),
             feature_configuration = feature_configuration,
+            is_framework = ctx.attr.is_framework,
             module_name = ctx.attr.module_name,
             swiftinterface_file = swiftinterface,
             swift_infos = swift_infos,
@@ -163,6 +168,16 @@ The list of `.a` or `.lo` files provided to Swift targets that depend on this
 target.
 """,
                 mandatory = False,
+            ),
+            "is_framework": attr.bool(
+                default = False,
+                doc = """\
+Whether the module is an Apple framework module. If `True`, the interface
+compiles into a `<module_name>.framework` directory, and dependents find the
+module through a framework search path. The compiler then emits a `-framework`
+autolink entry for the module. The linker must find the framework binary
+elsewhere, for example in the SDK. Requires `swiftinterface`.
+""",
             ),
             "module_name": attr.string(
                 doc = "The name of the module represented by this target.",

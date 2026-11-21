@@ -503,6 +503,28 @@ def compile_action_configs(
             features = [SWIFT_FEATURE_DISABLE_SWIFT_SANDBOX],
         ),
 
+        # Pass `-F` for the framework modules of dependencies before the
+        # developer framework paths, so that a dependency's module takes
+        # precedence over a developer framework with the same name. Keep these
+        # before `_non_pcm_developer_framework_paths_configurator`.
+        ActionConfigInfo(
+            actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
+                SWIFT_ACTION_DUMP_AST,
+            ],
+            configurators = [_dependencies_framework_modules_configurator],
+            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+        ),
+
+        # These tools don't support explicit Swift module maps.
+        ActionConfigInfo(
+            actions = [
+                SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
+                SWIFT_ACTION_SYNTHESIZE_INTERFACE,
+            ],
+            configurators = [_dependencies_framework_modules_configurator],
+        ),
+
         # Set Developer Framework search paths
         ActionConfigInfo(
             actions = all_compile_action_names() + [
@@ -1234,6 +1256,7 @@ def compile_action_configs(
         # Set the module name.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
+                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
                 SWIFT_ACTION_DUMP_AST,
                 SWIFT_ACTION_PRECOMPILE_C_MODULE,
                 SWIFT_ACTION_SYMBOL_GRAPH_EXTRACT,
@@ -2263,6 +2286,11 @@ def _swift_module_file_map_fn(module):
     if module.is_system or not module.swift or type(module.swift.swiftmodule) != "File":
         return None
 
+    # The compiler emits a `-framework` autolink entry only for a module that
+    # it finds through `-F`, so framework modules must not use this flag.
+    if _swift_framework_search_path_map_fn(module):
+        return None
+
     if not module.swift.swiftmodule.is_directory:
         return "-swift-module-file={}={}".format(
             module.name,
@@ -2311,7 +2339,7 @@ def _swift_module_search_path_map_fn(module):
     if module.is_system:
         return None
 
-    if module.swift:
+    if module.swift and not _swift_framework_search_path_map_fn(module):
         swiftmodule = module.swift.swiftmodule
         if type(swiftmodule) == "File":
             search_path = swiftmodule.dirname
@@ -2328,6 +2356,25 @@ def _swift_module_search_path_map_fn(module):
         return search_path
     else:
         return None
+
+def _swift_framework_search_path_map_fn(module):
+    """Returns the directory that contains a framework module's `.framework`.
+
+    Returns `None` unless the module's `.swiftmodule` is a file at
+    `<dir>/<name>.framework/Modules/<name>.swiftmodule/<arch>.swiftmodule`.
+    """
+    if module.is_system or not module.is_framework or not module.swift:
+        return None
+
+    swiftmodule = module.swift.swiftmodule
+    if type(swiftmodule) != "File":
+        return None
+
+    framework_dir = paths.dirname(paths.dirname(swiftmodule.dirname))
+    if not framework_dir.endswith(".framework"):
+        return None
+
+    return paths.dirname(framework_dir)
 
 def _module_alias_flags(name, original):
     """Returns compiler flags to set the given module alias."""
@@ -2417,6 +2464,15 @@ def _dependencies_swiftmodule_search_paths_configurator(prerequisites, args):
 
     return ConfigResultInfo(
         inputs = prerequisites.transitive_swift_dependency_inputs,
+    )
+
+def _dependencies_framework_modules_configurator(prerequisites, args):
+    """Adds framework search paths for the framework modules of dependencies."""
+    args.add_all(
+        prerequisites.transitive_modules,
+        format_each = "-F%s",
+        map_each = _swift_framework_search_path_map_fn,
+        uniquify = True,
     )
 
 def _module_aliases_configurator(prerequisites, args):
