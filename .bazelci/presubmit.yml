@@ -34,6 +34,15 @@ x_defaults:
       - "//examples/xplatform/swift_testing"
       - "//tools/worker:json_worker_protocol_test"
       - "//tools/worker:proto_worker_protocol_test"
+      # Runs the toolchain's `swift` through the `.bat` wrapper, under `bazel
+      # test` and as a genrule tool. `swift-format` is left out until it is
+      # confirmed to ship next to `swift.exe` in the swift.org installer.
+      - "//test:swift_toolchain_tool"
+      - "//test/swift_toolchain_tool:swift_package_version_test"
+      - "//test/swift_toolchain_tool:swift_version_genrule_test"
+      - "//test/swift_toolchain_tool:swift_version_test"
+      # Runs a `.bat` custom driver `File` through the wrapper.
+      - "//test/swift_toolchain_tool:windows_fake_driver_version_test"
 
 tasks:
   macos_latest:
@@ -103,6 +112,10 @@ tasks:
       - "//examples/xplatform/xctest:xctest"
       - "//test/linux_static_stdlib:linux_non_hermetic_dynamic_stdlib_test"
       - "//test/linux_static_stdlib:linux_non_hermetic_linkshared_dynamic_stdlib_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_format_version_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_package_version_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_version_genrule_test"
+      - "//test/swift_toolchain_tool:linux_non_hermetic_swift_version_test"
 
   windows:
     name: "Current LTS"

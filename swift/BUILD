@@ -297,6 +297,15 @@ bzl_library(
 )
 
 bzl_library(
+    name = "swift_toolchain_tool",
+    srcs = ["swift_toolchain_tool.bzl"],
+    deps = [
+        "//swift/internal:toolchain_utils",
+        "@bazel_skylib//lib:shell",
+    ],
+)
+
+bzl_library(
     name = "swift_test",
     srcs = ["swift_test.bzl"],  # keep
     deps = [
@@ -346,6 +355,7 @@ bzl_library(
         ":swift_symbol_graph_aspect",
         ":swift_synthesize_interface_aspect",
         ":swift_test",
+        ":swift_toolchain_tool",
         "//swift/internal:system_clang_module",
         "//swift/internal:system_module_group",
         "//swift/internal:system_swiftinterface",

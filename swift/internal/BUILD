@@ -3,6 +3,14 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 licenses(["notice"])
 
+exports_files(
+    [
+        "swift_toolchain_tool.bat.tpl",
+        "swift_toolchain_tool.sh.tpl",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 # Indirection needed to prevent using `objc_library` outside of macOS
 alias(
     name = "swizzle_absolute_xcttestsourcelocation",
