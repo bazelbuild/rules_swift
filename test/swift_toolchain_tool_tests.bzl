@@ -30,6 +30,8 @@ visibility("private")
 
 _EXTRA_TOOLCHAINS = "//command_line_option:extra_toolchains"
 
+_PLATFORMS = "//command_line_option:platforms"
+
 _FIXTURES = "//test/fixtures/swift_toolchain_tool"
 
 _FIXTURE_DRIVER = "test/fixtures/swift_toolchain_tool/bin/swift"
@@ -45,15 +47,16 @@ _CUSTOM_DRIVER_CONFIG = {
     ),
 }
 
-def _template_substitutions(env, target):
-    """Returns the substitutions of the action that writes the script.
+def _template_action(env, target, extension = ""):
+    """Returns the action that writes the script.
 
     Args:
         env: The analysis test environment.
         target: The `swift_toolchain_tool` target under test.
+        extension: The expected extension of the script, e.g. `.bat`.
 
     Returns:
-        The substitutions `dict`, or `None` after logging a failure.
+        The `TemplateExpand` action, or `None` after logging a failure.
     """
     executable = target[DefaultInfo].files_to_run.executable
     if not executable:
@@ -62,7 +65,7 @@ def _template_substitutions(env, target):
         ))
         return None
 
-    asserts.equals(env, target.label.name, executable.basename)
+    asserts.equals(env, target.label.name + extension, executable.basename)
 
     template_actions = [
         action
@@ -79,15 +82,16 @@ def _template_substitutions(env, target):
             ),
         )
         return None
-    return template_actions[0].substitutions
+    return template_actions[0]
 
 def _script_test_impl(ctx):
     env = analysistest.begin(ctx)
     target = analysistest.target_under_test(env)
 
-    substitutions = _template_substitutions(env, target)
-    if substitutions == None:
+    action = _template_action(env, target)
+    if action == None:
         return analysistest.end(env)
+    substitutions = action.substitutions
 
     for key, expected in ctx.attr.expected_substitutions.items():
         asserts.equals(
@@ -146,41 +150,111 @@ def _make_script_test(config_settings = {}):
 
 _script_test = _make_script_test()
 
+def _on_platform(os, toolchain, config = {}):
+    """Returns `config` that targets a fixture platform with `toolchain`.
+
+    Args:
+        os: The OS of the fixture platform, `linux` or `windows`.
+        toolchain: The name of the fixture Swift toolchain to select.
+        config: Other settings to add.
+
+    Returns:
+        A `dict` of `config_settings`.
+    """
+    fixture = lambda name: str(Label("{}:{}".format(_FIXTURES, name)))
+    return config | {
+        _EXTRA_TOOLCHAINS: [
+            fixture("{}_cc_toolchain".format(os)),
+            fixture(toolchain),
+        ],
+        _PLATFORMS: [fixture("{}_x86_64".format(os))],
+    }
+
 _custom_driver_script_test = _make_script_test(_CUSTOM_DRIVER_CONFIG)
 
-_FILE_DRIVER_CONFIG = _CUSTOM_DRIVER_CONFIG | {
-    _EXTRA_TOOLCHAINS: ["{}:file_driver_toolchain".format(_FIXTURES)],
-}
+_FILE_DRIVER_CONFIG = _on_platform(
+    "linux",
+    "file_driver_toolchain",
+    _CUSTOM_DRIVER_CONFIG,
+)
 
 _file_driver_script_test = _make_script_test(_FILE_DRIVER_CONFIG)
 
-_ATTR_FILE_DRIVER_CONFIG = {
-    _EXTRA_TOOLCHAINS: ["{}:attr_file_driver_toolchain".format(_FIXTURES)],
-}
+_ATTR_FILE_DRIVER_CONFIG = _on_platform(
+    "linux",
+    "attr_file_driver_toolchain",
+)
 
 _attr_file_driver_script_test = _make_script_test(_ATTR_FILE_DRIVER_CONFIG)
 
-_string_driver_script_test = _make_script_test({
-    _EXTRA_TOOLCHAINS: ["{}:string_driver_toolchain".format(_FIXTURES)],
-})
+_string_driver_script_test = _make_script_test(
+    _on_platform("linux", "string_driver_toolchain"),
+)
 
-_relative_root_script_test = _make_script_test({
-    _EXTRA_TOOLCHAINS: ["{}:relative_root_toolchain".format(_FIXTURES)],
-})
+_relative_root_script_test = _make_script_test(
+    _on_platform("linux", "relative_root_toolchain"),
+)
 
-_HERMETIC_CONFIG = {
-    _EXTRA_TOOLCHAINS: ["{}:hermetic_swift_toolchain".format(_FIXTURES)],
-}
+_HERMETIC_CONFIG = _on_platform("linux", "hermetic_swift_toolchain")
 
-_HERMETIC_DRIVER_ONLY_CONFIG = {
-    _EXTRA_TOOLCHAINS: [
-        "{}:hermetic_driver_only_toolchain".format(_FIXTURES),
-    ],
-}
+_HERMETIC_DRIVER_ONLY_CONFIG = _on_platform(
+    "linux",
+    "hermetic_driver_only_toolchain",
+)
 
 _xcode_custom_toolchain_script_test = _make_script_test({
     "//command_line_option:action_env": ["TOOLCHAINS=com.example.swift"],
 })
+
+def _bat_script_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    action = _template_action(env, target, extension = ".bat")
+    if action == None:
+        return analysistest.end(env)
+    content = action.content
+    if content == None:
+        unittest.fail(env, "Expected the script content at analysis time.")
+        return analysistest.end(env)
+
+    lines = content.split("\n")
+    for line in ctx.attr.contains_lines:
+        asserts.true(
+            env,
+            line in lines,
+            "Expected the script to contain the line '{}'.".format(line),
+        )
+    for needle in ctx.attr.does_not_contain:
+        asserts.false(
+            env,
+            needle in content,
+            "Expected the script not to contain '{}'.".format(needle),
+        )
+
+    return analysistest.end(env)
+
+def _make_bat_script_test(config_settings):
+    return analysistest.make(
+        _bat_script_test_impl,
+        attrs = {
+            "contains_lines": attr.string_list(
+                doc = "Lines that the rendered script must contain.",
+            ),
+            "does_not_contain": attr.string_list(
+                doc = "Strings that the rendered script must not contain.",
+            ),
+        },
+        config_settings = config_settings,
+    )
+
+_windows_string_driver_bat_test = _make_bat_script_test(
+    _on_platform("windows", "windows_string_driver_toolchain"),
+)
+
+_windows_file_driver_bat_test = _make_bat_script_test(
+    _on_platform("windows", "windows_file_driver_toolchain"),
+)
 
 _file_driver_provider_test = make_provider_test_rule(
     config_settings = _FILE_DRIVER_CONFIG,
@@ -218,6 +292,11 @@ def _multitool_test_impl(ctx):
         ),
     )
     asserts.equals(env, ctx.attr.expected_args, multitool.args)
+    asserts.equals(
+        env,
+        ctx.attr.expected_tool_executable_suffix,
+        multitool.tool_executable_suffix,
+    )
     asserts.true(
         env,
         executable in multitool.files,
@@ -237,6 +316,7 @@ def _make_multitool_test(config_settings):
         attrs = {
             "expected_args": attr.string_list(),
             "expected_executable_suffix": attr.string(mandatory = True),
+            "expected_tool_executable_suffix": attr.string(default = ""),
         },
         config_settings = config_settings,
     )
@@ -262,6 +342,12 @@ def swift_toolchain_tool_test_suite(name, tags = []):
     """
     all_tags = [name] + tags
 
+    # Tests of the host toolchain's bash script; Windows hosts get a `.bat`.
+    not_windows = select({
+        "@platforms//os:windows": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    })
+
     _script_test(
         name = "{}_default_tool_script".format(name),
         expected_substitutions = {"%tool%": shell.quote("swift")},
@@ -269,6 +355,7 @@ def swift_toolchain_tool_test_suite(name, tags = []):
             "%xcode_locator_rlocationpath%": ["tools/osx/xcode-locator"],
         },
         tags = all_tags,
+        target_compatible_with = not_windows,
         target_under_test = "{}:swift".format(_FIXTURES),
     )
 
@@ -276,6 +363,7 @@ def swift_toolchain_tool_test_suite(name, tags = []):
         name = "{}_custom_tool_script".format(name),
         expected_substitutions = {"%tool%": shell.quote("swift-format")},
         tags = all_tags,
+        target_compatible_with = not_windows,
         target_under_test = "{}:swift_format".format(_FIXTURES),
     )
 
@@ -436,6 +524,7 @@ def swift_toolchain_tool_test_suite(name, tags = []):
             "%env_exports%": ["__BAZEL_", "TOOLCHAIN_PATH"],
         },
         tags = all_tags,
+        target_compatible_with = not_windows,
         target_under_test = "{}:swift".format(_FIXTURES),
     )
 
@@ -450,6 +539,7 @@ def swift_toolchain_tool_test_suite(name, tags = []):
             "//conditions:default": "usr/bin/swift",
         }),
         tags = all_tags,
+        target_compatible_with = not_windows,
         target_under_test = "{}:multitool_info".format(_FIXTURES),
     )
 
@@ -469,6 +559,55 @@ def swift_toolchain_tool_test_suite(name, tags = []):
         },
         tags = all_tags,
         target_compatible_with = ["@platforms//os:macos"],
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # On Windows, the script is a `.bat` that runs the toolchain's `.exe`
+    # tools and sets the environment with `%` escaped. Placeholders are
+    # dropped.
+    _windows_string_driver_bat_test(
+        name = "{}_windows_string_driver_bat".format(name),
+        contains_lines = [
+            'set "TOOL_NAME=swift"',
+            'set "TOOL_SUFFIX=.exe"',
+            'set "DRIVER_RLOCATIONPATH="',
+            'set "TOOL_PATH=C:\\Swift\\usr\\bin\\swift.exe"',
+            "set DRIVER_ARGS=",
+            'set "FOO=100%% done"',
+            'set "Path=C:\\Swift\\usr\\bin;C:\\Windows"',
+            'set "ProgramData=C:\\ProgramData"',
+            "exit /b %ERRORLEVEL%",
+        ],
+        does_not_contain = ["__BAZEL_", "SDKROOT", "export "],
+        tags = all_tags,
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # Other tools are the driver's `.exe` siblings.
+    _windows_string_driver_bat_test(
+        name = "{}_windows_string_driver_sibling_bat".format(name),
+        contains_lines = [
+            'set "TOOL_NAME=swift-format"',
+            'set "TOOL_PATH=C:\\Swift\\usr\\bin\\swift-format.exe"',
+        ],
+        tags = all_tags,
+        target_under_test = "{}:swift_format".format(_FIXTURES),
+    )
+
+    # A `File` driver is found through the runfiles manifest and run with
+    # `--driver-mode=swift`.
+    _windows_file_driver_bat_test(
+        name = "{}_windows_file_driver_bat".format(name),
+        contains_lines = [
+            'set "TOOL_NAME=swift"',
+            'set "DRIVER_RLOCATIONPATH=_main/{}"'.format(_FIXTURE_DRIVER),
+            'set "TOOL_PATH="',
+            'set DRIVER_ARGS="--driver-mode=swift"',
+            "if not \"%MANIFEST%\"==\"\" for /f \"usebackq tokens=1,*\" " +
+            "%%A in (`findstr /b /l /c:\"%DRIVER_RLOCATIONPATH% \" " +
+            "\"%MANIFEST%\"`) do if not defined DRIVER set \"DRIVER=%%B\"",
+        ],
+        tags = all_tags,
         target_under_test = "{}:swift".format(_FIXTURES),
     )
 

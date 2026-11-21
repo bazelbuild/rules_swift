@@ -474,6 +474,9 @@ following fields:
     skip them.
 *   `files`: A `list` of `File`s needed to run it, such as the other tools
     that the driver dispatches to and their runtime libraries.
+*   `tool_executable_suffix`: A `string` appended to the names of the other
+    tools in the toolchain, such as `".exe"` on Windows, or `""`. It is
+    already applied to `executable` when that is a `string`.
 
 Use `swift_toolchain_tool` to get a runnable wrapper for it.
 """,

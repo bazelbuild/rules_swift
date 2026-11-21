@@ -248,12 +248,14 @@ def _swift_multitool(
                 env = env,
                 executable = swift,
                 files = [swift] + files,
+                tool_executable_suffix = tool_executable_suffix,
             )
         return struct(
             args = ["--driver-mode=swift"],
             env = env,
             executable = swift_tools.swift_driver,
             files = [swift_tools.swift_driver] + files,
+            tool_executable_suffix = tool_executable_suffix,
         )
 
     if swift_executable:
@@ -262,6 +264,7 @@ def _swift_multitool(
             env = env,
             executable = swift_executable,
             files = [swift_executable],
+            tool_executable_suffix = tool_executable_suffix,
         )
 
     # Swift.org toolchains found on the system are run in place, so no files
@@ -279,6 +282,7 @@ def _swift_multitool(
         env = env,
         executable = executable,
         files = [],
+        tool_executable_suffix = tool_executable_suffix,
     )
 
 def _all_action_configs(

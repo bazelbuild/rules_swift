@@ -1,7 +1,9 @@
+load("@rules_cc//cc/toolchains:cc_toolchain.bzl", "cc_toolchain")
 load("//swift:swift_toolchain_tool.bzl", "swift_toolchain_tool")
 load("//swift/toolchains:swift_toolchain.bzl", "swift_toolchain")
 load("//swift/toolchains:swift_tools.bzl", "swift_tools")
 load("//test/fixtures:common.bzl", "FIXTURE_TAGS")
+load(":fake_cc_toolchain_config.bzl", "fake_cc_toolchain_config")
 load(":swift_multitool_info.bzl", "swift_multitool_info")
 
 package(
@@ -195,5 +197,156 @@ toolchain(
     name = "hermetic_driver_only_toolchain",
     tags = FIXTURE_TAGS,
     toolchain = ":_hermetic_driver_only_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+###############################################################################
+# Fixed target platforms and the C++ toolchains that `swift_toolchain` needs
+# for them. The C++ toolchains only satisfy toolchain resolution; they cannot
+# compile or link anything. The tests that check the bash script target
+# `linux_x86_64` so that they do not depend on the host, which would get a
+# `.bat` file on Windows.
+
+filegroup(
+    name = "_empty",
+    srcs = [],
+    tags = FIXTURE_TAGS,
+)
+
+platform(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+fake_cc_toolchain_config(
+    name = "_linux_cc_toolchain_config",
+    compiler = "clang",
+    tags = FIXTURE_TAGS,
+    target_cpu = "k8",
+    target_system_name = "x86_64-unknown-linux-gnu",
+)
+
+cc_toolchain(
+    name = "_linux_cc_toolchain",
+    all_files = ":_empty",
+    compiler_files = ":_empty",
+    dwp_files = ":_empty",
+    linker_files = ":_empty",
+    objcopy_files = ":_empty",
+    strip_files = ":_empty",
+    tags = FIXTURE_TAGS,
+    toolchain_config = ":_linux_cc_toolchain_config",
+)
+
+toolchain(
+    name = "linux_cc_toolchain",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    toolchain = ":_linux_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+platform(
+    name = "windows_x86_64",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:windows",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+fake_cc_toolchain_config(
+    name = "_windows_cc_toolchain_config",
+    compiler = "msvc-cl",
+    tags = FIXTURE_TAGS,
+    target_cpu = "x64_windows",
+    target_system_name = "x86_64-unknown-windows-msvc",
+)
+
+cc_toolchain(
+    name = "_windows_cc_toolchain",
+    all_files = ":_empty",
+    compiler_files = ":_empty",
+    dwp_files = ":_empty",
+    linker_files = ":_empty",
+    objcopy_files = ":_empty",
+    strip_files = ":_empty",
+    tags = FIXTURE_TAGS,
+    toolchain_config = ":_windows_cc_toolchain_config",
+)
+
+toolchain(
+    name = "windows_cc_toolchain",
+    tags = FIXTURE_TAGS,
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:windows",
+    ],
+    toolchain = ":_windows_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+###############################################################################
+# Windows fixtures. The tests target `windows_x86_64` so that the rule writes a
+# `.bat` file, and select one of the toolchains below with `--extra_toolchains`.
+
+_WINDOWS_TEST_ENV = {
+    # `%` must be doubled in a batch file.
+    "FOO": "100% done",
+    "Path": "C:\\Swift\\usr\\bin;C:\\Windows",
+    "ProgramData": "C:\\ProgramData",
+    # A placeholder that only the worker can fill in.
+    "SDKROOT": "__BAZEL_XCODE_SDKROOT__",
+}
+
+# An autoconfigured-style Windows toolchain: an absolute root and `.exe` tools.
+swift_toolchain(
+    name = "_windows_string_driver_toolchain",
+    arch = "x86_64",
+    env = _WINDOWS_TEST_ENV,
+    os = "windows",
+    parsed_version = "6.3",
+    root = "C:/Swift/usr",
+    sdkroot = "C:/Swift/Platforms/Windows.platform/Developer/SDKs/Windows.sdk",
+    tags = FIXTURE_TAGS,
+    tool_executable_suffix = ".exe",
+    version_file = ".swift_version",
+    xctest_version = "development",
+)
+
+toolchain(
+    name = "windows_string_driver_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_windows_string_driver_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# The same toolchain with a custom driver `File`.
+swift_toolchain(
+    name = "_windows_file_driver_toolchain",
+    arch = "x86_64",
+    env = _WINDOWS_TEST_ENV,
+    os = "windows",
+    parsed_version = "6.3",
+    root = "C:/Swift/usr",
+    sdkroot = "C:/Swift/Platforms/Windows.platform/Developer/SDKs/Windows.sdk",
+    swift_executable = ":bin/swift",
+    tags = FIXTURE_TAGS,
+    tool_executable_suffix = ".exe",
+    version_file = ".swift_version",
+    xctest_version = "development",
+)
+
+toolchain(
+    name = "windows_file_driver_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_windows_file_driver_toolchain",
     toolchain_type = "//toolchains:toolchain_type",
 )

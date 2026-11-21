@@ -28,6 +28,10 @@ readonly swift_rlocationpath=%swift_rlocationpath%
 # empty otherwise.
 readonly swift_string=%swift_string%
 
+# Suffix of the toolchain's executables (e.g. `.exe` on Windows); the `swift`
+# driver string already has it.
+readonly tool_executable_suffix=%tool_executable_suffix%
+
 # Arguments that must precede the user's arguments when running `swift` itself
 # (e.g. `--driver-mode=swift` for a custom driver).
 swift_args=(%swift_args%)
@@ -124,11 +128,11 @@ if [[ -n "${swift_rlocationpath}" ]]; then
   # Other tools are siblings of the driver. Standalone toolchains list them in
   # the runfiles next to it; otherwise fall back to the directory of the
   # driver's real path.
-  tool_path="$(dirname "${swift}")/${tool}"
+  tool_path="$(dirname "${swift}")/${tool}${tool_executable_suffix}"
   if [[ ! -x "${tool_path}" ]]; then
     real_swift="$(resolve_path "${swift}")" ||
       fail "cannot resolve the real path of '${swift}'"
-    tool_path="$(dirname "${real_swift}")/${tool}"
+    tool_path="$(dirname "${real_swift}")/${tool}${tool_executable_suffix}"
   fi
   if [[ ! -x "${tool_path}" ]]; then
     fail "cannot find '${tool}' next to the Swift driver at '${tool_path}'"
@@ -142,12 +146,12 @@ fi
 
 if [[ "${swift_string}" == */* ]]; then
   # A path into a toolchain; the other tools are its siblings.
-  tool_path="$(dirname "${swift_string}")/${tool}"
+  tool_path="$(dirname "${swift_string}")/${tool}${tool_executable_suffix}"
   if [[ ! -x "${tool_path}" ]]; then
     fail "cannot find '${tool}' at '${tool_path}'"
   fi
 else
-  tool_path="${tool}"
+  tool_path="${tool}${tool_executable_suffix}"
 fi
 
 if [[ "${use_xcrun}" != "true" && "${tool_path}" != */* ]] &&

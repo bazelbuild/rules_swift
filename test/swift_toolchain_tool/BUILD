@@ -14,8 +14,17 @@ swift_toolchain_tool(
     tool = "swift-format",
 )
 
+# Runs the wrapper as a tool of an action rather than with `bazel run`.
+genrule(
+    name = "swift_version_genrule",
+    outs = ["swift_version.txt"],
+    cmd = "$(location :swift) --version > $@ 2>&1",
+    tools = [":swift"],
+)
+
 # Arguments of `run_tool_test.sh`: the tool's runfiles path, a regex that its
-# output must match, and the arguments to run it with.
+# output must match, and the arguments to run it with; or `--output`, a file's
+# runfiles path, and a regex that its contents must match.
 _RUN_TESTS = {
     # Runs the toolchain's `swift` driver.
     "swift_version_test": [
@@ -33,6 +42,12 @@ _RUN_TESTS = {
     # Runs a sibling of the driver rather than the driver itself. Release
     # toolchains print a version; swift.org builds of `swift-format` print
     # `main`.
+    # Checks the output of the genrule above.
+    "swift_version_genrule_test": [
+        "--output",
+        "_main/test/swift_toolchain_tool/swift_version.txt",
+        "'Swift version [0-9]+'",
+    ],
     "swift_format_version_test": [
         "_main/test/swift_toolchain_tool/swift_format",
         "'^([0-9]+[.][0-9]+|main)'",
@@ -48,6 +63,7 @@ _RUN_TESTS = {
         data = [
             ":swift",
             ":swift_format",
+            ":swift_version_genrule",
         ],
         deps = ["@bazel_tools//tools/bash/runfiles"],
     )

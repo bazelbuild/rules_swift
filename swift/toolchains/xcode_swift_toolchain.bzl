@@ -785,6 +785,7 @@ def _swift_multitool(
             env = env,
             executable = swift_executable,
             files = [swift_executable],
+            tool_executable_suffix = "",
         )
 
     if toolchain_root:
@@ -796,6 +797,7 @@ def _swift_multitool(
         env = env,
         executable = executable,
         files = [],
+        tool_executable_suffix = "",
     )
 
 def _is_xcode_at_least_version(xcode_config, desired_version):

@@ -1047,10 +1047,11 @@ swift_toolchain_tool(<a href="#swift_toolchain_tool-name">name</a>, <a href="#sw
 
 Creates an executable that runs a tool from the resolved Swift toolchain.
 
-The generated script runs the requested tool from the same toolchain that the
-Swift build rules use (Xcode on macOS, or the configured swift.org toolchain on
-Linux), exports the environment that the toolchain requires, and forwards all
-of its arguments to the tool. This lets other rules run, for example,
+The output is a bash script, or a `.bat` file when the target platform is
+Windows. It runs the requested tool from the same toolchain that the Swift
+build rules use (Xcode on macOS, or the configured swift.org toolchain on Linux
+and Windows), exports the environment that the toolchain requires, and forwards
+all of its arguments to the tool. This lets other rules run, for example,
 `swift package dump-package` without depending on whatever `swift` is on
 `PATH`.
 

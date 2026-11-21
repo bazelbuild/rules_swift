@@ -27,6 +27,31 @@ def _rlocationpath(ctx, file):
         return file.short_path[len("../"):]
     return "{}/{}".format(ctx.workspace_name, file.short_path)
 
+def _bat_escape(value):
+    """Escapes `value` for use inside a double-quoted batch `set` value."""
+    return value.replace("%", "%%")
+
+def _bat_string_tool_path(swift_string, tool, suffix):
+    """Returns the Windows path of `tool` for a `string` Swift driver.
+
+    Args:
+        swift_string: The driver: a bare name or a path, with the suffix.
+        tool: The name of the tool to run.
+        suffix: The toolchain's `tool_executable_suffix`.
+
+    Returns:
+        The tool to run, with backslashes, or `""` if there is no driver.
+    """
+    if not swift_string:
+        return ""
+    driver = swift_string.replace("/", "\\")
+    if tool == "swift":
+        return driver
+    if "\\" not in driver:
+        # A bare name, found on `PATH`.
+        return tool + suffix
+    return "{}\\{}{}".format(driver.rpartition("\\")[0], tool, suffix)
+
 def _swift_toolchain_tool_impl(ctx):
     tool = ctx.attr.tool
     if not tool or "/" in tool or "\\" in tool:
@@ -42,6 +67,7 @@ def _swift_toolchain_tool_impl(ctx):
             "The resolved Swift toolchain does not provide a `swift` " +
             "driver; `swift_toolchain_tool` cannot be used with it.",
         )
+    suffix = getattr(multitool, "tool_executable_suffix", "") or ""
 
     executable = multitool.executable
     runfiles_files = list(multitool.files)
@@ -53,23 +79,47 @@ def _swift_toolchain_tool_impl(ctx):
         swift_rlocationpath = ""
         swift_string = executable or ""
 
-    xcode_locator = ctx.file._xcode_locator
-    runfiles_files.append(xcode_locator)
-
-    env_exports = "\n".join([
-        "export {}={}".format(key, shell.quote(value))
+    # Skip Bazel placeholders (e.g. `__BAZEL_XCODE_SDKROOT__`) that only the
+    # worker knows how to fill in.
+    env = [
+        (key, value)
         for key, value in sorted(multitool.env.items())
-        # Skip Bazel placeholders (e.g. `__BAZEL_XCODE_SDKROOT__`) that only
-        # the worker knows how to fill in.
         if value != None and "__BAZEL_" not in value
-    ])
+    ]
 
-    script = ctx.actions.declare_file(ctx.label.name)
-    ctx.actions.expand_template(
-        template = ctx.file._template,
-        output = script,
+    is_windows = ctx.target_platform_has_constraint(
+        ctx.attr._windows_os_constraint[platform_common.ConstraintValueInfo],
+    )
+    if is_windows:
+        script = ctx.actions.declare_file(ctx.label.name + ".bat")
+        template = ctx.file._bat_template
         substitutions = {
-            "%env_exports%": env_exports,
+            "%env_exports%": "\n".join([
+                'set "{}={}"'.format(key, _bat_escape(value))
+                for key, value in env
+            ]),
+            "%swift_args%": " ".join([
+                '"{}"'.format(_bat_escape(arg))
+                for arg in multitool.args
+            ]),
+            "%swift_rlocationpath%": _bat_escape(swift_rlocationpath),
+            "%string_tool_path%": _bat_escape(
+                _bat_string_tool_path(swift_string, tool, suffix),
+            ),
+            "%tool%": _bat_escape(tool),
+            "%tool_executable_suffix%": _bat_escape(suffix),
+        }
+        runfiles = ctx.runfiles(files = runfiles_files)
+    else:
+        xcode_locator = ctx.file._xcode_locator
+        runfiles_files.append(xcode_locator)
+        script = ctx.actions.declare_file(ctx.label.name)
+        template = ctx.file._template
+        substitutions = {
+            "%env_exports%": "\n".join([
+                "export {}={}".format(key, shell.quote(value))
+                for key, value in env
+            ]),
             "%swift_args%": " ".join([
                 shell.quote(arg)
                 for arg in multitool.args
@@ -77,15 +127,20 @@ def _swift_toolchain_tool_impl(ctx):
             "%swift_rlocationpath%": shell.quote(swift_rlocationpath),
             "%swift_string%": shell.quote(swift_string),
             "%tool%": shell.quote(tool),
+            "%tool_executable_suffix%": shell.quote(suffix),
             "%xcode_locator_rlocationpath%": shell.quote(
                 _rlocationpath(ctx, xcode_locator),
             ),
-        },
-        is_executable = True,
-    )
+        }
+        runfiles = ctx.runfiles(files = runfiles_files).merge(
+            ctx.attr._runfiles_lib[DefaultInfo].default_runfiles,
+        )
 
-    runfiles = ctx.runfiles(files = runfiles_files).merge(
-        ctx.attr._runfiles_lib[DefaultInfo].default_runfiles,
+    ctx.actions.expand_template(
+        template = template,
+        output = script,
+        substitutions = substitutions,
+        is_executable = True,
     )
 
     return [
@@ -113,12 +168,19 @@ It must be a bare tool name: an empty value or one that contains `/` or `\\`
 fails the build.
 """,
         ),
+        "_bat_template": attr.label(
+            allow_single_file = True,
+            default = Label("//swift/internal:swift_toolchain_tool.bat.tpl"),
+        ),
         "_runfiles_lib": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
         "_template": attr.label(
             allow_single_file = True,
             default = Label("//swift/internal:swift_toolchain_tool.sh.tpl"),
+        ),
+        "_windows_os_constraint": attr.label(
+            default = Label("@platforms//os:windows"),
         ),
         "_xcode_locator": attr.label(
             # Bazel's own locator; it is a stub that always fails on other
@@ -130,10 +192,11 @@ fails the build.
     doc = """\
 Creates an executable that runs a tool from the resolved Swift toolchain.
 
-The generated script runs the requested tool from the same toolchain that the
-Swift build rules use (Xcode on macOS, or the configured swift.org toolchain on
-Linux), exports the environment that the toolchain requires, and forwards all
-of its arguments to the tool. This lets other rules run, for example,
+The output is a bash script, or a `.bat` file when the target platform is
+Windows. It runs the requested tool from the same toolchain that the Swift
+build rules use (Xcode on macOS, or the configured swift.org toolchain on Linux
+and Windows), exports the environment that the toolchain requires, and forwards
+all of its arguments to the tool. This lets other rules run, for example,
 `swift package dump-package` without depending on whatever `swift` is on
 `PATH`.
 
