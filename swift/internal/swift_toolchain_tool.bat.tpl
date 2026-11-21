@@ -5,8 +5,11 @@ rem
 rem This file may have LF line endings, so it avoids labels and `goto`, which
 rem cmd.exe does not find reliably in such files. It also avoids `( ... )`
 rem blocks around paths, which may contain `)`; an `if` runs every command
-rem chained after it with `&`.
-setlocal
+rem chained after it with `&`. Error messages are quoted so that a `&` in an
+rem expanded path does not end the `echo`. Delayed expansion is turned off,
+rem since a caller such as a genrule's `cmd_bat` may turn it on and it would
+rem drop any `!` in paths and arguments.
+setlocal EnableExtensions DisableDelayedExpansion
 
 rem The tool to run, e.g. `swift` or `swift-format`.
 set "TOOL_NAME=%tool%"
@@ -29,26 +32,27 @@ set DRIVER_ARGS=%swift_args%
 rem Environment required by the toolchain.
 %env_exports%
 
-rem A `File` driver: find it through the runfiles manifest (from the
-rem environment, or next to this script), then in a runfiles directory.
+rem A `File` driver: find it through the runfiles manifest from the
+rem environment, then the one next to this script, then in a runfiles
+rem directory.
 set "DRIVER="
 set "MANIFEST="
 if not "%DRIVER_RLOCATIONPATH%"=="" set "MANIFEST=%RUNFILES_MANIFEST_FILE%"
-if not "%DRIVER_RLOCATIONPATH%"=="" if "%MANIFEST%"=="" if exist "%~dpn0.bat.runfiles_manifest" set "MANIFEST=%~dpn0.bat.runfiles_manifest"
 if not "%MANIFEST%"=="" for /f "usebackq tokens=1,*" %%A in (`findstr /b /l /c:"%DRIVER_RLOCATIONPATH% " "%MANIFEST%"`) do if not defined DRIVER set "DRIVER=%%B"
+if not "%DRIVER_RLOCATIONPATH%"=="" if not defined DRIVER if exist "%~dpn0.bat.runfiles_manifest" for /f "usebackq tokens=1,*" %%A in (`findstr /b /l /c:"%DRIVER_RLOCATIONPATH% " "%~dpn0.bat.runfiles_manifest"`) do if not defined DRIVER set "DRIVER=%%B"
 if not "%DRIVER_RLOCATIONPATH%"=="" if not defined DRIVER if not "%RUNFILES_DIR%"=="" if exist "%RUNFILES_DIR%\%DRIVER_RLOCATIONPATH%" set "DRIVER=%RUNFILES_DIR%\%DRIVER_RLOCATIONPATH%"
 if not "%DRIVER_RLOCATIONPATH%"=="" if not defined DRIVER if exist "%~dpn0.bat.runfiles\%DRIVER_RLOCATIONPATH%" set "DRIVER=%~dpn0.bat.runfiles\%DRIVER_RLOCATIONPATH%"
-if not "%DRIVER_RLOCATIONPATH%"=="" if not defined DRIVER echo ERROR: swift_toolchain_tool: cannot locate the Swift driver '%DRIVER_RLOCATIONPATH%' in runfiles 1>&2 & exit /b 1
+if not "%DRIVER_RLOCATIONPATH%"=="" if not defined DRIVER echo "ERROR: swift_toolchain_tool: cannot locate the Swift driver '%DRIVER_RLOCATIONPATH%' in runfiles" 1>&2 & exit /b 1
 
 rem Run a `File` driver itself, or the tool next to it.
 if defined DRIVER set "DRIVER=%DRIVER:/=\%"
 if defined DRIVER if "%TOOL_NAME%"=="swift" set "TOOL_PATH=%DRIVER%"
 if defined DRIVER if not "%TOOL_NAME%"=="swift" for %%I in ("%DRIVER%") do set "TOOL_PATH=%%~dpI%TOOL_NAME%%TOOL_SUFFIX%"
 
-if "%TOOL_PATH%"=="" echo ERROR: swift_toolchain_tool: the Swift toolchain does not provide a 'swift' driver 1>&2 & exit /b 1
+if "%TOOL_PATH%"=="" echo "ERROR: swift_toolchain_tool: the Swift toolchain does not provide a 'swift' driver" 1>&2 & exit /b 1
 
 rem Check a path, but leave a bare name to the `PATH` lookup.
-if not "%TOOL_PATH:\=%"=="%TOOL_PATH%" if not exist "%TOOL_PATH%" echo ERROR: swift_toolchain_tool: cannot find '%TOOL_NAME%' at '%TOOL_PATH%' 1>&2 & exit /b 1
+if not "%TOOL_PATH:\=%"=="%TOOL_PATH%" if not exist "%TOOL_PATH%" echo "ERROR: swift_toolchain_tool: cannot find '%TOOL_NAME%' at '%TOOL_PATH%'" 1>&2 & exit /b 1
 
 rem Only `swift` itself takes the driver arguments.
 if not "%TOOL_NAME%"=="swift" set "DRIVER_ARGS="

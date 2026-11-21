@@ -1055,6 +1055,10 @@ all of its arguments to the tool. This lets other rules run, for example,
 `swift package dump-package` without depending on whatever `swift` is on
 `PATH`.
 
+On Windows, the `.bat` file forwards its arguments with `%*`, so cmd.exe parses
+them again: callers must quote any argument that contains `&`, `|`, `<`, `>` or
+`^`.
+
 On macOS, the script runs the Xcode that Bazel selected (for example with
 `--xcode_version`) by setting `DEVELOPER_DIR` to that Xcode, unless
 `DEVELOPER_DIR` is already set.
@@ -1088,7 +1092,7 @@ bazel run //:swift -- --version
 | Name  | Description | Type | Mandatory | Default |
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="swift_toolchain_tool-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
-| <a id="swift_toolchain_tool-tool"></a>tool |  The name of the toolchain tool to run, such as `swift` (the default), `swift-format`, or `swift-build`.<br><br>`swift` runs the toolchain's `swift` driver. Any other value runs the tool with that name from the same directory as the driver for toolchains that provide one (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH` otherwise.<br><br>It must be a bare tool name: an empty value or one that contains `/` or `\` fails the build.   | String | optional |  `"swift"`  |
+| <a id="swift_toolchain_tool-tool"></a>tool |  The name of the toolchain tool to run, such as `swift` (the default), `swift-format`, or `swift-build`.<br><br>`swift` runs the toolchain's `swift` driver. Any other value runs the tool with that name from the same directory as the driver for toolchains that provide one (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH` otherwise.<br><br>It must be a bare tool name made of the characters `A-Z`, `a-z`, `0-9`, `.`, `_`, `+` and `-`; any other value, including an empty one, fails the build.   | String | optional |  `"swift"`  |
 
 
 <a id="universal_swift_compiler_plugin"></a>

@@ -12,9 +12,13 @@ package(
 
 licenses(["notice"])
 
-# A stand-in driver for `--@rules_swift//swift:default_swift_executable` and the
-# `swift_executable` of the toolchains below.
-exports_files(["bin/swift"])
+# Stand-in drivers for `--@rules_swift//swift:default_swift_executable` and the
+# `swift_executable` of the toolchains below. `bin/fake_swift.bat` is the
+# Windows one that `//test/swift_toolchain_tool` runs.
+exports_files([
+    "bin/fake_swift.bat",
+    "bin/swift",
+])
 
 ###############################################################################
 # Fixtures for testing `swift_toolchain_tool`.
@@ -348,5 +352,27 @@ toolchain(
     name = "windows_file_driver_toolchain",
     tags = FIXTURE_TAGS,
     toolchain = ":_windows_file_driver_toolchain",
+    toolchain_type = "//toolchains:toolchain_type",
+)
+
+# Fails analysis: a double quote cannot be escaped in a `.bat` file.
+swift_toolchain(
+    name = "_windows_quoted_env_toolchain",
+    arch = "x86_64",
+    env = _WINDOWS_TEST_ENV | {"FOO": 'say "hi"'},
+    os = "windows",
+    parsed_version = "6.3",
+    root = "C:/Swift/usr",
+    sdkroot = "C:/Swift/Platforms/Windows.platform/Developer/SDKs/Windows.sdk",
+    tags = FIXTURE_TAGS,
+    tool_executable_suffix = ".exe",
+    version_file = ".swift_version",
+    xctest_version = "development",
+)
+
+toolchain(
+    name = "windows_quoted_env_toolchain",
+    tags = FIXTURE_TAGS,
+    toolchain = ":_windows_quoted_env_toolchain",
     toolchain_type = "//toolchains:toolchain_type",
 )

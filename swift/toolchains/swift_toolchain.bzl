@@ -959,8 +959,16 @@ def _swift_toolchain_impl(ctx):
         additional_tools = additional_tools,
         tool_executable_suffix = ctx.attr.tool_executable_suffix,
     )
+
+    # Actions get the SDK through `-sdk`, but `swift` run outside of an action
+    # (e.g. `swift package` under `bazel run`) finds the Windows SDK through
+    # `SDKROOT`. The path is kept as given, with forward slashes, which the
+    # Windows tools accept.
+    multitool_env = dict(ctx.attr.env)
+    if ctx.attr.os == "windows" and sdkroot:
+        multitool_env["SDKROOT"] = sdkroot
     swift_multitool = _swift_multitool(
-        env = ctx.attr.env,
+        env = multitool_env,
         swift_executable = swift_executable if not ctx.attr.swift_tools else None,
         swift_tools = ctx.attr.swift_tools[SwiftToolsInfo] if ctx.attr.swift_tools else None,
         toolchain_root = toolchain_root,

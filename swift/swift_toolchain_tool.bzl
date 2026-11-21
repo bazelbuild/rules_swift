@@ -27,8 +27,34 @@ def _rlocationpath(ctx, file):
         return file.short_path[len("../"):]
     return "{}/{}".format(ctx.workspace_name, file.short_path)
 
-def _bat_escape(value):
-    """Escapes `value` for use inside a double-quoted batch `set` value."""
+# The characters allowed in `tool`.
+_TOOL_CHARS = (
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._+-"
+)
+
+def _bat_escape(value, description):
+    """Escapes `value` for use inside a double-quoted batch `set` value.
+
+    Fails the build if `value` contains a character that cannot be escaped
+    there: a double quote, a carriage return or a newline.
+
+    Args:
+        value: The value to escape.
+        description: What the value is, for the error message.
+
+    Returns:
+        `value` with `%` doubled.
+    """
+    for char, name in [
+        ("\"", "a double quote"),
+        ("\r", "a carriage return"),
+        ("\n", "a newline"),
+    ]:
+        if char in value:
+            fail(
+                ("{} contains {}, which cannot be escaped in a Windows " +
+                 "batch file: {}").format(description, name, repr(value)),
+            )
     return value.replace("%", "%%")
 
 def _bat_string_tool_path(swift_string, tool, suffix):
@@ -54,10 +80,11 @@ def _bat_string_tool_path(swift_string, tool, suffix):
 
 def _swift_toolchain_tool_impl(ctx):
     tool = ctx.attr.tool
-    if not tool or "/" in tool or "\\" in tool:
+    if not tool or [char for char in tool.elems() if char not in _TOOL_CHARS]:
         fail(
             "`tool` must be the bare name of a toolchain tool, such as " +
-            "`swift-format`, not empty or a path; got '{}'.".format(tool),
+            "`swift-format`, made of the characters `A-Z`, `a-z`, `0-9`, " +
+            "`.`, `_`, `+` and `-`; got '{}'.".format(tool),
         )
 
     swift_toolchain = get_swift_toolchain(ctx)
@@ -95,26 +122,39 @@ def _swift_toolchain_tool_impl(ctx):
         template = ctx.file._bat_template
         substitutions = {
             "%env_exports%": "\n".join([
-                'set "{}={}"'.format(key, _bat_escape(value))
+                'set "{}={}"'.format(
+                    _bat_escape(key, "A toolchain environment variable name"),
+                    _bat_escape(
+                        value,
+                        "The toolchain environment variable `{}`".format(key),
+                    ),
+                )
                 for key, value in env
             ]),
             "%swift_args%": " ".join([
-                '"{}"'.format(_bat_escape(arg))
+                '"{}"'.format(_bat_escape(arg, "A Swift driver argument"))
                 for arg in multitool.args
             ]),
-            "%swift_rlocationpath%": _bat_escape(swift_rlocationpath),
+            "%swift_rlocationpath%": _bat_escape(
+                swift_rlocationpath,
+                "The runfiles path of the Swift driver",
+            ),
             "%string_tool_path%": _bat_escape(
                 _bat_string_tool_path(swift_string, tool, suffix),
+                "The path of the tool",
             ),
-            "%tool%": _bat_escape(tool),
-            "%tool_executable_suffix%": _bat_escape(suffix),
+            "%tool%": _bat_escape(tool, "`tool`"),
+            "%tool_executable_suffix%": _bat_escape(
+                suffix,
+                "The toolchain's `tool_executable_suffix`",
+            ),
         }
         runfiles = ctx.runfiles(files = runfiles_files)
     else:
         xcode_locator = ctx.file._xcode_locator
         runfiles_files.append(xcode_locator)
         script = ctx.actions.declare_file(ctx.label.name)
-        template = ctx.file._template
+        template = ctx.file._sh_template
         substitutions = {
             "%env_exports%": "\n".join([
                 "export {}={}".format(key, shell.quote(value))
@@ -164,8 +204,8 @@ that name from the same directory as the driver for toolchains that provide one
 (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH`
 otherwise.
 
-It must be a bare tool name: an empty value or one that contains `/` or `\\`
-fails the build.
+It must be a bare tool name made of the characters `A-Z`, `a-z`, `0-9`, `.`,
+`_`, `+` and `-`; any other value, including an empty one, fails the build.
 """,
         ),
         "_bat_template": attr.label(
@@ -175,7 +215,7 @@ fails the build.
         "_runfiles_lib": attr.label(
             default = Label("@bazel_tools//tools/bash/runfiles"),
         ),
-        "_template": attr.label(
+        "_sh_template": attr.label(
             allow_single_file = True,
             default = Label("//swift/internal:swift_toolchain_tool.sh.tpl"),
         ),
@@ -199,6 +239,10 @@ and Windows), exports the environment that the toolchain requires, and forwards
 all of its arguments to the tool. This lets other rules run, for example,
 `swift package dump-package` without depending on whatever `swift` is on
 `PATH`.
+
+On Windows, the `.bat` file forwards its arguments with `%*`, so cmd.exe parses
+them again: callers must quote any argument that contains `&`, `|`, `<`, `>` or
+`^`.
 
 On macOS, the script runs the Xcode that Bazel selected (for example with
 `--xcode_version`) by setting `DEVELOPER_DIR` to that Xcode, unless

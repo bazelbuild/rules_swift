@@ -50,6 +50,8 @@ filegroup(
 # `swift_toolchain_tool`): the `swift-<subcommand>` executables and other tools
 # it dispatches to, the libraries they load, and SwiftPM's manifest and plugin
 # APIs. These are runfiles only; they are not inputs to compile actions.
+# SwiftPM's `usr/lib/swift/pm` is already in the `additional_inputs` of
+# `:tools`, which `swift_multitool` also adds.
 filegroup(
     name = "swift_multitool_files",
     srcs = glob(
@@ -58,7 +60,6 @@ filegroup(
             "usr/lib/clang/**",
             "usr/lib/lib*.dylib",
             "usr/lib/lib*.so*",
-            "usr/lib/swift/pm/**",
         ],
         allow_empty = True,
     ),

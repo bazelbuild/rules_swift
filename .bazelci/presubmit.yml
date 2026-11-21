@@ -41,6 +41,8 @@ x_defaults:
       - "//test/swift_toolchain_tool:swift_package_version_test"
       - "//test/swift_toolchain_tool:swift_version_genrule_test"
       - "//test/swift_toolchain_tool:swift_version_test"
+      # Runs a `.bat` custom driver `File` through the wrapper.
+      - "//test/swift_toolchain_tool:windows_fake_driver_version_test"
 
 tasks:
   macos_latest:

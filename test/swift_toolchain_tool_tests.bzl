@@ -20,7 +20,11 @@ load(
     "//test/fixtures/swift_toolchain_tool:swift_multitool_info.bzl",
     "SwiftMultitoolTestInfo",
 )
-load("//test/rules:analysis_failure_test.bzl", "analysis_failure_test")
+load(
+    "//test/rules:analysis_failure_test.bzl",
+    "analysis_failure_test",
+    "make_analysis_failure_test_rule",
+)
 load(
     "//test/rules:provider_test.bzl",
     "make_provider_test_rule",
@@ -254,6 +258,10 @@ _windows_string_driver_bat_test = _make_bat_script_test(
 
 _windows_file_driver_bat_test = _make_bat_script_test(
     _on_platform("windows", "windows_file_driver_toolchain"),
+)
+
+_windows_quoted_env_failure_test = make_analysis_failure_test_rule(
+    _on_platform("windows", "windows_quoted_env_toolchain"),
 )
 
 _file_driver_provider_test = make_provider_test_rule(
@@ -564,7 +572,7 @@ def swift_toolchain_tool_test_suite(name, tags = []):
 
     # On Windows, the script is a `.bat` that runs the toolchain's `.exe`
     # tools and sets the environment with `%` escaped. Placeholders are
-    # dropped.
+    # dropped, and `SDKROOT` is set to the toolchain's SDK.
     _windows_string_driver_bat_test(
         name = "{}_windows_string_driver_bat".format(name),
         contains_lines = [
@@ -576,9 +584,10 @@ def swift_toolchain_tool_test_suite(name, tags = []):
             'set "FOO=100%% done"',
             'set "Path=C:\\Swift\\usr\\bin;C:\\Windows"',
             'set "ProgramData=C:\\ProgramData"',
+            'set "SDKROOT=C:/Swift/Platforms/Windows.platform/Developer/SDKs/Windows.sdk"',
             "exit /b %ERRORLEVEL%",
         ],
-        does_not_contain = ["__BAZEL_", "SDKROOT", "export "],
+        does_not_contain = ["__BAZEL_", "export "],
         tags = all_tags,
         target_under_test = "{}:swift".format(_FIXTURES),
     )
@@ -594,8 +603,8 @@ def swift_toolchain_tool_test_suite(name, tags = []):
         target_under_test = "{}:swift_format".format(_FIXTURES),
     )
 
-    # A `File` driver is found through the runfiles manifest and run with
-    # `--driver-mode=swift`.
+    # A `File` driver is found through the runfiles manifest from the
+    # environment or next to the script, and run with `--driver-mode=swift`.
     _windows_file_driver_bat_test(
         name = "{}_windows_file_driver_bat".format(name),
         contains_lines = [
@@ -606,7 +615,23 @@ def swift_toolchain_tool_test_suite(name, tags = []):
             "if not \"%MANIFEST%\"==\"\" for /f \"usebackq tokens=1,*\" " +
             "%%A in (`findstr /b /l /c:\"%DRIVER_RLOCATIONPATH% \" " +
             "\"%MANIFEST%\"`) do if not defined DRIVER set \"DRIVER=%%B\"",
+            "if not \"%DRIVER_RLOCATIONPATH%\"==\"\" if not defined DRIVER " +
+            "if exist \"%~dpn0.bat.runfiles_manifest\" for /f " +
+            "\"usebackq tokens=1,*\" %%A in (`findstr /b /l " +
+            "/c:\"%DRIVER_RLOCATIONPATH% \" " +
+            "\"%~dpn0.bat.runfiles_manifest\"`) do if not defined DRIVER " +
+            "set \"DRIVER=%%B\"",
         ],
+        tags = all_tags,
+        target_under_test = "{}:swift".format(_FIXTURES),
+    )
+
+    # A double quote cannot be escaped in a `.bat` file.
+    _windows_quoted_env_failure_test(
+        name = "{}_windows_quoted_env".format(name),
+        expected_message = (
+            "The toolchain environment variable `FOO` contains a double quote"
+        ),
         tags = all_tags,
         target_under_test = "{}:swift".format(_FIXTURES),
     )

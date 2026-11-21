@@ -5,6 +5,7 @@ load("@rules_cc//cc/common:objc_info.bzl", "ObjcInfo")
 load("//swift:providers.bzl", "SwiftInfo")
 
 _COMPILATION_MODE = "//command_line_option:compilation_mode"
+_DEFAULT_SWIFT_EXECUTABLE = str(Label("//swift:default_swift_executable"))
 _EXTRA_TOOLCHAINS = "//command_line_option:extra_toolchains"
 _FEATURES = "//command_line_option:features"
 _HOST_FEATURES = "//command_line_option:host_features"
@@ -17,6 +18,7 @@ _USE_PROTO_WORKER = str(Label("//swift:use_proto_worker"))
 
 _TRANSITION_OPTIONS = [
     _COMPILATION_MODE,
+    _DEFAULT_SWIFT_EXECUTABLE,
     _EXTRA_TOOLCHAINS,
     _FEATURES,
     _HOST_FEATURES,
@@ -31,6 +33,7 @@ _TRANSITION_OPTIONS = [
 def _transition_impl(settings, attr):
     return {
         _COMPILATION_MODE: attr.compilation_mode or settings[_COMPILATION_MODE],
+        _DEFAULT_SWIFT_EXECUTABLE: attr.default_swift_executable or settings[_DEFAULT_SWIFT_EXECUTABLE],
         _EXTRA_TOOLCHAINS: settings[_EXTRA_TOOLCHAINS] + attr.extra_toolchains,
         _FEATURES: settings[_FEATURES] + attr.transitive_features,
         _HOST_FEATURES: settings[_HOST_FEATURES] + attr.transitive_features,
@@ -56,6 +59,10 @@ _TRANSITION_ATTRS = {
             "`opt`). Empty (the default) leaves the inherited setting alone."
         ),
         values = ["", "dbg", "fastbuild", "opt"],
+    ),
+    "default_swift_executable": attr.label(
+        allow_single_file = True,
+        doc = "Optional custom Swift driver to set `//swift:default_swift_executable` to.",
     ),
     "extra_toolchains": attr.string_list(
         doc = "Toolchains appended to --extra_toolchains for the transitioned target.",
