@@ -16,25 +16,7 @@ with; the `swift` module extension enforces this by deriving both from the same
 `swift.toolchain` tag.
 """
 
-def _execroot_relative_path(path):
-    """Returns the execution-root-relative path for an external repository path.
-
-    Args:
-        path: An absolute `path` (or string) below the output base's
-            `external` directory.
-
-    Returns:
-        The same path expressed relative to the execution root, suitable for
-        baking into command line flags.
-    """
-    path_str = str(path)
-
-    # buildifier: disable=external-path
-    if "/external/" not in path_str:
-        fail("Expected a path inside an external repository, got: " + path_str)
-
-    # buildifier: disable=external-path
-    return "external/" + path_str.rsplit("/external/", 1)[1]
+load("@bazel_skylib//lib:paths.bzl", "paths")
 
 def _download_sdk_bundle(repository_ctx):
     """Downloads and extracts the Swift SDK artifact bundle for a repository.
@@ -104,12 +86,22 @@ def _swift_android_sdk_impl(repository_ctx):
     minimum_api = str(min(apis)) if apis else ""
 
     # The clang headers are provided by the Swift toolchain, not the Android SDK bundle
-    paired_usr = repository_ctx.path(repository_ctx.attr.paired_swiftc).dirname.dirname
+    paired_swiftc = repository_ctx.attr.paired_swiftc
+    paired_usr = repository_ctx.path(paired_swiftc).dirname.dirname
     clang_versions = paired_usr.get_child("lib", "clang").readdir()
     if len(clang_versions) != 1:
         fail("Expected exactly one clang version directory in the host " +
              "toolchain, found: " + str(clang_versions))
-    clang_builtin_headers = _execroot_relative_path(clang_versions[0].get_child("include"))
+
+    # TODO: Remove once we drop support for Bazel versions before 9.3.0.
+    swiftc_root = paired_swiftc.repo_root if hasattr(paired_swiftc, "repo_root") else paired_swiftc.workspace_root
+    swiftc_exec_path = paths.join(swiftc_root, paired_swiftc.package, paired_swiftc.name)
+    clang_builtin_headers = paths.join(
+        paths.dirname(paths.dirname(swiftc_exec_path)),
+        "lib/clang",
+        clang_versions[0].basename,
+        "include",
+    )
 
     repository_ctx.template(
         "BUILD.bazel",
