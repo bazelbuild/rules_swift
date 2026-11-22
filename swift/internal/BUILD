@@ -98,6 +98,7 @@ bzl_library(
         ":utils",
         ":wmo",
         "//swift:providers",
+        "@bazel_features//:features",
         "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:sets",
         "@rules_cc//cc/common",
@@ -345,7 +346,10 @@ bzl_library(
     name = "explicit_module_map_file",
     srcs = ["explicit_module_map_file.bzl"],
     visibility = ["//swift:__subpackages__"],
-    deps = ["@bazel_skylib//lib:paths"],
+    deps = [
+        "@bazel_features//:features",
+        "@bazel_skylib//lib:paths",
+    ],
 )
 
 bzl_library(
