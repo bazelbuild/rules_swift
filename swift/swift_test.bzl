@@ -104,6 +104,7 @@ def _do_compile(
         feature_configuration = feature_configuration,
         local_defines = ctx.attr.local_defines,
         module_name = module_name,
+        package_name = ctx.attr.package_name,
         plugins = plugins,
         srcs = srcs,
         swift_infos = swift_infos,

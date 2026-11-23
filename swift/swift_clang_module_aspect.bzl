@@ -579,6 +579,7 @@ def _compile_swift_overlay(
         defines = overlay_info.defines,
         feature_configuration = feature_configuration,
         module_name = module_name,
+        package_name = overlay_info.package_name,
         plugins = overlay_info.plugins,
         private_compilation_contexts = [
             cc_info.compilation_context

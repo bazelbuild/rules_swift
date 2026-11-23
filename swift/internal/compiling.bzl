@@ -78,6 +78,7 @@ load(
     "is_optimization_manually_requested",
     "is_wmo_manually_requested",
 )
+load(":package_name.bzl", "validate_swift_package_name")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(
     ":utils.bzl",
@@ -301,6 +302,7 @@ def compile(
         generated_header_name = None,
         hdrs = [],
         module_name,
+        package_name = None,
         plugins = [],
         private_compilation_contexts = [],
         private_swift_infos = [],
@@ -343,6 +345,9 @@ def compile(
         module_name: The name of the Swift module being compiled. This must be
             present and valid; use `derive_swift_module_name` to generate a
             default from the target's label if needed.
+        package_name: An optional semantic Swift package name (`-package-name`)
+            for the target being compiled. If omitted or empty, defaults to the
+            Bazel package path of the target's label.
         plugins: A list of `SwiftCompilerPluginInfo` providers that represent
             plugins that should be loaded by the compiler.
         private_compilation_contexts: A list of `CcCompilationContext`s that
@@ -418,6 +423,13 @@ def compile(
         module_name,
         feature_configuration = feature_configuration,
     )
+    validate_swift_package_name(
+        package_name,
+        feature_configuration = feature_configuration,
+    )
+    effective_package_name = package_name or (
+        feature_configuration._label.package if feature_configuration._label else ""
+    )
     original_module_name = module_name
     module_alias = toolchains.swift.module_aliases.get(module_name)
     if module_alias:
@@ -483,6 +495,7 @@ def compile(
         feature_configuration = feature_configuration,
         generated_header_name = generated_header_name,
         module_name = module_name,
+        package_name = effective_package_name,
         target_name = target_name,
         user_compile_flags = copts,
     )
@@ -640,6 +653,7 @@ def compile(
         "mixed_module_clang_inputs": incomplete_header_module,
         "module_name": module_name,
         "original_module_name": original_module_name,
+        "package_name": effective_package_name,
         "plugins": used_plugins,
         "source_files": compile_plan.swift_inputs.srcs,
         "target_label": feature_configuration._label,
@@ -1891,6 +1905,7 @@ def _construct_compile_plan(
         generated_header_name,
         hdrs,
         module_name,
+        package_name,
         srcs,
         target_name,
         user_compile_flags):
@@ -1907,6 +1922,8 @@ def _construct_compile_plan(
         hdrs: A list of C/Objective-C header files that should be propagated by
             the module being compiled, if this is a mixed language target.
         module_name: The name of the Swift module being compiled.
+        package_name: The effective Swift package name (`-package-name`), or
+            `""` if none.
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
@@ -1960,7 +1977,7 @@ def _construct_compile_plan(
         private_swiftinterface_file = actions.declare_file(
             "{}.private.swiftinterface".format(module_name),
         )
-        if feature_configuration._label and feature_configuration._label.package:
+        if package_name:
             package_swiftinterface_file = actions.declare_file(
                 "{}.package.swiftinterface".format(module_name),
             )

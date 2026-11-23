@@ -58,3 +58,12 @@ swift_library(
     module_name = "ToyModuleV6",
     tags = FIXTURE_TAGS,
 )
+
+swift_library(
+    name = "toy_module_library_with_custom_package_name",
+    package_name = "CustomPackageNameTest",
+    srcs = ["ToyModule.swift"],
+    library_evolution = True,
+    module_name = "ToyModuleCustomPackage",
+    tags = FIXTURE_TAGS,
+)

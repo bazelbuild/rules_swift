@@ -141,6 +141,33 @@ def module_interface_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_with_evolution_and_v6",
     )
 
+    # Verify that `package_name` overrides `-package-name` and still emits
+    # `.package.swiftinterface` under library evolution.
+    action_command_line_test(
+        name = "{}_swift_library_with_custom_package_name_passes_package_name".format(name),
+        expected_argv = ["-package-name CustomPackageNameTest"],
+        not_expected_argv = [
+            "-package-name test/fixtures/module_interface/library",
+        ],
+        mnemonic = select({
+            "@build_bazel_apple_support//constraints:apple": "SwiftCompile",
+            "//conditions:default": "SwiftCompileModule",
+        }),
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_with_custom_package_name",
+    )
+
+    provider_test(
+        name = "{}_swift_library_with_custom_package_name_emits_package_swiftinterface".format(name),
+        expected_files = [
+            "test/fixtures/module_interface/library/ToyModuleCustomPackage.package.swiftinterface",
+        ],
+        field = "direct_modules.swift!.package_swiftinterface",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/module_interface/library:toy_module_library_with_custom_package_name",
+    )
+
     native.test_suite(
         name = name,
         tags = all_tags,

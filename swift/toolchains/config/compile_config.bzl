@@ -2021,9 +2021,12 @@ def _conditional_compilation_flag_configurator(prerequisites, args):
 
 def _package_identifier_configurator(prerequisites, args):
     """Adds the package identifier to the action command line."""
-    label = getattr(prerequisites, "target_label", None)
-    if label:
-        args.add("-package-name", label.package)
+    package_name = getattr(prerequisites, "package_name", None)
+    if not package_name:
+        label = getattr(prerequisites, "target_label", None)
+        package_name = label.package if label else None
+    if package_name:
+        args.add("-package-name", package_name)
 
 def _constant_value_extraction_configurator(
         prerequisites,

@@ -184,6 +184,18 @@ build label, by stripping the leading `//` and replacing `/`, `:`, and other
 non-identifier characters with underscores.
 """,
         ),
+        "package_name": attr.string(
+            doc = "".join([
+                """\
+The semantic Swift package name (`-package-name`) of the target being built,
+which controls visibility of declarations marked with the `package` access
+modifier across modules.
+
+If left unspecified, the package name defaults to the Bazel package path of the
+target being compiled (for example, `my/package` for `//my/package:target`).
+""",
+            ]),
+        ),
         "plugins": attr.label_list(
             cfg = config.exec(exec_group = "swift_plugins"),
             doc = """\

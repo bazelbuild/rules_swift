@@ -91,6 +91,9 @@ Bool. Whether to compile the overlay with library evolution enabled.
 List of strings. Linker flags to propagate when the overlay is used as a
 dependency.
 """,
+        "package_name": """\
+String. An optional custom Swift package name (`-package-name`) for the overlay.
+""",
         "plugins": """\
 A list of `SwiftCompilerPluginInfo` providers of the overlay's plug-ins.
 """,

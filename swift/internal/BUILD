@@ -90,6 +90,7 @@ bzl_library(
         ":features",
         ":module_maps",
         ":optimization",
+        ":package_name",
         ":toolchain_utils",
         ":utils",
         "//swift:module_name",
@@ -176,6 +177,11 @@ bzl_library(
 bzl_library(
     name = "output_groups",
     srcs = ["output_groups.bzl"],
+)
+
+bzl_library(
+    name = "package_name",
+    srcs = ["package_name.bzl"],
 )
 
 bzl_library(

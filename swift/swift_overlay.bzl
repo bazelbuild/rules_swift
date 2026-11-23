@@ -64,6 +64,7 @@ def _swift_overlay_impl(ctx):
             enabled_features = ctx.features,
             library_evolution = ctx.attr.library_evolution,
             linkopts = ctx.attr.linkopts,
+            package_name = ctx.attr.package_name,
             plugins = get_providers(ctx.attr.plugins, SwiftCompilerPluginInfo),
             private_deps = struct(
                 cc_infos = get_providers(private_deps, CcInfo),
