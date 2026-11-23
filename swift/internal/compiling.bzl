@@ -48,11 +48,9 @@ load(
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
-    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LTO_THIN",
-    "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
@@ -154,11 +152,7 @@ def compile_module_interface(
             provider of the calling rule.
 
         *   `supplemental_outputs`: A `struct` representing supplemental,
-            optional outputs. Its fields are:
-
-            *   `indexstore_directory`: A directory-type `File` that represents
-                the indexstore output files created when the feature
-                `swift.index_while_building` is enabled.
+            optional outputs.
     """
 
     validate_swift_module_name(module_name)
@@ -222,23 +216,11 @@ def compile_module_interface(
     else:
         explicit_swift_module_map_file = None
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-    ):
-        indexstore_directory = actions.declare_directory(
-            "{}.swiftinterface.indexstore".format(target_name),
-        )
-        outputs.append(indexstore_directory)
-    else:
-        indexstore_directory = None
-
     prerequisites = struct(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = merged_compilation_context,
         explicit_swift_module_map_file = explicit_swift_module_map_file,
         genfiles_dir = feature_configuration._genfiles_dir,
-        indexstore_directory = indexstore_directory,
         is_swift = True,
         module_name = module_name,
         source_files = [swiftinterface_file],
@@ -283,7 +265,6 @@ def compile_module_interface(
         module_context = module_context,
         supplemental_outputs = struct(
             const_values_files = [],
-            indexstore_directory = indexstore_directory,
             macro_expansion_directories = [],
         ),
     )
@@ -408,10 +389,6 @@ def compile(
             *   `const_values_files`: A list of `File`s that contains JSON
                 representations of constant values extracted from the source
                 files, if requested via a direct dependency.
-
-            *   `indexstore_directory`: A directory-type `File` that represents
-                the indexstore output files created when the feature
-                `swift.index_while_building` is enabled.
 
             *   `macro_expansion_directories`: A list of directory-type `File`s
                 that represent the locations where macro expansion files were
@@ -613,11 +590,6 @@ def compile(
         is_incomplete_header_module = bool(generated_header_name),
         is_swift_generated_header = False,
         module_name = module_name,
-        # If we're generating a header for this Swift module, defer indexing to
-        # when we generate the full module that includes that header as well.
-        # Otherwise, this is the only Clang module that we're compiling, so we
-        # need to index it now.
-        should_index = not generated_header_name,
         swift_infos = swift_infos,
         toolchains = toolchains,
         target_name = target_name,
@@ -728,7 +700,6 @@ def compile(
             is_incomplete_header_module = False,
             is_swift_generated_header = True,
             module_name = module_name,
-            should_index = True,
             swift_infos = (
                 swift_infos +
                 toolchains.swift.generated_header_module_implicit_deps_providers.swift_infos
@@ -813,7 +784,6 @@ def compile(
         compilation_outputs = compilation_outputs,
         supplemental_outputs = struct(
             const_values_files = compile_outputs.const_values_files,
-            indexstore_directory = compile_outputs.indexstore_directory,
             macro_expansion_directories = macro_expansion_directories,
         ),
         swift_info = SwiftInfo(
@@ -955,7 +925,6 @@ def _execute_compile_plan(
     batches = _compute_codegen_batches(
         batch_size = swift_toolchain.codegen_batch_size,
         compile_plan = compile_plan,
-        feature_configuration = feature_configuration,
     )
     macro_expansion_directories = []
     for number, batch in enumerate(batches, 1):
@@ -992,16 +961,6 @@ def _execute_compile_plan(
             for invocation in batch
             for output in invocation.objects + invocation.other_outputs
         ]
-        if is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-        ):
-            # TODO: b/351801556 - If this is true, then we only have one batch
-            # (`_compute_codegen_batches` ensures this). Indexing happens when
-            # object files are emitted, so we need to declare that output here.
-            # Update the APIs to support multiple indexstore directories per
-            # target so that we can emit one indexstore per batch instead.
-            batch_outputs.append(compile_plan.outputs.indexstore_directory)
 
         if not is_feature_enabled(
             feature_configuration = feature_configuration,
@@ -1035,16 +994,13 @@ def _execute_compile_plan(
 
 def _compute_codegen_batches(
         batch_size,
-        compile_plan,
-        feature_configuration):
+        compile_plan):
     """Computes the batches of object files that will be compiled.
 
     Args:
         batch_size: The number of source files to compile in each batch.
         compile_plan: A `struct` containing information about the planned
             compilation actions.
-        feature_configuration: The feature configuration for the target being
-            compiled.
 
     Returns:
         A list of batches. Each batch itself is a list, where each element is a
@@ -1052,15 +1008,6 @@ def _compute_codegen_batches(
         to be registered.
     """
     codegen_outputs = compile_plan.codegen_outputs
-
-    # TODO: b/351801556 - Update the APIs to support multiple indexstore
-    # directories per target so that we can emit one indexstore per batch. For
-    # now, force one batch if indexing is enabled.
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-    ):
-        return [codegen_outputs]
 
     # Separate invocations for single files known at analysis time from "tree"
     # (directory) invocations where we don't know the exact sources and
@@ -1149,7 +1096,6 @@ def _plan_legacy_swift_compilation(
         compile_outputs.swiftinterface_file,
         compile_outputs.swiftsourceinfo_file,
         compile_outputs.generated_header_file,
-        compile_outputs.indexstore_directory,
     ]) + compile_outputs.object_files + compile_outputs.const_values_files + macro_expansion_directories
 
     run_toolchain_action(
@@ -1176,7 +1122,6 @@ def _compile_clang_module_for_swift_module(
         is_incomplete_header_module,
         is_swift_generated_header,
         module_name,
-        should_index,
         swift_infos,
         toolchains,
         target_name,
@@ -1200,9 +1145,6 @@ def _compile_clang_module_for_swift_module(
         is_swift_generated_header: If True, the module contains the Swift
             generated header.
         module_name: The name of the module being compiled.
-        should_index: If True and index-while-building is enabled, the
-            indexstore directory should be declared and returned among the
-            results.
         swift_infos: The `SwiftInfo` providers for the dependencies of this
             module.
         toolchains: The struct containing the Swift and C++ toolchain providers,
@@ -1297,7 +1239,6 @@ def _compile_clang_module_for_swift_module(
         is_swift_generated_header = is_swift_generated_header,
         module_map_file = generated_module_map,
         module_name = module_name,
-        should_index = should_index,
         swift_infos = swift_infos,
         toolchains = toolchains,
         target_name = target_name,
@@ -1448,8 +1389,6 @@ def precompile_clang_module(
             something that `swift_clang_module_aspect` cannot handle on its own)
             or it can be passing into `swift_common.compile_module_interface`
             when compiling a textual interface that has an underlying C module.
-        *   `indexstore_directory`: The indexstore directory for the precompiled
-            module, if any.
         *   `pcm_file`: The precompiled module file. This field is deprecated;
             clients should retrieve it from the `clang_module` field instead.
     """
@@ -1462,7 +1401,6 @@ def precompile_clang_module(
         is_swift_generated_header = False,
         module_map_file = module_map_file,
         module_name = module_name,
-        should_index = True,
         swift_infos = swift_infos,
         target_name = target_name,
         toolchains = toolchains,
@@ -1480,7 +1418,6 @@ def _precompile_clang_module(
         is_swift_generated_header,
         module_map_file,
         module_name,
-        should_index,
         swift_infos = [],
         toolchains,
         toolchain_type,
@@ -1510,9 +1447,6 @@ def _precompile_clang_module(
             to be compiled.
         module_name: The name of the top-level module in the module map that
             will be compiled.
-        should_index: If True and index-while-building is enabled, the
-            indexstore directory should be declared and returned among the
-            results.
         swift_infos: A list of `SwiftInfo` providers representing dependencies
             required to compile this module.
         target_name: The name of the target for which the code is being
@@ -1535,8 +1469,6 @@ def _precompile_clang_module(
             something that `swift_clang_module_aspect` cannot handle on its own)
             or it can be passing into `swift_common.compile_module_interface`
             when compiling a textual interface that has an underlying C module.
-        *   `indexstore_directory`: The indexstore directory for the precompiled
-            module, if any.
         *   `pcm_file`: The precompiled module file. This field is deprecated;
             clients should retrieve it from the `clang_module` field instead.
     """
@@ -1585,22 +1517,6 @@ def _precompile_clang_module(
         transitive_modules = []
 
     outputs = [precompiled_module]
-    if should_index and are_all_features_enabled(
-        feature_configuration = feature_configuration,
-        feature_names = [
-            SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-            SWIFT_FEATURE_MODULAR_INDEXING,
-            SWIFT_FEATURE_SYSTEM_MODULE,
-        ],
-    ):
-        indexstore_directory = actions.declare_directory(
-            "{}.swift.pcm.indexstore".format(target_name),
-        )
-        outputs.append(indexstore_directory)
-        index_unit_output_path = precompiled_module.path
-    else:
-        indexstore_directory = None
-        index_unit_output_path = None
 
     compilation_context_for_compilation = (
         compilation_context_for_explicit_module_compilation(
@@ -1672,8 +1588,6 @@ def _precompile_clang_module(
         bin_dir = feature_configuration._bin_dir,
         cc_compilation_context = compilation_context_for_compilation,
         genfiles_dir = feature_configuration._genfiles_dir,
-        indexstore_directory = indexstore_directory,
-        index_unit_output_path = index_unit_output_path,
         is_swift = False,
         is_swift_generated_header = is_swift_generated_header,
         module_name = module_name,
@@ -1712,7 +1626,6 @@ def _precompile_clang_module(
             precompiled_module = precompiled_module,
             unchecked_include_headers = unchecked_include_headers,
         ),
-        indexstore_directory = indexstore_directory,
         # TODO: b/401511920 - Update clients and remove this field.
         pcm_file = precompiled_module,
     )
@@ -2005,21 +1918,6 @@ def _construct_compile_plan(
         user_compile_flags = user_compile_flags,
     )
 
-    if is_feature_enabled(
-        feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-    ):
-        indexstore_directory = actions.declare_directory(
-            "{}.indexstore".format(target_name),
-        )
-        include_index_unit_paths = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_MODULAR_INDEXING,
-        )
-    else:
-        indexstore_directory = None
-        include_index_unit_paths = False
-
     if not output_nature.emits_multiple_objects:
         # If we're emitting a single object, we don't use an object map; we just
         # declare the output file that the compiler will generate and there are
@@ -2033,8 +1931,6 @@ def _construct_compile_plan(
             objects = object_files,
             other_outputs = const_values_files,
         )]
-        # TODO(b/147451378): Support indexing even with a single object file.
-
     else:
         # Otherwise, we need to create an output map that lists the individual
         # object files so that we can pass them all to the archive action.
@@ -2044,7 +1940,6 @@ def _construct_compile_plan(
             is_wmo = output_nature.is_wmo,
             srcs = swift_srcs,
             target_name = target_name,
-            include_index_unit_paths = include_index_unit_paths,
         )
         object_files = output_info.object_files
         const_values_files = output_info.const_values_files
@@ -2054,7 +1949,6 @@ def _construct_compile_plan(
     compile_outputs = struct(
         const_values_files = const_values_files,
         generated_header_file = generated_header,
-        indexstore_directory = indexstore_directory,
         object_files = object_files,
         output_file_map = output_file_map,
         package_swiftinterface_file = package_swiftinterface_file,
@@ -2094,7 +1988,6 @@ def _construct_compile_plan(
 # correspond to the strings used as keys in the output file map.
 _OUTPUT_KINDS = struct(
     const_values = "const-values",
-    index_unit_output_path = "index-unit-output-path",
     llvm_bc = "llvm-bc",
     object = "object",
 )
@@ -2102,7 +1995,6 @@ _OUTPUT_KINDS = struct(
 # The file extensions used for each kind of output.
 _PER_SOURCE_OUTPUT_EXTENSIONS = {
     _OUTPUT_KINDS.const_values: "swiftconstvalues",
-    _OUTPUT_KINDS.index_unit_output_path: "o",
     _OUTPUT_KINDS.llvm_bc: "o",
     _OUTPUT_KINDS.object: "o",
 }
@@ -2216,8 +2108,7 @@ def _declare_multiple_outputs_and_write_output_file_map(
         extract_const_values,
         is_wmo,
         srcs,
-        target_name,
-        include_index_unit_paths):
+        target_name):
     """Declares low-level outputs and writes the output map for a compilation.
 
     Args:
@@ -2229,8 +2120,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         srcs: The list of source files that will be compiled.
         target_name: The name (excluding package path) of the target being
             built.
-        include_index_unit_paths: Whether to include "index-unit-output-path"
-            paths in the output file map.
 
     Returns:
         A `struct` with the following fields:
@@ -2279,9 +2168,6 @@ def _declare_multiple_outputs_and_write_output_file_map(
         # `llvm-bc` to the same declared `.o` path so LTO bitcode outputs land
         # where Bazel expects them; non-LTO compiles ignore the `llvm-bc` key.
         file_outputs[_OUTPUT_KINDS.llvm_bc] = obj.path
-
-        if include_index_unit_paths:
-            file_outputs[_OUTPUT_KINDS.index_unit_output_path] = obj.path
 
         if not is_wmo:
             const_values_file = None

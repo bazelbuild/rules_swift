@@ -605,35 +605,6 @@ def parallel_compilation_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:legacy_batch_mode",
     )
 
-    # Verify index-while-building flag and output partitioning: the `.indexstore`
-    # output directory is declared only on SwiftCompileCodegen, not on
-    # SwiftCompileModule.
-    parallel_action_test(
-        name = "{}_index_while_building_on_codegen".format(name),
-        expected_argv = [
-            "-index-store-path",
-            "-index-ignore-clang-modules",
-        ],
-        expected_outputs = [
-            "index_while_building.indexstore",
-            "*",
-        ],
-        mnemonic = "SwiftCompileCodegen",
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:index_while_building",
-    )
-
-    parallel_action_test(
-        name = "{}_index_while_building_not_on_module".format(name),
-        expected_outputs = [
-            "-index_while_building.indexstore",
-            "*",
-        ],
-        mnemonic = "SwiftCompileModule",
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:index_while_building",
-    )
-
     # Verify constant value extraction flag, input, and output partitioning:
     # `.swiftconstvalues` outputs are declared only on SwiftCompileCodegen (both
     # per-file and whole-module WMO), not on SwiftCompileModule.
@@ -724,9 +695,8 @@ def parallel_compilation_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_wmo_driver_flag",
     )
 
-    # Verify codegen batching when len(srcs) > codegen_batch_size (9 > 8),
-    # per-batch layering check placement, and single-batch fallback when
-    # index_while_building is enabled.
+    # Verify codegen batching when len(srcs) > codegen_batch_size (9 > 8) and
+    # per-batch layering check placement.
     codegen_batching_test(
         name = "{}_multi_batch_codegen".format(name),
         expect_indexed_macro_expansion_dirs = True,
@@ -743,14 +713,6 @@ def parallel_compilation_test_suite(name, tags = []):
         expected_codegen_batches = 2,
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch_layering_check_on_codegen",
-    )
-
-    codegen_batching_test(
-        name = "{}_multi_batch_collapses_when_indexing".format(name),
-        expected_batch_object_counts = [9],
-        expected_codegen_batches = 1,
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch_with_indexing",
     )
 
     # Verify supplemental output groups produced by parallel compilation.
@@ -773,15 +735,6 @@ def parallel_compilation_test_suite(name, tags = []):
         provider = "OutputGroupInfo",
         tags = all_tags,
         target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch",
-    )
-
-    provider_test(
-        name = "{}_indexstore_output_group".format(name),
-        expected_files = ["index_while_building.indexstore"],
-        field = "indexstore",
-        provider = "OutputGroupInfo",
-        tags = all_tags,
-        target_under_test = "@build_bazel_rules_swift//test/fixtures/parallel_compilation:index_while_building",
     )
 
     provider_test(
@@ -817,10 +770,8 @@ def parallel_compilation_test_suite(name, tags = []):
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:header_and_interface",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:layering_check_on_codegen",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:legacy_batch_mode",
-            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:index_while_building",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch_layering_check_on_codegen",
-            "@build_bazel_rules_swift//test/fixtures/parallel_compilation:multi_batch_with_indexing",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values",
             "@build_bazel_rules_swift//test/fixtures/parallel_compilation:const_values_wmo",
         ],

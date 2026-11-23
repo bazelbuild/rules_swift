@@ -56,7 +56,6 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:utils.bzl",
-    "compact",
     "compilation_context_for_explicit_module_compilation",
 )
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
@@ -447,7 +446,6 @@ def _handle_module(
         unchecked_include_headers = unchecked_include_headers,
     )
     precompiled_module = getattr(pcm_outputs, "pcm_file", None)
-    pcm_indexstore = getattr(pcm_outputs, "indexstore_directory", None)
 
     clang_module_context = create_clang_module_inputs(
         compilation_context = compilation_context,
@@ -497,10 +495,7 @@ def _handle_module(
         overlay_swift_module = overlay_swift_info.direct_modules[0].swift
         output_groups = supplemental_compilation_output_groups(
             overlay_compile_result.supplemental_outputs,
-            additional_indexstore_files = compact([pcm_indexstore]),
         )
-    elif pcm_indexstore:
-        output_groups = {"indexstore": depset([pcm_indexstore])}
 
     providers = [
         SwiftInfo(

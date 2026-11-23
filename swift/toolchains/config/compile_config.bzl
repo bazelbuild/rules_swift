@@ -44,15 +44,11 @@ load(
     "SWIFT_FEATURE_FASTBUILD",
     "SWIFT_FEATURE_FILE_PREFIX_MAP",
     "SWIFT_FEATURE_FULL_DEBUG_INFO",
-    "SWIFT_FEATURE_INDEX_INCLUDE_LOCALS",
-    "SWIFT_FEATURE_INDEX_SYSTEM_MODULES",
-    "SWIFT_FEATURE_INDEX_WHILE_BUILDING",
     "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LTO_FULL",
     "SWIFT_FEATURE_LTO_THIN",
-    "SWIFT_FEATURE_MODULAR_INDEXING",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
@@ -922,58 +918,6 @@ def compile_action_configs(
                 SWIFT_ACTION_SYNTHESIZE_INTERFACE,
             ],
             configurators = [_module_name_configurator],
-        ),
-
-        # Configure index-while-building.
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [_index_while_building_configurator],
-            features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [add_arg("-index-include-locals")],
-            features = [
-                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-                SWIFT_FEATURE_INDEX_INCLUDE_LOCALS,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [add_arg("-index-ignore-system-modules")],
-            features = [SWIFT_FEATURE_INDEX_WHILE_BUILDING],
-            not_features = [SWIFT_FEATURE_INDEX_SYSTEM_MODULES],
-        ),
-        ActionConfigInfo(
-            actions = all_compile_action_names(),
-            configurators = [
-                add_arg("-index-ignore-clang-modules"),
-            ],
-            features = [
-                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-                SWIFT_FEATURE_MODULAR_INDEXING,
-                SWIFT_FEATURE_USE_C_MODULES,
-            ],
-        ),
-        ActionConfigInfo(
-            actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
-            configurators = [
-                _index_while_building_configurator,
-                add_arg("-index-ignore-clang-modules"),
-                add_arg("-Xcc", "-index-ignore-pcms"),
-            ],
-            features = [
-                SWIFT_FEATURE_INDEX_WHILE_BUILDING,
-                SWIFT_FEATURE_MODULAR_INDEXING,
-                # Only index system PCMs since we should have the source code
-                # available for most non system modules except for third-party
-                # frameworks which we don't have the source code for.
-                SWIFT_FEATURE_SYSTEM_MODULE,
-            ],
         ),
 
         # Language features and versions.
@@ -1916,14 +1860,6 @@ def _explicit_swift_module_map_configurator(prerequisites, args, is_frontend = F
 def _module_name_configurator(prerequisites, args):
     """Adds the module name flag to the command line."""
     args.add("-module-name", prerequisites.module_name)
-
-def _index_while_building_configurator(prerequisites, args):
-    """Adds flags for indexstore generation to the command line."""
-    args.add("-index-store-path", prerequisites.indexstore_directory.path)
-    index_output_path = getattr(prerequisites, "index_unit_output_path", None)
-    if index_output_path:
-        args.add("-Xcc", "-index-unit-output-path")
-        args.add("-Xcc", index_output_path)
 
 def _source_files_configurator(prerequisites, args):
     """Adds source files to the command line and required inputs."""

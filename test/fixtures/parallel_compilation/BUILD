@@ -108,17 +108,6 @@ swift_library(
     tags = FIXTURE_TAGS,
 )
 
-swift_library(
-    name = "index_while_building",
-    srcs = ["Empty.swift"],
-    features = [
-        "swift.index_while_building",
-        "swift.modular_indexing",
-        "swift.use_c_modules",
-    ],
-    tags = FIXTURE_TAGS,
-)
-
 generate_swift_sources(
     name = "nine_sources",
     count = 9,
@@ -138,13 +127,6 @@ swift_library(
         "swift.layering_check_swift",
         "swift._layering_check_on_codegen",
     ],
-    tags = FIXTURE_TAGS,
-)
-
-swift_library(
-    name = "multi_batch_with_indexing",
-    srcs = [":nine_sources"],
-    features = ["swift.index_while_building"],
     tags = FIXTURE_TAGS,
 )
 
