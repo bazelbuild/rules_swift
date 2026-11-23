@@ -16,6 +16,7 @@ def aspect_tests(name, tags = []):
         tags = all_tags,
         targets = [
             "//test/fixtures/precompile_user_compile_flags:user_explicit_modules",
+            "//test/fixtures/precompile_user_compile_flags:user_explicit_modules_layering_check",
         ],
     )
 

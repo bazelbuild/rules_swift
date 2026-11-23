@@ -75,6 +75,52 @@ _ASPECT_ATTRS = [
     "deps",
 ]
 
+# The private `copts` flags that are forwarded to the PCM action, in either
+# their joined (`-Ifoo`) or separated (`-I`, `foo`) form.
+_PCM_COPT_FLAGS = ("-D", "-I", "-iquote", "-isystem")
+
+def _pcm_copts(copts, *, tokenize):
+    """Returns the subset of `copts` that is forwarded to the PCM action.
+
+    Args:
+        copts: The target's `copts`.
+        tokenize: A function that applies Bourne shell tokenization to a copt,
+            or `None` if the copts must not be tokenized.
+
+    Returns:
+        A list of the `-D`, `-I`, `-iquote`, and `-isystem` flags in `copts`,
+        each with its argument. Flags whose value contains a `$(...)` make
+        variable are skipped.
+    """
+
+    # A copt with a make variable is kept whole, so that it can be skipped
+    # along with the flag that it belongs to.
+    tokens = []
+    for copt in copts:
+        if tokenize and "$(" not in copt:
+            # TODO: https://github.com/bazelbuild/bazel/issues/8389
+            tokens.extend(tokenize(copt))
+        else:
+            tokens.append(copt)
+
+    pcm_copts = []
+    skip_next = False
+    for i, token in enumerate(tokens):
+        if skip_next:
+            skip_next = False
+            continue
+        if token in _PCM_COPT_FLAGS:
+            # Separated form: the next token is the flag's argument.
+            if i + 1 >= len(tokens):
+                break
+            arg = tokens[i + 1]
+            skip_next = True
+            if "$(" not in token and "$(" not in arg:
+                pcm_copts.extend([token, arg])
+        elif token.startswith(_PCM_COPT_FLAGS) and "$(" not in token:
+            pcm_copts.append(token)
+    return pcm_copts
+
 def _compute_all_excluded_headers(*, exclude_headers, target):
     """Returns the full set of headers to exclude for a target.
 
@@ -474,24 +520,23 @@ def _handle_module(
 
     output_groups = {}
 
-    # Private -D flags might be needed to compile the PCM
+    # Private -D flags might be needed to compile the PCM, as might private
+    # header search paths that headers in a custom module map rely on. These
+    # are passed only to this target's PCM action and are not propagated.
     # TODO: Only grab local_defines once that has existed for long enough
     tokenization = not (
         is_feature_enabled(feature_configuration, "no_copts_tokenization") or
         "no_copts_tokenization" in requested_features
     )
-    local_defines = []
-    for copt in getattr(attr, "copts", []):
-        if copt.startswith("-D") and "$(" not in copt:
-            # Match the Bourne shell tokenization applied by C/C++ rules so
-            # that the PCM action receives the same argument value.
-            if tokenization:
-                # TODO: https://github.com/bazelbuild/bazel/issues/8389
-                local_defines.extend(aspect_ctx.tokenize(copt))
-            else:
-                local_defines.append(copt)
+
+    # Match the Bourne shell tokenization applied by C/C++ rules so that the
+    # PCM action receives the same argument values.
+    pcm_copts = _pcm_copts(
+        getattr(attr, "copts", []),
+        tokenize = aspect_ctx.tokenize if tokenization else None,
+    )
     for define in getattr(attr, "local_defines", []):
-        local_defines.append("-D" + define)
+        pcm_copts.append("-D" + define)
 
     compile_result = precompile_clang_module(
         actions = aspect_ctx.actions,
@@ -504,7 +549,7 @@ def _handle_module(
         target_name = target.label.name,
         toolchain_type = toolchain_type,
         unchecked_include_headers = unchecked_include_headers,
-        user_compile_flags = local_defines,
+        user_compile_flags = pcm_copts,
     )
     precompiled_module = compile_result.clang_module.precompiled_module if compile_result else None
     pcm_indexstore = compile_result.indexstore_directory if compile_result else None

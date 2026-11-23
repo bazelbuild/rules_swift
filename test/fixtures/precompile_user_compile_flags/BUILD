@@ -15,6 +15,12 @@ swift_interop_hint(
 )
 
 swift_interop_hint(
+    name = "SearchPaths_hint",
+    module_name = "SearchPaths",
+    tags = FIXTURE_TAGS,
+)
+
+swift_interop_hint(
     name = "NoCoptsTokenization_hint",
     module_name = "NoCoptsTokenization",
     tags = FIXTURE_TAGS,
@@ -38,6 +44,37 @@ cc_library(
     tags = FIXTURE_TAGS,
 )
 
+_SEARCH_PATHS_DIR = package_name() + "/search_paths"
+
+cc_library(
+    name = "SearchPaths",
+    srcs = ["SearchPaths.c"],
+    # The search path headers are module headers so that the layering check
+    # accepts their includes. They are found only through the copts below.
+    hdrs = [
+        "SearchPaths.h",
+        "search_paths/include_dir/search_path_from_include.h",
+        "search_paths/quote_dir/search_path_from_iquote.h",
+        "search_paths/separated_dir/search_path_from_separated.h",
+        "search_paths/system_dir/search_path_from_isystem.h",
+    ],
+    aspect_hints = [":SearchPaths_hint"],
+    copts = [
+        "-I{}/include_dir".format(_SEARCH_PATHS_DIR),
+        "-iquote{}/quote_dir".format(_SEARCH_PATHS_DIR),
+        "-isystem{}/system_dir".format(_SEARCH_PATHS_DIR),
+        # Separated forms. The define after each one must still reach the PCM.
+        "-isystem",
+        "{}/separated_dir".format(_SEARCH_PATHS_DIR),
+        "-DSEARCH_PATHS_AFTER_SEPARATED=1",
+        # A make variable is skipped together with its flag.
+        "-I",
+        "$(GENDIR)/{}/does_not_exist".format(_SEARCH_PATHS_DIR),
+        "-DSEARCH_PATHS_AFTER_MAKE_VARIABLE=1",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
 cc_library(
     name = "NoCoptsTokenization",
     srcs = [
@@ -58,6 +95,7 @@ swift_binary(
     deps = [
         ":Defines",
         ":NoCoptsTokenization",
+        ":SearchPaths",
     ],
 )
 
@@ -70,5 +108,18 @@ transition_binary(
     transitive_features = [
         "swift.use_c_modules",
         "swift.emit_c_module",
+    ],
+)
+
+transition_binary(
+    name = "user_explicit_modules_layering_check",
+    tags = FIXTURE_TAGS,
+    target = ":user",
+    # TODO: Remove when we support explicit modules on Linux
+    target_compatible_with = ["@platforms//os:macos"],
+    transitive_features = [
+        "swift.use_c_modules",
+        "swift.emit_c_module",
+        "swift.layering_check_for_c_deps",
     ],
 )
