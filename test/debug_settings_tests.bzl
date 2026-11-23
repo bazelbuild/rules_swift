@@ -15,6 +15,10 @@
 """Tests for debugging-related command line flags under various configs."""
 
 load(
+    "@build_bazel_apple_support//xcode:xcode_version_at_least.bzl",
+    "xcode_version_at_least",
+)
+load(
     "@build_bazel_rules_swift//test/rules:action_command_line_test.bzl",
     "make_action_command_line_test_rule",
 )
@@ -265,14 +269,29 @@ def debug_settings_test_suite(name, tags = []):
     # Debug module embedding tests
     # -------------------------------------------------------------------------
 
-    # Verify default platform behavior in `dbg` mode: Apple toolchains embed
-    # `.swiftmodule` by default, while Linux enables `swift.no_embed_debug_module`
-    # by default.
+    apple_xcode_at_least_27_0 = "{}_apple_xcode_at_least_27_0".format(name)
+
+    xcode_version_at_least(
+        name = apple_xcode_at_least_27_0,
+        constraint_values = [
+            "@build_bazel_apple_support//constraints:apple",
+        ],
+        minimum_xcode_version = "27.0",
+        tags = ["manual"],
+    )
+
+    # Verify default platform behavior in `dbg` mode: Linux and Apple with
+    # Xcode 27.0+ enable `swift.no_embed_debug_module` by default, relying on
+    # `-debug-module-path` in DWARF; older Xcode versions still embed
+    # `.swiftmodule` files at link time.
     dbg_provider_test(
         name = "{}_dbg_default_embed_module_cc_info".format(name),
         expected_values = select({
             "@build_bazel_apple_support//constraints:apple": [
                 "swiftmodule",
+            ],
+            ":" + apple_xcode_at_least_27_0: [
+                "-swiftmodule",
             ],
             "//conditions:default": [
                 "-swiftmodule",
@@ -289,6 +308,10 @@ def debug_settings_test_suite(name, tags = []):
         expected_inputs = select({
             "@build_bazel_apple_support//constraints:apple": [
                 "simple.swiftmodule",
+                "*",
+            ],
+            ":" + apple_xcode_at_least_27_0: [
+                "-simple.swiftmodule",
                 "*",
             ],
             "//conditions:default": [

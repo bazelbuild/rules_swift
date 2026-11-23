@@ -146,5 +146,6 @@ bzl_library(
         "//test/rules:starlark_tests_bzls",
         "@bazel_skylib//lib:unittest",
         "@bazel_skylib//rules:build_test",
+        "@build_bazel_apple_support//xcode:xcode_version_at_least",
     ],
 )

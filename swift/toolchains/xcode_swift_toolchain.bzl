@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",  # @unused
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH",
@@ -800,6 +801,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     if _is_xcode_at_least_version(xcode_config, "27.0"):
         requested_features.extend([
+            SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE,
             SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST,
             SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH,
         ])
