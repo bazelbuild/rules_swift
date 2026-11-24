@@ -2602,8 +2602,9 @@ def _precompile_user_compile_flags_configurator(prerequisites, args):
     """Forwards the underlying clang library's copts to the precompile action.
 
     Each flag is wrapped in `-Xcc` so that swiftc passes it through to clang
-    when emitting the `.pcm`. This lets flags like `-DSWIFT_PACKAGE` reach
-    the precompile, since they don't propagate via `CcInfo`.
+    when emitting the `.pcm`. This lets flags like `-DSWIFT_PACKAGE` and
+    private header search paths (`-I`, `-iquote`, `-isystem`) reach the
+    precompile, since they don't propagate via `CcInfo`.
     """
     args.add_all(
         prerequisites.user_compile_flags,
