@@ -282,8 +282,8 @@ package.
 ## swift_import
 
 <pre>
-swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-plugins">plugins</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>, <a href="#swift_import-swiftinterface">swiftinterface</a>,
-             <a href="#swift_import-swiftmodule">swiftmodule</a>)
+swift_import(<a href="#swift_import-name">name</a>, <a href="#swift_import-deps">deps</a>, <a href="#swift_import-data">data</a>, <a href="#swift_import-archives">archives</a>, <a href="#swift_import-is_framework">is_framework</a>, <a href="#swift_import-module_name">module_name</a>, <a href="#swift_import-plugins">plugins</a>, <a href="#swift_import-swiftdoc">swiftdoc</a>,
+             <a href="#swift_import-swiftinterface">swiftinterface</a>, <a href="#swift_import-swiftmodule">swiftmodule</a>)
 </pre>
 
 Allows for the use of Swift textual module interfaces and/or precompiled Swift
@@ -317,6 +317,7 @@ that use this API must match the package name used to build the pre-built module
 | <a id="swift_import-deps"></a>deps |  A list of targets that are dependencies of the target being built, which will be linked into that target.<br><br>If the Swift toolchain supports implementation-only imports (`private_deps` on `swift_library`), then targets in `deps` are treated as regular (non-implementation-only) imports that are propagated both to their direct and indirect (transitive) dependents.<br><br>Allowed kinds of dependencies are:<br><br>*   `swift_library` (or anything propagating `SwiftInfo`)<br><br>*   `cc_library` and `objc_library` (or anything propagating `CcInfo`)   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-data"></a>data |  The list of files needed by this target at runtime.<br><br>Files and targets named in the `data` attribute will appear in the `*.runfiles` area of this target, if it has one. This may include data files needed by a binary or library, or other programs needed by it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-archives"></a>archives |  The list of `.a` or `.lo` files provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="swift_import-is_framework"></a>is_framework |  Whether the module is an Apple framework module. If `True`, the interface compiles into a `<module_name>.framework` directory, and dependents find the module through a framework search path. The compiler then emits a `-framework` autolink entry for the module. The linker must find the framework binary elsewhere, for example in the SDK. Requires `swiftinterface`.   | Boolean | optional |  `False`  |
 | <a id="swift_import-module_name"></a>module_name |  The name of the module represented by this target.   | String | required |  |
 | <a id="swift_import-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling any modules that depend on this target. Enable the `swift.load_plugins_from_direct_dependencies` feature to load them only for modules that directly depend on this target.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_import-swiftdoc"></a>swiftdoc |  The `.swiftdoc` file provided to Swift targets that depend on this target.   | <a href="https://bazel.build/concepts/labels">Label</a> | optional |  `None`  |

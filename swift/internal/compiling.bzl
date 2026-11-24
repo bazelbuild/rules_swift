@@ -81,6 +81,7 @@ load(
     "warnings_as_errors_from_features",
 )
 load(":module_maps.bzl", "write_module_map")
+load(":target_triples.bzl", "target_triples")
 load(":toolchain_utils.bzl", "SWIFT_TOOLCHAIN_TYPE")
 load(
     ":utils.bzl",
@@ -318,8 +319,23 @@ def compile_module_interface(
         toolchains = toolchains,
     )
 
+    if is_framework:
+        target_system_name = (
+            toolchains.swift.cc_toolchain_info.target_gnu_system_name
+        )
+        arch = target_triples.normalize_for_swift(
+            target_triples.parse(target_system_name),
+        ).cpu
+        swiftmodule_path = (
+            "{0}.framework/Modules/{0}.swiftmodule/{1}.swiftmodule".format(
+                module_name,
+                arch,
+            )
+        )
+    else:
+        swiftmodule_path = "{}.swiftmodule".format(module_name)
     swiftmodule_file = actions.declare_file(
-        "{}_outs/{}.swiftmodule".format(target_name, module_name),
+        "{}_outs/{}".format(target_name, swiftmodule_path),
     )
     outputs = [swiftmodule_file]
 
