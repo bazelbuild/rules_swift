@@ -46,6 +46,25 @@ filegroup(
     ),
 )
 
+# The files that the `swift` multi-tool needs at runtime (for example under
+# `swift_toolchain_tool`): the `swift-<subcommand>` executables and other tools
+# it dispatches to, the libraries they load, and SwiftPM's manifest and plugin
+# APIs. These are runfiles only; they are not inputs to compile actions.
+# SwiftPM's `usr/lib/swift/pm` is already in the `additional_inputs` of
+# `:tools`, which `swift_multitool` also adds.
+filegroup(
+    name = "swift_multitool_files",
+    srcs = glob(
+        [
+            "usr/bin/*",
+            "usr/lib/clang/**",
+            "usr/lib/lib*.dylib",
+            "usr/lib/lib*.so*",
+        ],
+        allow_empty = True,
+    ),
+)
+
 # The subset of the toolchain that link actions driven by this toolchain's
 # clang need (used by the WebAssembly SDK's cc toolchain).
 filegroup(
@@ -305,8 +324,10 @@ swift_tools(
             "usr/lib/swift/xros/**",
         ],
     ),
+    swift = "usr/bin/swift",
     swift_autolink_extract = "usr/bin/swift-autolink-extract",
     swift_driver = "usr/bin/swiftc",
+    swift_runfiles = [":swift_multitool_files"],
     swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
 )
 

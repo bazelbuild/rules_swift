@@ -32,6 +32,7 @@ On this page:
   * [swift_proto_library](#swift_proto_library)
   * [swift_proto_library_group](#swift_proto_library_group)
   * [swift_test](#swift_test)
+  * [swift_toolchain_tool](#swift_toolchain_tool)
   * [universal_swift_compiler_plugin](#universal_swift_compiler_plugin)
   * [mixed_language_library](#mixed_language_library)
 
@@ -1034,6 +1035,64 @@ root of your workspace (i.e. `$(SRCROOT)`).
 | <a id="swift_test-plugins"></a>plugins |  A list of `swift_compiler_plugin` targets that should be loaded by the compiler when compiling this module and any modules that depend on it. Enable the `swift.load_plugins_from_direct_dependencies` feature to load them only for this module and modules that directly depend on it.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="swift_test-stamp"></a>stamp |  Enable or disable link stamping; that is, whether to encode build information into the binary. Possible values are:<br><br>* `stamp = 1`: Stamp the build information into the binary. Stamped binaries are   only rebuilt when their dependencies change. Use this if there are tests that   depend on the build information.<br><br>* `stamp = 0`: Always replace build information by constant values. This gives   good build result caching.<br><br>* `stamp = -1`: Embedding of build information is controlled by the   `--[no]stamp` flag.   | Integer | optional |  `0`  |
 | <a id="swift_test-swiftc_inputs"></a>swiftc_inputs |  Additional files that are referenced using `$(location ...)` in attributes that support location expansion.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+
+
+<a id="swift_toolchain_tool"></a>
+
+## swift_toolchain_tool
+
+<pre>
+swift_toolchain_tool(<a href="#swift_toolchain_tool-name">name</a>, <a href="#swift_toolchain_tool-tool">tool</a>)
+</pre>
+
+Creates an executable that runs a tool from the resolved Swift toolchain.
+
+The output is a bash script, or a `.bat` file when the target platform is
+Windows. It runs the requested tool from the same toolchain that the Swift
+build rules use (Xcode on macOS, or the configured swift.org toolchain on Linux
+and Windows), exports the environment that the toolchain requires, and forwards
+all of its arguments to the tool. This lets other rules run, for example,
+`swift package dump-package` without depending on whatever `swift` is on
+`PATH`.
+
+On Windows, the `.bat` file forwards its arguments with `%*`, so cmd.exe parses
+them again: callers must quote any argument that contains `&`, `|`, `<`, `>` or
+`^`.
+
+On macOS, the script runs the Xcode that Bazel selected (for example with
+`--xcode_version`) by setting `DEVELOPER_DIR` to that Xcode, unless
+`DEVELOPER_DIR` is already set.
+
+The target can be run with `bazel run` or used as a tool by other rules. When
+another rule uses it to run actions, depend on it with `cfg = "exec"` so that
+the toolchain is resolved for the execution platform.
+
+Example:
+
+```build
+load("@rules_swift//swift:swift_toolchain_tool.bzl", "swift_toolchain_tool")
+
+swift_toolchain_tool(
+    name = "swift",
+)
+
+swift_toolchain_tool(
+    name = "swift_format",
+    tool = "swift-format",
+)
+```
+
+```shell
+bazel run //:swift -- --version
+```
+
+**ATTRIBUTES**
+
+
+| Name  | Description | Type | Mandatory | Default |
+| :------------- | :------------- | :------------- | :------------- | :------------- |
+| <a id="swift_toolchain_tool-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
+| <a id="swift_toolchain_tool-tool"></a>tool |  The name of the toolchain tool to run, such as `swift` (the default), `swift-format`, or `swift-build`.<br><br>`swift` runs the toolchain's `swift` driver. Any other value runs the tool with that name from the same directory as the driver for toolchains that provide one (standalone swift.org toolchains), via `xcrun` for Xcode, or from `PATH` otherwise.<br><br>It must be a bare tool name made of the characters `A-Z`, `a-z`, `0-9`, `.`, `_`, `+` and `-`; any other value, including an empty one, fails the build.   | String | optional |  `"swift"`  |
 
 
 <a id="universal_swift_compiler_plugin"></a>
