@@ -40,3 +40,28 @@ swift_library(
     ],
     tags = FIXTURE_TAGS,
 )
+
+swift_library(
+    name = "no_allocations",
+    srcs = [
+        "First.swift",
+        "Second.swift",
+    ],
+    features = [
+        "swift.experimental.Embedded",
+        "swift.no_allocations",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+swift_library(
+    name = "no_allocations_without_embedded",
+    srcs = [
+        "First.swift",
+        "Second.swift",
+    ],
+    features = [
+        "swift.no_allocations",
+    ],
+    tags = FIXTURE_TAGS,
+)

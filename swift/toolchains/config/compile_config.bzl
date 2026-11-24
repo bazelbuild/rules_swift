@@ -51,6 +51,7 @@ load(
     "SWIFT_FEATURE_LTO_THIN",
     "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
     "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE_NO_ALLOCATIONS",
     "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
@@ -968,6 +969,14 @@ def compile_action_configs(
             configurators = [add_arg("-strict-memory-safety")],
             features = [
                 SWIFT_FEATURE_STRICT_MEMORY_SAFETY,
+            ],
+        ),
+        ActionConfigInfo(
+            actions = all_compile_action_names(),
+            configurators = [add_arg("-Xfrontend", "-no-allocations")],
+            features = [
+                SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED,
+                SWIFT_FEATURE_NO_ALLOCATIONS,
             ],
         ),
         ActionConfigInfo(

@@ -116,6 +116,12 @@ SWIFT_FEATURE_MODULE_HOME_IS_CWD = "swift.module_home_is_cwd"
 # relative to the location of the module map file.
 SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
 
+# If enabled alongside `swift.experimental.Embedded`, passes
+# `-Xfrontend -no-allocations` to diagnose any heap allocations as compile-time
+# errors and avoid linking allocating runtime functions. Has no effect when
+# Embedded Swift is not enabled.
+SWIFT_FEATURE_NO_ALLOCATIONS = "swift.no_allocations"
+
 # When code is compiled with ASAN enabled, a reference to a versioned symbol is
 # emitted that ensures that the object files are linked to a version of the ASAN
 # runtime library that is known to be compatible. If this feature is enabled,

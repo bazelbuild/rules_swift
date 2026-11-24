@@ -83,6 +83,7 @@ def _embedded_compile_test_impl(ctx):
     for disallowed_flag in (
         "-disable-cmo",
         "-enable-batch-mode",
+        "-no-allocations",
     ):
         asserts.false(
             env,
@@ -164,6 +165,57 @@ _embedded_both_opt_compile_test = analysistest.make(
     },
 )
 
+def _no_allocations_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    actions = analysistest.target_actions(env)
+
+    compile_actions = [a for a in actions if a.mnemonic == "SwiftCompile"]
+    asserts.equals(
+        env,
+        1,
+        len(compile_actions),
+        "Expected a single monolithic SwiftCompile action for Embedded Swift.",
+    )
+    if len(compile_actions) == 1:
+        argv = compile_actions[0].argv
+        asserts.equals(
+            env,
+            1,
+            _count_subsequence(argv, ["-Xfrontend", "-no-allocations"]),
+            "Expected `-Xfrontend -no-allocations` exactly once in argv: {}".format(argv),
+        )
+
+    return analysistest.end(env)
+
+_no_allocations_test = analysistest.make(
+    _no_allocations_test_impl,
+)
+
+def _no_allocations_ignored_without_embedded_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    actions = analysistest.target_actions(env)
+
+    compile_actions = [a for a in actions if a.mnemonic.startswith("SwiftCompile")]
+    asserts.true(
+        env,
+        len(compile_actions) >= 1,
+        "Expected at least one SwiftCompile action.",
+    )
+    for action in compile_actions:
+        asserts.false(
+            env,
+            "-no-allocations" in action.argv,
+            "Expected `-no-allocations` to be omitted when Embedded Swift is not enabled, got argv: {}".format(
+                action.argv,
+            ),
+        )
+
+    return analysistest.end(env)
+
+_no_allocations_ignored_without_embedded_test = analysistest.make(
+    _no_allocations_ignored_without_embedded_test_impl,
+)
+
 def embedded_test_suite(name):
     """Test suite for Embedded Swift compilation configuration.
 
@@ -182,6 +234,14 @@ def embedded_test_suite(name):
         name = "{}_via_build_setting_and_experimental_feature_opt_test".format(name),
         target_under_test = "@build_bazel_rules_swift//test/fixtures/embedded:via_experimental_feature",
     )
+    _no_allocations_test(
+        name = "{}_no_allocations_test".format(name),
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/embedded:no_allocations",
+    )
+    _no_allocations_ignored_without_embedded_test(
+        name = "{}_no_allocations_ignored_without_embedded_test".format(name),
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/embedded:no_allocations_without_embedded",
+    )
 
     native.test_suite(
         name = name,
@@ -189,5 +249,7 @@ def embedded_test_suite(name):
             ":{}_via_build_setting_test".format(name),
             ":{}_via_experimental_feature_test".format(name),
             ":{}_via_build_setting_and_experimental_feature_opt_test".format(name),
+            ":{}_no_allocations_test".format(name),
+            ":{}_no_allocations_ignored_without_embedded_test".format(name),
         ],
     )
