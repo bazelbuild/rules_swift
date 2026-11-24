@@ -31,6 +31,7 @@ load(
     "configure_features_for_binary",
     "create_linking_context_from_compilation_outputs",
     "entry_point_function_name",
+    "extra_link_time_libraries_linking_contexts",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -146,10 +147,19 @@ def _swift_compiler_plugin_impl(ctx):
         additional_debug_outputs = []
         variables_extension = {}
 
+    additional_linking_contexts = [malloc_linking_context(ctx)]
+    additional_linking_contexts.extend(
+        extra_link_time_libraries_linking_contexts(
+            ctx,
+            additional_linking_contexts = additional_linking_contexts,
+            deps = deps,
+        ),
+    )
+
     binary_linking_outputs = register_link_binary_action(
         actions = ctx.actions,
         additional_inputs = ctx.files.swiftc_inputs,
-        additional_linking_contexts = [malloc_linking_context(ctx)],
+        additional_linking_contexts = additional_linking_contexts,
         additional_outputs = additional_debug_outputs,
         feature_configuration = feature_configuration,
         compilation_outputs = compilation_outputs,

@@ -254,6 +254,69 @@ def entry_point_function_name(module_name):
     """
     return "{}_main".format(physical_swift_module_name(module_name))
 
+def extra_link_time_libraries_linking_contexts(
+        ctx,
+        *,
+        additional_linking_contexts = [],
+        deps = [],
+        output_type = "executable"):
+    """Builds any `_extra_link_time_libraries` from transitive `CcInfo` deps.
+
+    `cc_common.link` does not automatically materialize
+    `CcLinkingContext._extra_link_time_libraries` (such as Go `c-archive`s
+    produced by `go_library(cgo = True)`). Binary-linking rules should pass the
+    returned contexts into `register_link_binary_action` via
+    `additional_linking_contexts`.
+
+    Args:
+        ctx: The rule context.
+        additional_linking_contexts: Additional `CcLinkingContext`s that will
+            be linked into the binary (for example, from `SwiftBinaryInfo`).
+        deps: A list of target dependencies that may provide `CcInfo` or
+            `SwiftOverlayInfo`.
+        output_type: The binary output type; `"executable"` or
+            `"dynamic_library"`.
+
+    Returns:
+        A `list` of `CcLinkingContext`s containing any materialized extra
+        link-time libraries (empty if none are present).
+    """
+    if not hasattr(cc_common, "build_extra_link_time_libraries"):
+        return []
+
+    linking_contexts = [
+        dep[CcInfo].linking_context
+        for dep in deps
+        if CcInfo in dep
+    ] + [
+        dep[SwiftOverlayInfo].linking_context
+        for dep in deps
+        if SwiftOverlayInfo in dep
+    ] + list(additional_linking_contexts)
+
+    merged_linking_context = cc_common.merge_linking_contexts(
+        linking_contexts = linking_contexts,
+    )
+    extra_link_time_libraries = getattr(
+        merged_linking_context,
+        "_extra_link_time_libraries",
+        None,
+    )
+    if not extra_link_time_libraries or not extra_link_time_libraries.libraries:
+        return []
+
+    extra_library_info = cc_common.build_extra_link_time_libraries(
+        extra_libraries = extra_link_time_libraries.libraries,
+        ctx = ctx,
+        static_mode = True,
+        for_dynamic_library = output_type == "dynamic_library",
+    )
+    return [
+        cc_common.create_linking_context(
+            linker_inputs = extra_library_info.transitive_linker_inputs,
+        ),
+    ]
+
 def malloc_linking_context(ctx):
     """Returns the linking context to use for the malloc implementation.
 

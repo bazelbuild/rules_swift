@@ -29,6 +29,7 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:linking.bzl",
     "configure_features_for_binary",
+    "extra_link_time_libraries_linking_contexts",
     "malloc_linking_context",
     "register_link_binary_action",
 )
@@ -164,6 +165,13 @@ def _swift_test_impl(ctx):
                 binary_info.cc_info.linking_context,
             )
     additional_linking_contexts.append(malloc_linking_context(ctx))
+    additional_linking_contexts.extend(
+        extra_link_time_libraries_linking_contexts(
+            ctx,
+            additional_linking_contexts = additional_linking_contexts,
+            deps = deps + additional_link_deps,
+        ),
+    )
 
     module_name = ctx.attr.module_name
     if not module_name:
