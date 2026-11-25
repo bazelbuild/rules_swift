@@ -42,10 +42,6 @@ SWIFT_FEATURE_OPT = "swift.opt"
 # Swift 6 features even before switching to a Swift 6 compiler.
 SWIFT_FEATURE_ENABLE_V6 = "swift.enable_v6"
 
-# If True, transitive C headers will be always be passed as inputs to Swift
-# compilation actions, even when building with explicit modules.
-SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS = "swift.headers_always_action_inputs"
-
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
 SWIFT_FEATURE_COVERAGE = "swift.coverage"
@@ -55,11 +51,6 @@ SWIFT_FEATURE_COVERAGE = "swift.coverage"
 # builds as well as hermetic index and coverage information. This requires
 # Xcode 14 or newer.
 SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
-
-# If enabled, debug builds will use the `-debug-prefix-map` feature to remap the
-# current working directory to `.`, which permits debugging remote or sandboxed
-# builds.
-SWIFT_FEATURE_DEBUG_PREFIX_MAP = "swift.debug_prefix_map"
 
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that

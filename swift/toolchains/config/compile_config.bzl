@@ -32,7 +32,6 @@ load(
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
     "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
-    "SWIFT_FEATURE_DEBUG_PREFIX_MAP",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
     "SWIFT_FEATURE_EMIT_C_MODULE",
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
@@ -446,20 +445,6 @@ def compile_action_configs(
         ),
 
         # Make paths written into debug info workspace-relative.
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_PRECOMPILE_C_MODULE,
-            ],
-            configurators = [
-                add_arg("-Xwrapped-swift=-debug-prefix-pwd-is-dot"),
-            ],
-            features = [
-                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_DBG],
-                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FASTBUILD],
-                [SWIFT_FEATURE_DEBUG_PREFIX_MAP, SWIFT_FEATURE_FULL_DEBUG_INFO],
-            ],
-            not_features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
-        ),
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
@@ -1316,7 +1301,6 @@ def _dependencies_clang_defines_configurator(prerequisites, args):
     args.add_all(all_clang_defines, before_each = "-Xcc", format_each = "-D%s")
 
 def _collect_clang_module_inputs(
-        always_include_headers,
         explicit_module_compilation_context,
         mixed_module_clang_inputs,
         modules,
@@ -1325,9 +1309,6 @@ def _collect_clang_module_inputs(
     """Collects Clang module-related inputs to pass to an action.
 
     Args:
-        always_include_headers: If True, pass the transitive headers as inputs
-            to the compilation action, even if doing an explicit module
-            compilation.
         explicit_module_compilation_context: The `CcCompilationContext` of the
             target being compiled, if the inputs are being collected for an
             explicit module compilation action. This parameter should be `None`
@@ -1364,7 +1345,6 @@ def _collect_clang_module_inputs(
     prune_headers = (
         explicit_module_compilation_context != None and
         prefer_precompiled_modules and
-        not always_include_headers and
         unchecked_include_headers != None
     )
 
@@ -1419,7 +1399,7 @@ def _collect_clang_module_inputs(
             if prune_headers:
                 transitive_inputs.append(clang_module.unchecked_include_headers)
 
-        if always_include_headers or (
+        if (
             not use_precompiled_module and
             (module_map or not prefer_precompiled_modules)
         ):
@@ -1451,8 +1431,9 @@ def _collect_clang_module_inputs(
         if use_precompiled_module:
             direct_inputs.append(precompiled_module)
         if (
-            not use_precompiled_module or always_include_headers
-        ) and mixed_module_clang_inputs.compilation_context:
+            not use_precompiled_module and
+            mixed_module_clang_inputs.compilation_context
+        ):
             compilation_context = mixed_module_clang_inputs.compilation_context
             transitive_inputs.append(compilation_context.headers)
             transitive_inputs.append(
@@ -1582,11 +1563,6 @@ def _dependencies_clang_modulemaps_configurator(prerequisites, args):
         compilation_context = prerequisites.cc_compilation_context
 
     return _collect_clang_module_inputs(
-        always_include_headers = getattr(
-            prerequisites,
-            "always_include_headers",
-            False,
-        ),
         explicit_module_compilation_context = compilation_context,
         mixed_module_clang_inputs = mixed_inputs,
         modules = modules,
@@ -1644,11 +1620,6 @@ def _dependencies_clang_modules_configurator(prerequisites, args, include_module
         unchecked_include_headers = None
 
     return _collect_clang_module_inputs(
-        always_include_headers = getattr(
-            prerequisites,
-            "always_include_headers",
-            False,
-        ),
         explicit_module_compilation_context = compilation_context,
         mixed_module_clang_inputs = mixed_inputs,
         modules = modules,

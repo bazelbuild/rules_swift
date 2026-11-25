@@ -47,7 +47,6 @@ load(
     "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
-    "SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LTO_THIN",
@@ -608,10 +607,6 @@ def compile(
 
     prerequisites = {
         "additional_inputs": additional_inputs,
-        "always_include_headers": is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
-        ),
         "bin_dir": feature_configuration._bin_dir,
         "cc_compilation_context": merged_compilation_context,
         "const_gather_protocols_file": const_gather_protocols_file,
@@ -1553,10 +1548,6 @@ def _precompile_clang_module(
         not is_feature_enabled(
             feature_configuration = feature_configuration,
             feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
-        ) and
-        not is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_HEADERS_ALWAYS_ACTION_INPUTS,
         )
     ):
         transitive_headers_to_stage = [unchecked_include_headers]
