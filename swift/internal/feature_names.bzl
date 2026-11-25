@@ -467,6 +467,14 @@ SWIFT_FEATURE_ENABLE_CPP23_INTEROP = "swift.enable_cpp23_interop"
 # * alwayslink on swift_library() target will now default to False, as it is not required in embedded mode
 SWIFT_FEATURE_ENABLE_EMBEDDED = "swift.enable_embedded"
 
+# If enabled, Swift compilation actions also write the compiler's diagnostics to
+# serialized diagnostics (`.dia`) files: one for the module under whole-module
+# optimization, or one per source file otherwise. They are declared outputs of
+# the action, so they are cached with its object files. Like the
+# `serialized_diagnostics_file` feature of rules_cc, it adds no output group;
+# the files are found among the action's outputs.
+SWIFT_FEATURE_SERIALIZED_DIAGNOSTICS_FILE = "swift.serialized_diagnostics_file"
+
 # Before swift 6.3 using macros lead to absolute paths in swiftmodule files
 # even with -prefix-serialized-debugging-options
 SWIFT_FEATURE__SUPPORTS_HERMETIC_SWIFTMODULE = "swift._supports_hermetic_swiftmodule"
