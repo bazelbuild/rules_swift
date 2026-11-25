@@ -141,3 +141,45 @@ swift_library(
     tags = FIXTURE_TAGS,
     deps = [":invalid_multiple_overlays_cc"],
 )
+
+swift_interop_hint(
+    name = "evolution_module_hint",
+    module_name = "EvolutionOverlayMod",
+    tags = FIXTURE_TAGS,
+)
+
+swift_overlay(
+    name = "evolution_overlay",
+    srcs = ["Empty.swift"],
+    library_evolution = True,
+    tags = FIXTURE_TAGS,
+)
+
+cc_library(
+    name = "cc_with_evolution_overlay",
+    hdrs = ["header.h"],
+    aspect_hints = [
+        ":evolution_module_hint",
+        ":evolution_overlay",
+    ],
+    tags = FIXTURE_TAGS,
+)
+
+forward_swift_info_from_swift_clang_module_aspect(
+    name = "cc_with_evolution_overlay_swift_info",
+    target = ":cc_with_evolution_overlay",
+)
+
+swift_overlay(
+    name = "invalid_internal_feature_overlay",
+    srcs = ["Empty.swift"],
+    features = ["swift._coverage"],
+    tags = FIXTURE_TAGS,
+)
+
+swift_overlay(
+    name = "invalid_disabled_internal_feature_overlay",
+    srcs = ["Empty.swift"],
+    features = ["-swift._file_prefix_map"],
+    tags = FIXTURE_TAGS,
+)

@@ -126,7 +126,7 @@ def configure_features(
             unsupported_features = unsupported_features,
         )
 
-    _check_internal_features(ctx = ctx)
+    check_internal_features(ctx = ctx)
 
     # Disable CMO for builds in `exec` configurations so that we can use
     # parallelized compilation for build tools written in Swift. The speedup
@@ -412,7 +412,7 @@ def _check_allowlists(
                     target = str(label),
                 ))
 
-def _check_internal_features(*, ctx):
+def check_internal_features(*, ctx):
     """Checks that internal `swift._*` features are not requested directly.
 
     Internal features (prefixed with `swift._`) are implementation details of

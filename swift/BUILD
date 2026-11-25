@@ -230,6 +230,7 @@ bzl_library(
         ":swift_overlay_helpers",
         "//swift/internal:attrs",
         "//swift/internal:feature_names",
+        "//swift/internal:features",
         "//swift/internal:providers",
         "//swift/internal:toolchain_utils",
         "//swift/internal:utils",

@@ -25,6 +25,10 @@ load(
     "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
 )
 load(
+    "@build_bazel_rules_swift//swift/internal:features.bzl",
+    "check_internal_features",
+)
+load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
     "SwiftCompilerPluginInfo",
     "SwiftOverlayCompileInfo",
@@ -45,6 +49,8 @@ load(":swift_overlay_helpers.bzl", "SwiftOverlayTargetInfo")
 visibility("public")
 
 def _swift_overlay_impl(ctx):
+    check_internal_features(ctx = ctx)
+
     deps = ctx.attr.deps
     private_deps = ctx.attr.private_deps
 
@@ -61,7 +67,7 @@ def _swift_overlay_impl(ctx):
             copts = ctx.attr.copts,
             defines = ctx.attr.defines,
             disabled_features = ctx.disabled_features,
-            enabled_features = ctx.features,
+            enabled_features = features,
             library_evolution = ctx.attr.library_evolution,
             linkopts = ctx.attr.linkopts,
             package_name = ctx.attr.package_name,

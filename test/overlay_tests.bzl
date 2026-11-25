@@ -318,12 +318,58 @@ def overlay_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/overlay:invalid_multiple_overlays_swift",
     )
 
+    # Verify that requesting or disabling an internal `swift._*` feature
+    # directly on a `swift_overlay` fails analysis.
+    analysis_failure_test(
+        name = "{}_internal_feature_fails".format(name),
+        expected_message = (
+            "Feature 'swift._coverage' is an internal rules_swift feature " +
+            "and cannot be set directly on target"
+        ),
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/overlay:invalid_internal_feature_overlay",
+    )
+
+    analysis_failure_test(
+        name = "{}_disabled_internal_feature_fails".format(name),
+        expected_message = (
+            "Feature '-swift._file_prefix_map' is an internal rules_swift " +
+            "feature and cannot be set directly on target"
+        ),
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/overlay:invalid_disabled_internal_feature_overlay",
+    )
+
+    # Verify that `library_evolution = True` on a `swift_overlay` enables
+    # library evolution and emits a `.swiftinterface`.
+    explicit_modules_aspect_action_command_line_test(
+        name = "{}_library_evolution_flags".format(name),
+        expected_argv = [
+            "-enable-library-evolution",
+        ],
+        mnemonic = "SwiftCompile",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_evolution_overlay",
+    )
+
+    provider_test(
+        name = "{}_library_evolution_emits_swiftinterface".format(name),
+        expected_files = [
+            "test/fixtures/overlay/EvolutionOverlayMod.swiftinterface",
+        ],
+        field = "direct_modules.swift!.swiftinterface",
+        provider = "SwiftInfo",
+        tags = all_tags,
+        target_under_test = "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_evolution_overlay_swift_info",
+    )
+
     # Verify that targets with `swift_overlay` build end-to-end.
     build_test(
         name = "{}_build_test".format(name),
         tags = all_tags,
         targets = [
             "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_custom_module_and_overlay_swift_info",
+            "@build_bazel_rules_swift//test/fixtures/overlay:cc_with_evolution_overlay_swift_info",
             "@build_bazel_rules_swift//test/fixtures/overlay:downstream_of_overlay",
         ],
     )
