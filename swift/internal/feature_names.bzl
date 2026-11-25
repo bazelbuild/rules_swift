@@ -44,13 +44,13 @@ SWIFT_FEATURE_ENABLE_V6 = "swift.enable_v6"
 
 # This feature is enabled if coverage collection is enabled for the build. (See
 # the note above about not depending on the C++ features.)
-SWIFT_FEATURE_COVERAGE = "swift.coverage"
+SWIFT_FEATURE__COVERAGE = "swift._coverage"
 
 # If enabled, builds will use the `-file-prefix-map` feature to remap the
 # current working directory to `.`, which permits debugging remote or sandboxed
 # builds as well as hermetic index and coverage information. This requires
 # Xcode 14 or newer.
-SWIFT_FEATURE_FILE_PREFIX_MAP = "swift.file_prefix_map"
+SWIFT_FEATURE__FILE_PREFIX_MAP = "swift._file_prefix_map"
 
 # If enabled, C and Objective-C libraries that are direct or transitive
 # dependencies of a Swift library will emit explicit precompiled modules that
@@ -75,7 +75,7 @@ SWIFT_FEATURE_LAYERING_CHECK_SWIFT = "swift.layering_check_swift"
 SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN = "swift._layering_check_on_codegen"
 
 # If enabled, the C or Objective-C target should be compiled as a system module.
-SWIFT_FEATURE_SYSTEM_MODULE = "swift.system_module"
+SWIFT_FEATURE__SYSTEM_MODULE = "swift._system_module"
 
 # If enabled, Swift compilation actions will use batch mode by passing
 # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
@@ -94,18 +94,18 @@ SWIFT_FEATURE_ENABLE_TESTING = "swift.enable_testing"
 # This is required when dSYMs are requested via the `--apple_generate_dsym` flag
 # but the compilation mode is `fastbuild`, because `dsymutil` emits spurious
 # warnings otherwise.
-SWIFT_FEATURE_FULL_DEBUG_INFO = "swift.full_debug_info"
+SWIFT_FEATURE__FULL_DEBUG_INFO = "swift._full_debug_info"
 
 # If enabled, paths embedded into precompiled Clang modules will be relative to
 # the workspace, not to the modulemap file location. Paths in the module maps
 # themselves will still be treated as modulemap-relative.
-SWIFT_FEATURE_MODULE_HOME_IS_CWD = "swift.module_home_is_cwd"
+SWIFT_FEATURE__MODULE_HOME_IS_CWD = "swift._module_home_is_cwd"
 
 # If enabled, compilation actions and module map generation will assume that the
 # header paths in module maps are relative to the current working directory
 # (i.e., the workspace root); if disabled, header paths in module maps are
 # relative to the location of the module map file.
-SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD = "swift.module_map_home_is_cwd"
+SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD = "swift._module_map_home_is_cwd"
 
 # If enabled alongside `swift.experimental.Embedded`, passes
 # `-Xfrontend -no-allocations` to diagnose any heap allocations as compile-time
@@ -118,7 +118,7 @@ SWIFT_FEATURE_NO_ALLOCATIONS = "swift.no_allocations"
 # runtime library that is known to be compatible. If this feature is enabled,
 # the versioned symbol reference will be omitted, allowing the object files to
 # link to any version of the ASAN runtime library.
-SWIFT_FEATURE_NO_ASAN_VERSION_CHECK = "swift.no_asan_version_check"
+SWIFT_FEATURE__NO_ASAN_VERSION_CHECK = "swift._no_asan_version_check"
 
 # If enabled, builds using the "opt" compilation mode will invoke `swiftc` with
 # the `-whole-module-optimization` flag (in addition to `-O`).
@@ -140,7 +140,7 @@ SWIFT_FEATURE_OPT_USES_CMO = "swift.opt_uses_cmo"
 # If enabled, and if the toolchain specifies a generated header rewriting tool,
 # that tool will be invoked after compilation to rewrite the generated header in
 # place.
-SWIFT_FEATURE_REWRITE_GENERATED_HEADER = "swift.rewrite_generated_header"
+SWIFT_FEATURE__REWRITE_GENERATED_HEADER = "swift._rewrite_generated_header"
 
 # If enabled, Swift compiler invocations will use precompiled modules from
 # dependencies instead of module maps and headers, if those dependencies provide
@@ -149,7 +149,7 @@ SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 
 # If enabled, Swift modules for dependencies will be passed to the compiler
 # using a JSON file instead of `-I` search paths.
-SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP = "swift.use_explicit_swift_module_map"
+SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP = "swift._use_explicit_swift_module_map"
 
 # If enabled, Swift compilation actions will use the same global Clang module
 # cache used by Objective-C compilation actions. This is disabled by default
@@ -173,11 +173,11 @@ SWIFT_FEATURE_CACHEABLE_SWIFTMODULES = "swift.cacheable_swiftmodules"
 
 # If enabled, requests the `-enable-library-evolution` swiftc flag which is
 # required for newer features like swiftinterface file generation.
-SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION = "swift.enable_library_evolution"
+SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION = "swift._enable_library_evolution"
 
 # If enabled, requests the swiftinterface file to be built on the swiftc
 # invocation.
-SWIFT_FEATURE_EMIT_SWIFTINTERFACE = "swift.emit_swiftinterface"
+SWIFT_FEATURE__EMIT_SWIFTINTERFACE = "swift._emit_swiftinterface"
 
 # If enabled, declare `.swiftsourceinfo` files as outputs that Bazel will track.
 # Note that at the time of this writing (Swift 5.10), `.swiftsourceinfo` files
@@ -214,7 +214,7 @@ SWIFT_FEATURE__OPT_IN_SWIFTCOPTS = "swift._opt_in_swiftcopts"
 # better dead-code stripping. This assumes that all clients of public types are
 # part of the same link unit or that public symbols linked into frameworks are
 # explicitly exported via `-exported_symbols_list`.
-SWIFT_FEATURE_INTERNALIZE_AT_LINK = "swift.internalize_at_link"
+SWIFT_FEATURE__INTERNALIZE_AT_LINK = "swift._internalize_at_link"
 
 # If enabled, requests the `-disable-availability-checking` frontend flag.
 # This disables checking for potentially unavailable APIs.

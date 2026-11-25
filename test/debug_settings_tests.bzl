@@ -66,10 +66,8 @@ FASTBUILD_EMBED_MODULE_CONFIG_SETTINGS = {
 }
 
 FASTBUILD_FULL_DI_CONFIG_SETTINGS = {
+    "//command_line_option:apple_generate_dsym": True,
     "//command_line_option:compilation_mode": "fastbuild",
-    "//command_line_option:features": [
-        "swift.full_debug_info",
-    ],
 }
 
 OPT_CONFIG_SETTINGS = {
@@ -84,10 +82,8 @@ OPT_EMBED_MODULE_CONFIG_SETTINGS = {
 }
 
 OPT_FULL_DI_CONFIG_SETTINGS = {
+    "//command_line_option:apple_generate_dsym": True,
     "//command_line_option:compilation_mode": "opt",
-    "//command_line_option:features": [
-        "swift.full_debug_info",
-    ],
 }
 
 dbg_action_command_line_test = make_action_command_line_test_rule(
@@ -220,7 +216,7 @@ def debug_settings_test_suite(name, tags = []):
         target_under_test = "@build_bazel_rules_swift//test/fixtures/debug_settings:simple",
     )
 
-    # Verify that `-c fastbuild` builds with `swift.full_debug_info` use `-g`
+    # Verify that `-c fastbuild` builds with `swift._full_debug_info` use `-g`
     # instead of `-gline-tables-only` (this is required for Apple dSYM support).
     fastbuild_full_di_action_command_line_test(
         name = "{}_fastbuild_full_di_build".format(name),
@@ -456,7 +452,7 @@ def debug_settings_test_suite(name, tags = []):
     )
 
     # Verify that `-debug-module-path` is omitted in `opt` mode without
-    # `swift.full_debug_info`.
+    # `swift._full_debug_info`.
     opt_action_command_line_test(
         name = "{}_opt_no_debug_module_path".format(name),
         not_expected_argv = [
@@ -468,7 +464,7 @@ def debug_settings_test_suite(name, tags = []):
     )
 
     # Verify that `-debug-module-path` is emitted in `opt` mode when
-    # `swift.full_debug_info` is enabled.
+    # `swift._full_debug_info` is enabled.
     opt_full_di_action_command_line_test(
         name = "{}_opt_full_di_debug_module_path".format(name),
         expected_argv = [

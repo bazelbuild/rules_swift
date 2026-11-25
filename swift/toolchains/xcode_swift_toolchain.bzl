@@ -49,10 +49,10 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",  # @unused
-    "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
-    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_EMBED_DEBUG_MODULE",
     "SWIFT_FEATURE_STD_GNU2X",
+    "SWIFT_FEATURE__MODULE_HOME_IS_CWD",
+    "SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH",
 )
@@ -795,7 +795,7 @@ def _xcode_swift_toolchain_impl(ctx):
         SWIFT_FEATURE_COMPILE_IN_PARALLEL,
 
         # Ensure hermetic PCM files (no absolute workspace paths).
-        SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+        SWIFT_FEATURE__MODULE_HOME_IS_CWD,
         SWIFT_FEATURE_STD_GNU2X,
     ])
 
@@ -811,7 +811,7 @@ def _xcode_swift_toolchain_impl(ctx):
 
     # `-fmodule-map-file-home-is-cwd` is incompatible with Apple's module maps,
     # which we must use for system frameworks.
-    unsupported_features.append(SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD)
+    unsupported_features.append(SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD)
 
     env = _xcode_env(target_triple = target_triple, xcode_config = xcode_config)
     execution_requirements = xcode_config.execution_info()

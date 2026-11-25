@@ -18,15 +18,15 @@ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load(
     ":feature_names.bzl",
-    "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
-    "SWIFT_FEATURE_FILE_PREFIX_MAP",
-    "SWIFT_FEATURE_FULL_DEBUG_INFO",
-    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_OPT_USES_CMO",
+    "SWIFT_FEATURE__COVERAGE",
+    "SWIFT_FEATURE__FILE_PREFIX_MAP",
+    "SWIFT_FEATURE__FULL_DEBUG_INFO",
+    "SWIFT_FEATURE__INTERNALIZE_AT_LINK",
 )
 load(":package_specs.bzl", "label_matches_package_specs")
 
@@ -39,6 +39,7 @@ visibility([
 _INTERNAL_FEATURE_TEST_PACKAGES = [
     "test/fixtures/debug_settings",
     "test/fixtures/layering_check",
+    "test/fixtures/module_interface",
     "test/fixtures/parallel_compilation",
 ]
 
@@ -216,10 +217,10 @@ def features_for_build_modes(ctx, cpp_fragment = None):
         requested_features.append(SWIFT_FEATURE_ENABLE_TESTING)
 
     if ctx.configuration.coverage_enabled:
-        requested_features.append(SWIFT_FEATURE_COVERAGE)
+        requested_features.append(SWIFT_FEATURE__COVERAGE)
 
     if cpp_fragment and cpp_fragment.apple_generate_dsym:
-        requested_features.append(SWIFT_FEATURE_FULL_DEBUG_INFO)
+        requested_features.append(SWIFT_FEATURE__FULL_DEBUG_INFO)
 
     return requested_features, unsupported_features
 
@@ -281,8 +282,8 @@ def default_features_for_toolchain(ctx, target_triple):
     # Common features we turn on regardless of target.
     features = [
         SWIFT_FEATURE_ENABLE_BATCH_MODE,
-        SWIFT_FEATURE_FILE_PREFIX_MAP,
-        SWIFT_FEATURE_INTERNALIZE_AT_LINK,
+        SWIFT_FEATURE__FILE_PREFIX_MAP,
+        SWIFT_FEATURE__INTERNALIZE_AT_LINK,
         SWIFT_FEATURE_LAYERING_CHECK_SWIFT,
 
         # Allow users to start using access levels on `import`s by default. Note

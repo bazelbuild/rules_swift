@@ -30,43 +30,43 @@ load(
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
     "SWIFT_FEATURE_CACHEABLE_SWIFTMODULES",
-    "SWIFT_FEATURE_COVERAGE",
     "SWIFT_FEATURE_DBG",
     "SWIFT_FEATURE_DISABLE_AVAILABILITY_CHECKING",
     "SWIFT_FEATURE_EMIT_C_MODULE",
-    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE_ENABLE_BATCH_MODE",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_ENABLE_TESTING",
     "SWIFT_FEATURE_ENABLE_V6",
     "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_FASTBUILD",
-    "SWIFT_FEATURE_FILE_PREFIX_MAP",
-    "SWIFT_FEATURE_FULL_DEBUG_INFO",
-    "SWIFT_FEATURE_INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LTO_FULL",
     "SWIFT_FEATURE_LTO_THIN",
-    "SWIFT_FEATURE_MODULE_HOME_IS_CWD",
-    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_NO_ALLOCATIONS",
-    "SWIFT_FEATURE_NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_OSIZE",
     "SWIFT_FEATURE_OPT_USES_WMO",
-    "SWIFT_FEATURE_REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE_STRICT_MEMORY_SAFETY",
-    "SWIFT_FEATURE_SYSTEM_MODULE",
     "SWIFT_FEATURE_USE_C_MODULES",
-    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
+    "SWIFT_FEATURE__COVERAGE",
+    "SWIFT_FEATURE__EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE__FILE_PREFIX_MAP",
+    "SWIFT_FEATURE__FULL_DEBUG_INFO",
+    "SWIFT_FEATURE__INTERNALIZE_AT_LINK",
     "SWIFT_FEATURE__LAYERING_CHECK_ON_CODEGEN",
+    "SWIFT_FEATURE__MODULE_HOME_IS_CWD",
+    "SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE__NO_ASAN_VERSION_CHECK",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__REWRITE_GENERATED_HEADER",
     "SWIFT_FEATURE__SUPPORTS_CONST_GATHER_PROTOCOLS_LIST",
     "SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH",
+    "SWIFT_FEATURE__SYSTEM_MODULE",
+    "SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -179,7 +179,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-enable-library-evolution")],
-            features = [SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION],
+            features = [SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION],
         ),
         ActionConfigInfo(
             actions = [
@@ -187,7 +187,7 @@ def compile_action_configs(
                 SWIFT_ACTION_COMPILE_MODULE,
             ],
             configurators = [_emit_module_interface_path_configurator],
-            features = [SWIFT_FEATURE_EMIT_SWIFTINTERFACE],
+            features = [SWIFT_FEATURE__EMIT_SWIFTINTERFACE],
         ),
         ActionConfigInfo(
             actions = [
@@ -276,7 +276,7 @@ def compile_action_configs(
                     SWIFT_ACTION_COMPILE_MODULE,
                 ],
                 configurators = [generated_header_rewriter_configurator],
-                features = [SWIFT_FEATURE_REWRITE_GENERATED_HEADER],
+                features = [SWIFT_FEATURE__REWRITE_GENERATED_HEADER],
             ),
         )
 
@@ -350,7 +350,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-Xfrontend", "-internalize-at-link")],
-            features = [SWIFT_FEATURE_INTERNALIZE_AT_LINK],
+            features = [SWIFT_FEATURE__INTERNALIZE_AT_LINK],
         ),
 
         # Emit LLVM bitcode for Link-Time Optimization (LTO). If both features
@@ -418,18 +418,18 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-g")],
-            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE__FULL_DEBUG_INFO]],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [add_arg("-Xcc", "-gmodules")],
-            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE_FULL_DEBUG_INFO]],
+            features = [[SWIFT_FEATURE_DBG], [SWIFT_FEATURE__FULL_DEBUG_INFO]],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [add_arg("-gline-tables-only")],
             features = [SWIFT_FEATURE_FASTBUILD],
-            not_features = [SWIFT_FEATURE_FULL_DEBUG_INFO],
+            not_features = [SWIFT_FEATURE__FULL_DEBUG_INFO],
         ),
 
         # Emit the path to this module's `.swiftmodule` in debug info so LLDB
@@ -440,7 +440,7 @@ def compile_action_configs(
             features = [
                 [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_DBG],
                 [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_FASTBUILD],
-                [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE_FULL_DEBUG_INFO],
+                [SWIFT_FEATURE__SUPPORTS_DEBUG_MODULE_PATH, SWIFT_FEATURE__FULL_DEBUG_INFO],
             ],
         ),
 
@@ -453,7 +453,7 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xwrapped-swift=-file-prefix-pwd-is-dot"),
             ],
-            features = [SWIFT_FEATURE_FILE_PREFIX_MAP],
+            features = [SWIFT_FEATURE__FILE_PREFIX_MAP],
         ),
     ]
 
@@ -469,7 +469,7 @@ def compile_action_configs(
                 add_arg("-profile-generate"),
                 add_arg("-profile-coverage-mapping"),
             ],
-            features = [SWIFT_FEATURE_COVERAGE],
+            features = [SWIFT_FEATURE__COVERAGE],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -483,7 +483,7 @@ def compile_action_configs(
             ],
             features = [
                 "asan",
-                SWIFT_FEATURE_NO_ASAN_VERSION_CHECK,
+                SWIFT_FEATURE__NO_ASAN_VERSION_CHECK,
             ],
         ),
         ActionConfigInfo(
@@ -544,7 +544,7 @@ def compile_action_configs(
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
                 SWIFT_FEATURE_USE_C_MODULES,
-                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+                SWIFT_FEATURE__MODULE_HOME_IS_CWD,
             ]],
         ),
         # Treat paths embedded into .pcm files as workspace-relative, not
@@ -562,7 +562,7 @@ def compile_action_configs(
             features = [[
                 SWIFT_FEATURE_EMIT_C_MODULE,
                 SWIFT_FEATURE_USE_C_MODULES,
-                SWIFT_FEATURE_MODULE_HOME_IS_CWD,
+                SWIFT_FEATURE__MODULE_HOME_IS_CWD,
             ]],
         ),
         # Treat paths in .modulemap files as workspace-relative, not modulemap-
@@ -578,7 +578,7 @@ def compile_action_configs(
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fmodule-map-file-home-is-cwd"),
             ],
-            features = [SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD],
+            features = [SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD],
         ),
 
         # Configure how implicit modules are handled--either using the module
@@ -631,7 +631,7 @@ def compile_action_configs(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
             configurators = [_c_layering_check_configurator],
             features = [SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS],
-            not_features = [SWIFT_FEATURE_SYSTEM_MODULE],
+            not_features = [SWIFT_FEATURE__SYSTEM_MODULE],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_PRECOMPILE_C_MODULE],
@@ -652,7 +652,7 @@ def compile_action_configs(
                 add_arg("-Xcc", "-Xclang"),
                 add_arg("-Xcc", "-fsystem-module"),
             ],
-            features = [SWIFT_FEATURE_SYSTEM_MODULE],
+            features = [SWIFT_FEATURE__SYSTEM_MODULE],
         ),
     ]
 
@@ -661,7 +661,7 @@ def compile_action_configs(
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_explicit_swift_module_map_configurator],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            features = [SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
@@ -672,19 +672,19 @@ def compile_action_configs(
                     is_frontend = True,
                 ),
             ],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            features = [SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
             configurators = [
                 add_arg("-disable-implicit-swift-modules"),
             ],
-            features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            features = [SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
             configurators = [_dependencies_swiftmodules_configurator],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            not_features = [SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = [SWIFT_ACTION_COMPILE_MODULE_INTERFACE],
@@ -695,7 +695,7 @@ def compile_action_configs(
                     is_frontend = True,
                 ),
             ],
-            not_features = [SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP],
+            not_features = [SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP],
         ),
         ActionConfigInfo(
             actions = all_compile_action_names(),
@@ -936,7 +936,7 @@ def compile_action_configs(
             actions = all_compile_action_names(),
             configurators = [add_arg("-swift-version", "5")],
             features = [
-                SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+                SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION,
             ],
             not_features = [
                 SWIFT_FEATURE_ENABLE_V6,

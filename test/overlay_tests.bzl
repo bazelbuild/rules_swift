@@ -34,28 +34,24 @@ load(
 
 visibility("private")
 
-_COMMON_FEATURES = [
-    "-swift.emit_swiftinterface",
-]
-
-_EXPLICIT_MODULES_FEATURES = _COMMON_FEATURES + [
+_EXPLICIT_MODULES_FEATURES = [
     "swift.emit_c_module",
     "swift.use_c_modules",
     "-swift.compile_in_parallel",
 ]
 
-_IMPLICIT_MODULES_FEATURES = _COMMON_FEATURES + [
+_IMPLICIT_MODULES_FEATURES = [
     "-swift.use_c_modules",
     "-swift.compile_in_parallel",
 ]
 
-_PARALLEL_COMPILE_FEATURES = _COMMON_FEATURES + [
+_PARALLEL_COMPILE_FEATURES = [
     "swift.emit_c_module",
     "swift.use_c_modules",
     "swift.compile_in_parallel",
 ]
 
-_WMO_FEATURES = _COMMON_FEATURES + [
+_WMO_FEATURES = [
     "swift.emit_c_module",
     "swift.use_c_modules",
     "swift.opt",

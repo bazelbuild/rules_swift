@@ -30,8 +30,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE__EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -145,8 +145,8 @@ def _swift_library_impl(ctx):
     extra_features = []
 
     if ctx.attr.library_evolution:
-        extra_features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
-        extra_features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+        extra_features.append(SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION)
+        extra_features.append(SWIFT_FEATURE__EMIT_SWIFTINTERFACE)
 
     toolchains = find_all_toolchains(ctx)
     feature_configuration = configure_features(

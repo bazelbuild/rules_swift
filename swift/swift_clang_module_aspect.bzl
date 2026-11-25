@@ -21,7 +21,7 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
+    "SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:features.bzl",
@@ -197,7 +197,7 @@ def _generate_module_map(
     # content permitted in the module map.
     workspace_relative = is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+        feature_name = SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD,
     )
 
     private_headers = compilation_context.direct_private_headers

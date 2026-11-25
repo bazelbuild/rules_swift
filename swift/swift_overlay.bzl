@@ -21,8 +21,8 @@ load(
 )
 load(
     "@build_bazel_rules_swift//swift/internal:feature_names.bzl",
-    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE__EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
 )
 load(
     "@build_bazel_rules_swift//swift/internal:providers.bzl",
@@ -50,8 +50,8 @@ def _swift_overlay_impl(ctx):
 
     features = list(ctx.features)
     if ctx.attr.library_evolution:
-        features.append(SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION)
-        features.append(SWIFT_FEATURE_EMIT_SWIFTINTERFACE)
+        features.append(SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION)
+        features.append(SWIFT_FEATURE__EMIT_SWIFTINTERFACE)
 
     return [
         SwiftOverlayCompileInfo(

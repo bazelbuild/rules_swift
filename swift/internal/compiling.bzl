@@ -44,20 +44,20 @@ load(
     "SWIFT_FEATURE_COMPILE_IN_PARALLEL",
     "SWIFT_FEATURE_DECLARE_SWIFTSOURCEINFO",
     "SWIFT_FEATURE_EMIT_C_MODULE",
-    "SWIFT_FEATURE_EMIT_SWIFTINTERFACE",
-    "SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION",
     "SWIFT_FEATURE_EXPERIMENTAL_EMBEDDED",
     "SWIFT_FEATURE_LAYERING_CHECK_FOR_C_DEPS",
     "SWIFT_FEATURE_LAYERING_CHECK_SWIFT",
     "SWIFT_FEATURE_LTO_THIN",
-    "SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE_OPT",
     "SWIFT_FEATURE_OPT_USES_CMO",
     "SWIFT_FEATURE_OPT_USES_WMO",
-    "SWIFT_FEATURE_SYSTEM_MODULE",
-    "SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP",
+    "SWIFT_FEATURE__EMIT_SWIFTINTERFACE",
+    "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
+    "SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD",
     "SWIFT_FEATURE__NUM_THREADS_1_IN_SWIFTCOPTS",
     "SWIFT_FEATURE__OPT_IN_SWIFTCOPTS",
+    "SWIFT_FEATURE__SYSTEM_MODULE",
+    "SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP",
     "SWIFT_FEATURE__WMO_IN_SWIFTCOPTS",
 )
 load(
@@ -202,7 +202,7 @@ def compile_module_interface(
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        feature_name = SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP,
     ):
         explicit_swift_module_map_file = actions.declare_file(
             "{}.swift-explicit-module-map.json".format(module_name),
@@ -251,7 +251,7 @@ def compile_module_interface(
         is_framework = is_framework,
         is_system = is_feature_enabled(
             feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
+            feature_name = SWIFT_FEATURE__SYSTEM_MODULE,
         ),
         swift = create_swift_module_inputs(
             swiftdoc = None,
@@ -489,7 +489,7 @@ def compile(
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_USE_EXPLICIT_SWIFT_MODULE_MAP,
+        feature_name = SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP,
     ):
         # Generate the JSON file that contains the manifest of Swift
         # dependencies.
@@ -835,7 +835,7 @@ def _should_plan_parallel_compilation(
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_ENABLE_LIBRARY_EVOLUTION,
+        feature_name = SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION,
     ):
         return True
 
@@ -1215,7 +1215,7 @@ def _compile_clang_module_for_swift_module(
         public_headers = compilation_context.direct_public_headers,
         workspace_relative = is_feature_enabled(
             feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_MODULE_MAP_HOME_IS_CWD,
+            feature_name = SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD,
         ),
     )
 
@@ -1547,7 +1547,7 @@ def _precompile_clang_module(
         ) and
         not is_feature_enabled(
             feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_SYSTEM_MODULE,
+            feature_name = SWIFT_FEATURE__SYSTEM_MODULE,
         )
     ):
         transitive_headers_to_stage = [unchecked_include_headers]
@@ -1873,7 +1873,7 @@ def _construct_compile_plan(
 
     if is_feature_enabled(
         feature_configuration = feature_configuration,
-        feature_name = SWIFT_FEATURE_EMIT_SWIFTINTERFACE,
+        feature_name = SWIFT_FEATURE__EMIT_SWIFTINTERFACE,
     ):
         swiftinterface_file = actions.declare_file(
             "{}.swiftinterface".format(module_name),
