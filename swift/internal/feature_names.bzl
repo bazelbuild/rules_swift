@@ -151,15 +151,6 @@ SWIFT_FEATURE_USE_C_MODULES = "swift.use_c_modules"
 # using a JSON file instead of `-I` search paths.
 SWIFT_FEATURE__USE_EXPLICIT_SWIFT_MODULE_MAP = "swift._use_explicit_swift_module_map"
 
-# If enabled, Swift compilation actions will use the same global Clang module
-# cache used by Objective-C compilation actions. This is disabled by default
-# because under some circumstances Clang module cache corruption can cause the
-# Swift compiler to crash (sometimes when switching configurations or syncing a
-# repository), but disabling it also causes a noticeable build time regression
-# so it can be explicitly re-enabled by users who are not affected by those
-# crashes.
-SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE = "swift.use_global_module_cache"
-
 # If enabled, builds using the "dbg" compilation mode will explicitly disable
 # swiftc from producing swiftmodules containing embedded file paths, which are
 # inherently non-portable across machines.

@@ -38,7 +38,6 @@ bzl_library(
         "//swift/internal:feature_names",
         "//swift/internal:optimization",
         "//swift/internal:package_specs",
-        "@bazel_skylib//lib:paths",
         "@bazel_skylib//lib:types",
     ],
 )

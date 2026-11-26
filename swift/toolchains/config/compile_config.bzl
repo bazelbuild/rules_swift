@@ -14,7 +14,6 @@
 
 """Common configuration for Swift compile actions."""
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(
     "@build_bazel_rules_swift//swift/internal:action_names.bzl",
@@ -50,7 +49,6 @@ load(
     "SWIFT_FEATURE_STD_GNU2X",
     "SWIFT_FEATURE_STRICT_MEMORY_SAFETY",
     "SWIFT_FEATURE_USE_C_MODULES",
-    "SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE",
     "SWIFT_FEATURE__COVERAGE",
     "SWIFT_FEATURE__EMIT_SWIFTINTERFACE",
     "SWIFT_FEATURE__ENABLE_LIBRARY_EVOLUTION",
@@ -581,16 +579,8 @@ def compile_action_configs(
             features = [SWIFT_FEATURE__MODULE_MAP_HOME_IS_CWD],
         ),
 
-        # Configure how implicit modules are handled--either using the module
-        # cache, or disabled completely when using explicit modules.
-        ActionConfigInfo(
-            actions = all_compile_action_names() + [
-                SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
-            ],
-            configurators = [_global_module_cache_configurator],
-            features = [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
-            not_features = [SWIFT_FEATURE_USE_C_MODULES],
-        ),
+        # Configure how implicit modules are handled--using an ephemeral module
+        # cache when explicit modules are disabled.
         ActionConfigInfo(
             actions = all_compile_action_names() + [
                 SWIFT_ACTION_COMPILE_MODULE_INTERFACE,
@@ -598,10 +588,7 @@ def compile_action_configs(
             configurators = [
                 add_arg("-Xwrapped-swift=-ephemeral-module-cache"),
             ],
-            not_features = [
-                [SWIFT_FEATURE_USE_C_MODULES],
-                [SWIFT_FEATURE_USE_GLOBAL_MODULE_CACHE],
-            ],
+            not_features = [SWIFT_FEATURE_USE_C_MODULES],
         ),
         # When using C modules, disable the implicit search for module map files
         # because all of them, including system dependencies, will be provided
@@ -1226,18 +1213,6 @@ def _swift_layering_check_configurator(prerequisites, args):
     return ConfigResultInfo(
         inputs = [prerequisites.deps_modules_file],
     )
-
-def _global_module_cache_configurator(prerequisites, args):
-    """Adds flags to enable the global module cache."""
-
-    # If bin_dir is not provided, then we don't pass any special flags to
-    # the compiler, letting it decide where the cache should live. This is
-    # usually somewhere in the system temporary directory.
-    if prerequisites.bin_dir:
-        args.add(
-            "-module-cache-path",
-            paths.join(prerequisites.bin_dir.path, "_swift_module_cache"),
-        )
 
 def _batch_mode_configurator(prerequisites, args):
     """Adds flags to enable batch compilation mode."""
