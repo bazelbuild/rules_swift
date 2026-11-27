@@ -1,0 +1,16 @@
+module(
+    name = "rules_swift_non_root_toolchain_test",
+    version = "0.0.0",
+)
+
+bazel_dep(
+    name = "rules_swift",
+    version = "0",
+)
+
+swift = use_extension("@rules_swift//swift:extensions.bzl", "swift")
+swift.toolchain(
+    name = "rules_swift_non_root_toolchain_test_swift",
+    swift_version = "6.4.0",
+)
+use_repo(swift, "rules_swift_non_root_toolchain_test_swift")
