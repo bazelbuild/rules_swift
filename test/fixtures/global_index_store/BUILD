@@ -14,6 +14,7 @@ swift_library(
     features = [
         "swift.use_global_index_store",
         "swift.index_while_building",
+        "swift.modular_indexing",
     ],
     tags = FIXTURE_TAGS,
     target_compatible_with = ["@platforms//os:macos"],
