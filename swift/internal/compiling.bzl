@@ -1965,13 +1965,8 @@ def _declare_compile_outputs(
         indexstore_directory = actions.declare_directory(
             "{}.indexstore".format(target_name),
         )
-        include_index_unit_paths = is_feature_enabled(
-            feature_configuration = feature_configuration,
-            feature_name = SWIFT_FEATURE_MODULAR_INDEXING,
-        )
     else:
         indexstore_directory = None
-        include_index_unit_paths = False
 
     # Configure localized-string extraction if requested. The compiler emits one
     # `.stringsdata` file per source file into this directory; the file set is
@@ -2042,7 +2037,7 @@ def _declare_compile_outputs(
             split_derived_file_generation = split_derived_file_generation,
             srcs = srcs,
             target_name = target_name,
-            include_index_unit_paths = include_index_unit_paths,
+            include_index_unit_paths = indexstore_directory != None,
         )
         object_files = output_info.object_files
         ast_files = output_info.ast_files

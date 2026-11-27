@@ -29,6 +29,15 @@ output_file_map_target_name_test = make_output_file_map_test_rule(
     },
 )
 
+output_file_map_index_while_building_test = make_output_file_map_test_rule(
+    config_settings = {
+        "//command_line_option:features": [
+            "swift.index_while_building",
+            "-swift.modular_indexing",
+        ],
+    },
+)
+
 output_file_map_embed_bitcode_test = make_output_file_map_test_rule(
     config_settings = {
         "//command_line_option:features": [
@@ -112,6 +121,18 @@ def output_file_map_test_suite(name, tags = []):
         name = "{}_default".format(name),
         expected_mapping = {
             "const-values": "test/fixtures/debug_settings/simple_objs/Empty.swift.swiftconstvalues",
+            "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
+        },
+        file_entry = "test/fixtures/debug_settings/Empty.swift",
+        output_file_map = "test/fixtures/debug_settings/simple.output_file_map.json",
+        tags = all_tags,
+        target_under_test = "//test/fixtures/debug_settings:simple",
+    )
+
+    output_file_map_index_while_building_test(
+        name = "{}_index_while_building".format(name),
+        expected_mapping = {
+            "index-unit-output-path": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
             "object": "test/fixtures/debug_settings/simple_objs/Empty.swift.o",
         },
         file_entry = "test/fixtures/debug_settings/Empty.swift",
