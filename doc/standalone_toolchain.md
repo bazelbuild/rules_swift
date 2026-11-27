@@ -55,6 +55,8 @@ actually build on. Each platform repo name is `<toolchain_name>_<platform>`.
 | `swift_version` | string | The Swift release version (e.g. `6.2.4`) or a snapshot identifier (see [Snapshots](#snapshot-toolchains)). Mutually exclusive with `swift_version_file`. |
 | `swift_version_file` | label | A label pointing at a file containing the version string (typically a `.swift-version` file checked into the repo). Mutually exclusive with `swift_version`. |
 | `platform_sha256` | string_dict | Optional map of platform -> SHA-256. Required for snapshots and any version not present in the bundled release metadata. When set, it overrides the bundled checksums. |
+| `sysroot` | string_keyed_label_dict | Optional map of platform -> label of sysroot files for the exec Swift toolchain. See [Using your own sysroot](#using-your-own-sysroot). |
+| `env` | string_dict | Optional environment variables for the exec Swift toolchain. `{sysroot}` in a value is replaced with the root of that platform's `sysroot`. |
 
 ### Supported platforms
 
@@ -100,6 +102,27 @@ swift.toolchain(
     swift_version_file = "//:.swift-version",
 )
 ```
+
+## Using your own sysroot
+
+By default the exec Swift toolchain uses the C++ toolchain's sysroot for `-sdk`.
+To build against a specific sysroot instead, for example when the C++ toolchain
+is hermetic and has no sysroot, set `sysroot` per platform:
+
+```bzl
+swift.toolchain(
+    name = "swift_toolchain",
+    swift_version = "6.4.0",
+    sysroot = {
+        "ubuntu22.04": "@my_ubuntu22.04_amd64_sysroot//:files",
+        "ubuntu22.04-aarch64": "@my_ubuntu22.04_arm64_sysroot//:files",
+    },
+    env = {"LD_LIBRARY_PATH": "{sysroot}/usr/lib"},
+)
+```
+
+The exec Swift toolchain passes the sysroot's root as `-sdk` and adds the files
+to the inputs of its Swift tools. The embedded toolchains are unaffected.
 
 ## Adding versions not bundled with `rules_swift`
 

@@ -9,7 +9,7 @@ load("//swift/internal:developer_dirs.bzl", "developer_dirs_linkopts")
 load("//swift/internal:utils.bzl", "include_developer_search_paths")
 
 # buildifier: disable=bzl-visibility
-load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url")
+load("//swift/internal/extensions:standalone_toolchain.bzl", "get_download_url", "sysroot_substitutions")
 
 # buildifier: disable=bzl-visibility
 load("//swift/internal/extensions:swift_sdk_releases.bzl", "swift_sdk_download_url")
@@ -193,6 +193,36 @@ def _swift_sdk_download_url_test(ctx):
 
 swift_sdk_download_url_test = unittest.make(_swift_sdk_download_url_test)
 
+def _sysroot_substitutions_test(ctx):
+    env = unittest.begin(ctx)
+
+    asserts.equals(
+        env,
+        {"{env}": "{}", "{sdkroot}": "", "{sysroot_inputs}": "[]"},
+        sysroot_substitutions(None, {}),
+    )
+
+    sysroot = Label("//test:BUILD")
+    asserts.equals(
+        env,
+        {
+            "{env}": '{"A": "b"}',
+            "{sdkroot}": sysroot.workspace_root,
+            "{sysroot_inputs}": repr([str(sysroot)]),
+        },
+        sysroot_substitutions(sysroot, {"A": "b"}),
+    )
+
+    asserts.equals(
+        env,
+        repr({"LD_LIBRARY_PATH": sysroot.workspace_root + "/lib"}),
+        sysroot_substitutions(sysroot, {"LD_LIBRARY_PATH": "{sysroot}/lib"})["{env}"],
+    )
+
+    return unittest.end(env)
+
+sysroot_substitutions_test = unittest.make(_sysroot_substitutions_test)
+
 def utils_test_suite(name):
     return unittest.suite(
         name,
@@ -200,4 +230,5 @@ def utils_test_suite(name):
         include_developer_search_paths_test,
         standalone_toolchain_download_url_test,
         swift_sdk_download_url_test,
+        sysroot_substitutions_test,
     )

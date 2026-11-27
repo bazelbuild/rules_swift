@@ -283,28 +283,38 @@ cc_toolchain(
     tool_map = "all_tools",
 )
 
+_SWIFT_TOOL_INPUTS = glob(
+    [
+        "usr/lib/swift/**",
+    ] + [
+        "usr/bin/swift",
+        "usr/bin/swift-frontend",
+    ],
+    exclude = [
+        # for now we only tested embedded, linux and macos so we can exclude files needed for
+        # other platforms.
+        "usr/lib/swift/xrsimulator/**",
+        "usr/lib/swift/appletvos/**",
+        "usr/lib/swift/watchos/**",
+        "usr/lib/swift/appletvsimulator/**",
+        "usr/lib/swift/iphoneos/**",
+        "usr/lib/swift/iphonesimulator/**",
+        "usr/lib/swift/watchsimulator/**",
+        "usr/lib/swift/xros/**",
+    ],
+)
+
 swift_tools(
     name = "tools",
-    additional_inputs = glob(
-        [
-            "usr/lib/swift/**",
-        ] + [
-            "usr/bin/swift",
-            "usr/bin/swift-frontend",
-        ],
-        exclude = [
-            # for now we only tested embedded, linux and macos so we can exclude files needed for
-            # other platforms.
-            "usr/lib/swift/xrsimulator/**",
-            "usr/lib/swift/appletvos/**",
-            "usr/lib/swift/watchos/**",
-            "usr/lib/swift/appletvsimulator/**",
-            "usr/lib/swift/iphoneos/**",
-            "usr/lib/swift/iphonesimulator/**",
-            "usr/lib/swift/watchsimulator/**",
-            "usr/lib/swift/xros/**",
-        ],
-    ),
+    additional_inputs = _SWIFT_TOOL_INPUTS,
+    swift_autolink_extract = "usr/bin/swift-autolink-extract",
+    swift_driver = "usr/bin/swiftc",
+    swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
+)
+
+swift_tools(
+    name = "tools_exec",
+    additional_inputs = _SWIFT_TOOL_INPUTS + {sysroot_inputs},
     swift_autolink_extract = "usr/bin/swift-autolink-extract",
     swift_driver = "usr/bin/swiftc",
     swift_symbolgraph_extract = "usr/bin/swift-symbolgraph-extract",
@@ -348,6 +358,7 @@ swift_toolchain(
         ],
         allow_empty = True,
     ),
+    env = {env},
     features = [
         "swift._supports_upcoming_features",
         "swift.no_embed_debug_module",
@@ -364,6 +375,7 @@ swift_toolchain(
         "@platforms//os:macos": "macos",
     }),
     parsed_version = "{swift_version}",
+    sdkroot = "{sdkroot}",
     static_runtime = select({
         "@platforms//os:linux": glob(
             [
@@ -377,6 +389,6 @@ swift_toolchain(
         ),
         "//conditions:default": [],
     }),
-    swift_tools = "tools",
+    swift_tools = "tools_exec",
     version_file = ".swift-version",
 )
