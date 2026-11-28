@@ -1,7 +1,3 @@
-load(
-    "@apple_support//configs:platforms.bzl",
-    "APPLE_PLATFORMS_CONSTRAINTS",
-)
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_swift//swift/toolchains:xcode_swift_toolchain.bzl", "xcode_swift_toolchain")
@@ -31,36 +27,6 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-toolchain(
-    name = "linux-swift-toolchain_x86_64",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    toolchain = "@rules_swift_local_config//:linux-toolchain",
-    toolchain_type = "//toolchains:toolchain_type",
-    visibility = ["//visibility:public"],
-)
-
-toolchain(
-    name = "linux-swift-toolchain_aarch64",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:aarch64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:aarch64",
-    ],
-    toolchain = "@rules_swift_local_config//:linux-toolchain",
-    toolchain_type = "//toolchains:toolchain_type",
-    visibility = ["//visibility:public"],
-)
-
 _XCODE_FEATURE_VALUES = [
     # TODO: This should be removed so that private headers can be used with
     # explicit modules, but the build targets for CgRPC need to be cleaned
@@ -72,6 +38,7 @@ xcode_swift_toolchain(
     name = "xcode-sdk-toolchain",
     features = _XCODE_FEATURE_VALUES,
     tags = ["manual"],
+    visibility = ["//toolchains:__pkg__"],
 )
 
 xcode_swift_toolchain(
@@ -81,64 +48,7 @@ xcode_swift_toolchain(
     implicit_system_modules = "@system_sdk//:implicit_modules",
     system_modules = "@system_sdk//:all_modules",
     tags = ["manual"],
-)
-
-[
-    toolchain(
-        name = "xcode-sdk-toolchain-" + arch,
-        exec_compatible_with = [
-            "@platforms//os:macos",
-        ],
-        target_compatible_with = constraints,
-        toolchain = ":xcode-sdk-toolchain",
-        toolchain_type = "//toolchains:sdk_toolchain_type",
-        visibility = ["//visibility:public"],
-    )
-    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
-]
-
-[
-    toolchain(
-        name = "xcode-toolchain-" + arch,
-        exec_compatible_with = [
-            "@platforms//os:macos",
-        ],
-        target_compatible_with = constraints,
-        toolchain = ":xcode-toolchain",
-        toolchain_type = "//toolchains:toolchain_type",
-        visibility = ["//visibility:public"],
-    )
-    for arch, constraints in APPLE_PLATFORMS_CONSTRAINTS.items()
-]
-
-toolchain(
-    name = "windows-swift-toolchain-x86_64",
-    exec_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:x86_64",
-    ],
-    toolchain = "@rules_swift_local_config//:windows-toolchain",
-    toolchain_type = "//toolchains:toolchain_type",
-    visibility = ["//visibility:public"],
-)
-
-toolchain(
-    name = "windows-swift-toolchain-aarch64",
-    exec_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:aarch64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:windows",
-        "@platforms//cpu:aarch64",
-    ],
-    toolchain = "@rules_swift_local_config//:windows-toolchain",
-    toolchain_type = "//toolchains:toolchain_type",
-    visibility = ["//visibility:public"],
+    visibility = ["//toolchains:__pkg__"],
 )
 
 bzl_library(

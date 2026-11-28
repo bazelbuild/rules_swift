@@ -184,8 +184,8 @@ transition_test(
         "--execute",
     ],
     extra_toolchains = [
-        "//swift/toolchains:linux-swift-toolchain_aarch64",
-        "//swift/toolchains:linux-swift-toolchain_x86_64",
+        "//toolchains:linux-swift-toolchain_aarch64",
+        "//toolchains:linux-swift-toolchain_x86_64",
     ],
     tags = ["manual"],
     target = ":_linux_non_hermetic_dynamic_stdlib_test",
@@ -196,8 +196,8 @@ transition_test(
     name = "linux_non_hermetic_linkshared_dynamic_stdlib_test",
     args = ["test/linux_static_stdlib/libuses_foundation_shared.so"],
     extra_toolchains = [
-        "//swift/toolchains:linux-swift-toolchain_aarch64",
-        "//swift/toolchains:linux-swift-toolchain_x86_64",
+        "//toolchains:linux-swift-toolchain_aarch64",
+        "//toolchains:linux-swift-toolchain_x86_64",
     ],
     tags = ["manual"],
     target = ":_linux_non_hermetic_linkshared_dynamic_stdlib_test",

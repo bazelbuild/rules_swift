@@ -286,7 +286,7 @@ register_toolchains(
     dev_dependency = True,
 )
 
-register_toolchains("//swift/toolchains:all")
+register_toolchains("//toolchains:all")
 
 # Dev dependencies
 bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.5.0", dev_dependency = True)
